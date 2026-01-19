@@ -10,9 +10,9 @@ CWD ./lib
 
 PROMPT Perform comprehensive security audit focusing on authentication, authorization, and data sanitization.
 
-CONTEXT @server/auth*.js
-CONTEXT @server/endpoints/*.js
-CONTEXT @plugins/*.js
+@server/auth*.js
+@server/endpoints/*.js
+@plugins/*.js
 
 PROMPT Analyze for common vulnerabilities:
 1. SQL injection vectors
@@ -31,7 +31,7 @@ PROMPT Use git history to identify:
 - Modified input validation
 
 PROMPT Cross-reference with known CVEs:
-CONTEXT @package.json
+@package.json
 PROMPT Check for vulnerable dependencies
 
 PROMPT Generate security audit report:

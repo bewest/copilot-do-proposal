@@ -23,11 +23,11 @@ PROMPT For each significant code change, verify:
 - Is the changelog updated?
 - Are migration guides provided (if breaking)?
 
-CONTEXT @lib/api/**/*.js
-CONTEXT @lib/server/**/*.js
-CONTEXT @docs/**/*.md
-CONTEXT @README.md
-CONTEXT @CHANGELOG.md
+@lib/api/**/*.js
+@lib/server/**/*.js
+@docs/**/*.md
+@README.md
+@CHANGELOG.md
 
 PROMPT Generate documentation sync report:
 
@@ -214,7 +214,7 @@ Breaking-Change: Yes
 **Verification Command:**
 ```bash
 # Run this workflow regularly
-copilot do workflows/documentation/sync-verification.copilot \
+copilot agent apply workflows/documentation/sync-verification.copilot \
   --format markdown \
   --output docs/sync-reports/$(date +%Y-%m-%d).md
 ```
@@ -222,7 +222,7 @@ copilot do workflows/documentation/sync-verification.copilot \
 **Integration with CI:**
 ```bash
 # Add to .github/workflows/pr-checks.yml
-copilot do workflows/documentation/sync-verification.copilot \
+copilot agent apply workflows/documentation/sync-verification.copilot \
   --format json \
   --output sync-check.json
 

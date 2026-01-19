@@ -10,10 +10,10 @@ CWD ./lib/plugins
 
 PROMPT Analyze all changes to insulin calculation and glucose prediction algorithms.
 
-CONTEXT @iob.js
-CONTEXT @cob.js
-CONTEXT @bwp.js
-CONTEXT @openaps.js
+@iob.js
+@cob.js
+@bwp.js
+@openaps.js
 
 PROMPT For each algorithm file, identify:
 1. Mathematical formulas and calculations
@@ -23,9 +23,9 @@ PROMPT For each algorithm file, identify:
 5. Recent changes (reference git log)
 
 PROMPT Cross-reference with test coverage:
-CONTEXT @../../tests/iob.test.js
-CONTEXT @../../tests/cob.test.js
-CONTEXT @../../tests/bwp.test.js
+@../../tests/iob.test.js
+@../../tests/cob.test.js
+@../../tests/bwp.test.js
 
 PROMPT Generate validation documentation with:
 

@@ -13,9 +13,9 @@ PROLOGUE Current version: $(git describe --tags)
 PROLOGUE Target repositories: nightscout-connect, nightscout-roles-gateway
 
 PROMPT Analyze recent API changes in the following files:
-CONTEXT @lib/api/*.js
-CONTEXT @lib/server/*.js
-CONTEXT @CHANGELOG.md
+@lib/api/*.js
+@lib/server/*.js
+@CHANGELOG.md
 
 PROMPT For each API change, document:
 1. What changed (endpoint, method signature, response format)
@@ -24,7 +24,7 @@ PROMPT For each API change, document:
 4. Migration guide reference (if breaking)
 
 PROMPT Compare current API with previous release:
-CONTEXT @docs/api-v3.md
+@docs/api-v3.md
 
 PROMPT Generate a structured report with:
 - Breaking-Change: Yes/No for each API
