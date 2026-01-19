@@ -157,6 +157,88 @@ copilot do "Summarize test findings and identify patterns" \
 # Equivalent to running 18+ sessions, but automated
 ```
 
+#### Example 4: Multi-Faceted Analysis (Real Pattern from Nightscout Ecosystem)
+
+**Observed pattern from git history:** When auditing each subcomponent (Dexcom G6/G7, Libre CGM, xDrip+, oref0, etc.), the developer sequentially updates **5 different facets**:
+
+```
+Commit: "Add detailed documentation for Dexcom G6 and G7 Bluetooth protocols"
+Files touched:
+  - mapping/cross-project/terminology-matrix.md    (terminology facet)
+  - traceability/requirements.md                   (requirements facet)  
+  - traceability/gaps.md                           (gaps facet)
+  - docs/.../dexcom-g6-g7-protocol-deep-dive.md   (deep dive facet)
+  
+Commit: "Update insulin curve models and associated documentation"
+Files touched:
+  - mapping/cross-project/terminology-matrix.md
+  - traceability/requirements.md
+  - traceability/gaps.md
+  - docs/.../insulin-curve-models-deep-dive.md
+```
+
+**Manual process** (what's happening today):
+- Audit Dexcom protocols → Update 5 files manually → Commit
+- Audit Libre protocols → Update same 5 files manually → Commit
+- Audit xDrip+ → Update same 5 files manually → Commit
+- Repeat for 10+ subcomponents
+- **No way to ensure consistency across facets**
+- **No automation for faceted analysis**
+
+**With ConversationFiles** (automated faceted analysis):
+
+```bash
+# Audit one subcomponent across all 5 facets
+copilot do ./workflows/audit-cgm-dexcom-g6.copilot
+
+# Or audit all CGM subcomponents in parallel
+copilot loop \
+  --parallel 4 \
+  workflows/audit-cgm-*.copilot
+```
+
+```dockerfile
+# workflows/audit-cgm-dexcom-g6.copilot
+MODEL claude-sonnet-4.5
+MODE full
+MAX-CYCLES 2
+
+# Facet 1: Terminology mapping
+PROMPT Analyze Dexcom G6 BLE protocol and update terminology matrix
+CONTEXT @mapping/cross-project/terminology-matrix.md
+CONTEXT @docs/research/dexcom-g6-protocol.md
+
+# Facet 2: Gap identification  
+PROMPT Identify implementation gaps for Dexcom G6 across AID systems
+CONTEXT @traceability/gaps.md
+
+# Facet 3: Requirements extraction
+PROMPT Extract formal requirements for Dexcom G6 integration
+CONTEXT @traceability/requirements.md
+
+# Facet 4: Traceability verification
+RUN make traceability
+PROMPT Verify traceability matrices are updated for Dexcom G6
+CONTEXT @traceability/assertion-trace.json
+CONTEXT @traceability/coverage-analysis.json
+
+# Facet 5: Progress tracking
+PROMPT Update progress tracking for Dexcom G6 analysis completion
+CONTEXT @progress.md
+```
+
+**Impact:** Analyzing 10 CGM subcomponents across 5 facets = 50 manual file updates becomes:
+
+```bash
+# One command, parallel execution, automated consistency
+copilot loop --parallel 4 workflows/audit-cgm-*.copilot
+# audit-cgm-dexcom-g6.copilot
+# audit-cgm-dexcom-g7.copilot
+# audit-cgm-libre-2.copilot
+# audit-cgm-libre-3.copilot
+# ... etc
+```
+
 **Benefits of This Approach:**
 - ✅ **Purposeful context boundaries** - Each component gets focused session (cognitive load management)
 - ✅ **Automated orchestration** - No manual session starting/sequencing
