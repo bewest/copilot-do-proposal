@@ -59,10 +59,15 @@ cli.add_command(status)
 @cli.command()
 @click.argument("name", default=".")
 @click.option("--force", is_flag=True, help="Overwrite existing files")
-def init(name: str, force: bool) -> None:
+@click.option("--no-copilot", is_flag=True, help="Skip GitHub Copilot integration files")
+def init(name: str, force: bool, no_copilot: bool) -> None:
     """Initialize sdqctl in a project.
     
-    Creates a .sdqctl.yaml config file and example workflows.
+    Creates:
+    - .sdqctl.yaml config file
+    - workflows/ directory with examples
+    - .github/copilot-instructions.md (unless --no-copilot)
+    - .github/skills/sdqctl-verify.md (unless --no-copilot)
     """
     from pathlib import Path
     from rich.console import Console
@@ -139,11 +144,185 @@ OUTPUT-FILE security-audit.md
         example_workflow.write_text(example_content)
         console.print(f"[green]Created: {example_workflow}[/green]")
     
+    # Create GitHub Copilot integration files
+    if not no_copilot:
+        _create_copilot_files(target_dir, force, console)
+    
     console.print("\n[bold]sdqctl initialized![/bold]")
     console.print("\nNext steps:")
     console.print("  1. Edit .sdqctl.yaml to configure your project")
     console.print("  2. Create workflows in the workflows/ directory")
     console.print("  3. Run: sdqctl run workflows/example-audit.conv --dry-run")
+    if not no_copilot:
+        console.print("  4. Copilot can now use sdqctl commands for verification")
+
+
+def _create_copilot_files(target_dir, force: bool, console) -> None:
+    """Create GitHub Copilot integration files."""
+    from pathlib import Path
+    
+    github_dir = target_dir / ".github"
+    skills_dir = github_dir / "skills"
+    
+    # Create directories
+    github_dir.mkdir(exist_ok=True)
+    skills_dir.mkdir(exist_ok=True)
+    
+    # Create copilot-instructions.md
+    instructions_file = github_dir / "copilot-instructions.md"
+    if instructions_file.exists() and not force:
+        console.print(f"[yellow]Copilot instructions already exist: {instructions_file}[/yellow]")
+    else:
+        instructions_content = """\
+# sdqctl Project Instructions
+
+This project uses **sdqctl** (Software Defined Quality Control) for declarative AI workflows.
+
+## Workflow Files
+
+Workflow files use the `.conv` extension and a Dockerfile-like syntax:
+- `MODEL` - AI model to use
+- `ADAPTER` - AI provider (copilot, claude, openai, mock)
+- `CONTEXT @pattern` - Include files matching pattern
+- `PROMPT` - Instructions for the AI
+- `OUTPUT-FILE` - Where to write results
+
+## Validation Commands (No LLM Required)
+
+Before committing `.conv` workflow files, validate them:
+
+```bash
+# Check syntax of all workflows
+sdqctl validate workflows/*.conv
+
+# Inspect parsed structure
+sdqctl show <file.conv>
+
+# Preview execution without running
+sdqctl run <file.conv> --dry-run
+```
+
+## Testing Workflows
+
+Use the mock adapter to test workflow mechanics without LLM calls:
+
+```bash
+sdqctl run <file.conv> --adapter mock --verbose
+```
+
+## Status Commands
+
+```bash
+# Check system configuration
+sdqctl status
+
+# List available adapters
+sdqctl status --adapters
+
+# View active sessions
+sdqctl status --sessions
+```
+
+## CI/CD Integration
+
+These commands are safe for CI/CD pipelines (no LLM calls):
+- `sdqctl validate` - Syntax validation
+- `sdqctl show` - Structure inspection
+- `sdqctl run --dry-run` - Execution preview
+- `sdqctl run --adapter mock` - Mock execution
+- `sdqctl status` - Configuration check
+"""
+        instructions_file.write_text(instructions_content)
+        console.print(f"[green]Created: {instructions_file}[/green]")
+    
+    # Create sdqctl-verify skill
+    skill_file = skills_dir / "sdqctl-verify.md"
+    if skill_file.exists() and not force:
+        console.print(f"[yellow]Skill already exists: {skill_file}[/yellow]")
+    else:
+        skill_content = """\
+---
+name: sdqctl-verify
+description: Validate and inspect sdqctl workflow files without LLM calls
+tools:
+  - bash
+---
+
+# sdqctl Verification Skill
+
+Use this skill to validate, inspect, and dry-run sdqctl workflows.
+All commands in this skill run **without LLM calls** and are safe for CI/CD.
+
+## Validate Workflow Syntax
+
+Check that a `.conv` file has valid syntax:
+
+```bash
+sdqctl validate <workflow.conv>
+```
+
+Returns validation status and any syntax errors.
+
+## Show Parsed Structure
+
+Display the internal representation of a workflow:
+
+```bash
+sdqctl show <workflow.conv>
+```
+
+Shows: model, adapter, mode, prompts, context patterns, output config.
+
+## Preview Execution (Dry Run)
+
+See what would happen without actually running:
+
+```bash
+sdqctl run <workflow.conv> --dry-run
+```
+
+Shows configuration and prompts that would be sent.
+
+## Test with Mock Adapter
+
+Run the full workflow mechanics without LLM calls:
+
+```bash
+sdqctl run <workflow.conv> --adapter mock --verbose
+```
+
+Uses canned responses to test workflow flow, checkpoints, and output.
+
+## Check System Status
+
+```bash
+# Overview
+sdqctl status
+
+# Available adapters
+sdqctl status --adapters
+
+# Active sessions
+sdqctl status --sessions
+```
+
+## Validate All Workflows
+
+```bash
+for f in workflows/*.conv; do
+  sdqctl validate "$f" || echo "FAILED: $f"
+done
+```
+
+## When to Use This Skill
+
+- **Before committing**: Validate new/modified `.conv` files
+- **In CI/CD**: Verify workflow definitions are valid
+- **During review**: Inspect what a workflow will do
+- **Debugging**: Test workflow mechanics with mock adapter
+"""
+        skill_file.write_text(skill_content)
+        console.print(f"[green]Created: {skill_file}[/green]")
 
 
 @cli.command()

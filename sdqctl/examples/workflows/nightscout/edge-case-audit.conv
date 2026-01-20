@@ -1,0 +1,47 @@
+# Edge Case Handling Audit
+# Generated from: docs/60-research/fixtures/edge-cases.js
+#
+# Analyzes edge case handling for robust data processing:
+# - Empty and null values
+# - Mixed validity batches
+# - Complex nested structures
+# - Validation failures
+
+MODEL gpt-4
+ADAPTER mock
+MODE audit
+MAX-CYCLES 1
+
+# Context: Edge case fixtures and API specs
+CONTEXT @docs/60-research/fixtures/edge-cases.js
+CONTEXT @specs/nightscout-api/entries-spec.md
+
+PROMPT Analyze edge case handling requirements:
+
+1. **Empty and Null Handling**
+   - How should empty arrays be handled?
+   - Treatment of null vs undefined vs missing fields
+   - Single item arrays as boundary case
+
+2. **Mixed Validity Batches**
+   - How to filter isValid: false entries?
+   - Should invalid entries be stored or rejected?
+   - Audit trail for rejected entries
+
+3. **Complex Structures**
+   - Extended emulated temp basals
+   - Nested extendedEmulated objects
+   - Large profile JSON handling (24-hour schedules)
+
+4. **Validation Failures**
+   - Missing required fields
+   - Future timestamps
+   - Negative/invalid glucose values
+   - Type mismatches
+
+PROMPT Generate comprehensive test cases for each edge case category.
+
+PROMPT Create an error handling decision tree for data ingestion.
+
+OUTPUT-FORMAT markdown
+OUTPUT-FILE audits/edge-case-handling.md

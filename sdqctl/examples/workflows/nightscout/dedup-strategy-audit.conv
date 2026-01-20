@@ -1,0 +1,44 @@
+# Deduplication Strategy Audit
+# Generated from: docs/60-research/fixtures/deduplication.js
+#
+# Analyzes deduplication strategies across AID systems:
+# - AAPS: pumpId-based deduplication
+# - Loop: syncIdentifier-based deduplication
+# - Trio: Pipeline-based deduplication
+
+MODEL gpt-4
+ADAPTER mock
+MODE audit
+MAX-CYCLES 1
+
+# Context: Deduplication fixtures and client mappings
+CONTEXT @docs/60-research/fixtures/deduplication.js
+CONTEXT @mapping/client/aaps-openaps-upload.md
+CONTEXT @mapping/client/loop-upload.md
+
+PROMPT Analyze deduplication strategies across AID systems:
+
+1. **AAPS Deduplication**
+   - How does pumpId + pumpSerial work?
+   - What happens with duplicate pumpIds from same pump?
+   - SGV entry deduplication (date + device)
+
+2. **Loop Deduplication**
+   - How does syncIdentifier work?
+   - Format and generation of sync IDs
+   - Comparison with AAPS approach
+
+3. **Edge Cases**
+   - Same content, different identifiers
+   - Missing identifiers - fallback strategies
+   - Timestamp-based deduplication
+
+4. **Unified Approach**
+   - Can we define a common dedup interface?
+   - Priority order for dedup keys
+   - Handling cross-client duplicates
+
+PROMPT Recommend a unified deduplication strategy that handles all AID systems.
+
+OUTPUT-FORMAT markdown
+OUTPUT-FILE audits/deduplication-strategy.md

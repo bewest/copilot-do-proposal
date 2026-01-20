@@ -1,1 +1,36 @@
+# External dependencies (submodules, cloned repos)
 externals/
+
+# =============================================================================
+# sdqctl - Software Defined Quality Control
+# =============================================================================
+
+# Runtime session data (ephemeral, user-specific)
+.sdqctl/sessions/
+.sdqctl/checkpoints/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Virtual environment (sdqctl venv when installed locally)
+sdqctl/lib/
+sdqctl/bin/
+sdqctl/include/
+sdqctl/lib64
+sdqctl/pyvenv.cfg
+
+# =============================================================================
+# Editor/IDE
+# =============================================================================
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+

@@ -1,0 +1,44 @@
+# AAPS Upload Pattern Audit
+# Generated from: docs/60-research/fixtures/aaps-single-doc.js
+#
+# Analyzes AAPS (AndroidAPS) data upload patterns to Nightscout for:
+# - Schema compliance
+# - Deduplication strategy
+# - Timestamp handling
+# - Error scenarios
+
+MODEL gpt-4
+ADAPTER mock
+MODE audit
+MAX-CYCLES 1
+
+# Context: AAPS fixture data and mapping documentation
+CONTEXT @docs/60-research/fixtures/aaps-single-doc.js
+CONTEXT @mapping/client/aaps-openaps-upload.md
+
+PROMPT Analyze the AAPS upload pattern from the fixture data:
+
+1. **Schema Compliance**
+   - What fields are required vs optional?
+   - Are there type constraints (string, number, boolean)?
+   - What are valid values for enum fields (direction, eventType)?
+
+2. **Deduplication Strategy**
+   - How does AAPS identify duplicate entries?
+   - What is the role of pumpId + pumpSerial?
+   - How do SGV entries differ from treatment entries?
+
+3. **Timestamp Handling**
+   - Relationship between date, dateString, created_at
+   - UTC offset handling
+   - Edge cases (future timestamps, timezone issues)
+
+4. **App Identification**
+   - How is AAPS identified in uploads?
+   - What distinguishes AAPS from other AID systems?
+   - Role of enteredBy field
+
+PROMPT Generate a validation checklist for AAPS uploads.
+
+OUTPUT-FORMAT markdown
+OUTPUT-FILE audits/aaps-upload-analysis.md
