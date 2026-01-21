@@ -584,7 +584,13 @@ def resolve_content_reference(value: str, base_path: Optional[Path] = None) -> s
         
     Returns:
         The resolved content (file contents or original value)
+        
+    Note:
+        Logs a warning if file reference cannot be resolved.
     """
+    import logging
+    logger = logging.getLogger("sdqctl.core.conversation")
+    
     if value.startswith("@"):
         file_path = value[1:]  # Remove @ prefix
         if base_path:
@@ -595,7 +601,8 @@ def resolve_content_reference(value: str, base_path: Optional[Path] = None) -> s
         if full_path.exists():
             return full_path.read_text()
         else:
-            # Return original reference if file not found (will be caught in validation)
+            # Log warning for unresolved file reference
+            logger.warning(f"File reference not found: {value} (resolved to {full_path})")
             return value
     return value
 

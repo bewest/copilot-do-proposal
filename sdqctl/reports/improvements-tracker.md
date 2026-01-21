@@ -2,7 +2,7 @@
 
 **Analysis Date:** 2026-01-21  
 **Git Branch:** main (f542099)  
-**Test Status:** 196/196 passing (109 original + 87 new CLI/command tests)
+**Test Status:** 221/221 passing (109 original + 87 CLI/command + 25 copilot adapter tests)
 
 ---
 
@@ -15,6 +15,28 @@
 - Added `tests/test_flow_command.py` with 15 tests for parallel execution
 - Added `tests/test_apply_command.py` with 17 tests for component iteration
 - Total test coverage increased from 109 to 196 tests
+
+### ✅ P1-5: Copilot Adapter Tests - COMPLETED
+- Added `tests/test_copilot_adapter.py` with 25 tests covering:
+  - Adapter initialization and lifecycle
+  - Session creation/destruction
+  - Message sending and event handling
+  - Token usage accumulation
+  - Tool call tracking
+  - Context usage estimation
+- Total test count now 221 tests
+
+### ✅ P1-3: File Reference Warning - COMPLETED
+- Added warning logging for unresolved `@file` references in `conversation.py`
+- Users now get log warning: "File reference not found: @path (resolved to /full/path)"
+
+### ✅ P1-4: Checkpoint Restore Diagnostics - COMPLETED
+- Added diagnostic info to checkpoint restore errors in `session.py`
+- Error now includes: "Conversation file not found: /path/to/file (checkpoint: /path/to/checkpoint)"
+
+### ✅ P2-2: Template Variable Documentation - COMPLETED
+- Synced README.md template variables with docstring in conversation.py
+- Added 6 missing variables: WORKFLOW_PATH, COMPONENT_PATH, COMPONENT_DIR, COMPONENT_TYPE, CYCLE_NUMBER, CYCLE_TOTAL
 
 ### ✅ Code Quality Fixes - COMPLETED
 - Fixed type hint `any` → `Any` in `adapters/copilot.py` line 85
@@ -195,45 +217,23 @@ When `run_on_error == "continue"`, the code path after timeout doesn't capture o
 
 **Recommendation:** Capture partial stdout/stderr from timed-out process.
 
-#### P1-3: build_prompt_with_injection File Reference Errors
+#### P1-3: build_prompt_with_injection File Reference Errors ✅ FIXED
 **File:** `sdqctl/core/conversation.py`, lines 424-445  
 **Issue:** `resolve_content_reference` silently returns original `@path` if file not found
 
-```python
-def resolve_content_reference(value: str, base_path: Optional[Path] = None) -> str:
-    if value.startswith("@"):
-        file_path = value[1:]
-        ...
-        if full_path.exists():
-            return full_path.read_text()
-        else:
-            return value  # <-- Silent failure, @file becomes literal text
-```
+**Resolution:** Added warning logging: "File reference not found: @path (resolved to /full/path)"
 
-This can cause confusing AI prompts with literal `@path/to/file` text instead of content.
-
-**Recommendation:** Add warning logging or raise ValueError with clear message.
-
-#### P1-4: Session Checkpoint Restore Missing Error Context
+#### P1-4: Session Checkpoint Restore Missing Error Context ✅ FIXED
 **File:** `sdqctl/core/session.py`, lines 206-239  
 **Issue:** `load_from_pause` raises generic ValueError without diagnostic info
 
-```python
-else:
-    raise ValueError("Checkpoint missing conversation_file reference or inline content")
-```
+**Resolution:** Error now includes: "Conversation file not found: /path/to/file (checkpoint: /path/to/checkpoint)"
 
-If the conversation file has been moved/deleted since pause, user gets unhelpful error.
-
-**Recommendation:** Include checkpoint path and original conversation path in error message.
-
-#### P1-5: Copilot Adapter Not Tested
+#### P1-5: Copilot Adapter Not Tested ✅ FIXED
 **File:** `sdqctl/adapters/copilot.py`  
 **Issue:** Copilot adapter exists but has no tests
 
-The `test_adapters.py` only tests MockAdapter. If copilot SDK behavior changes, it will break silently.
-
-**Recommendation:** Add mocked copilot SDK tests or integration tests with real SDK.
+**Resolution:** Added `tests/test_copilot_adapter.py` with 25 mocked tests covering initialization, lifecycle, sessions, events, and stats.
 
 #### P1-6: Unused cli_restrictions Variable ✅ FIXED
 **File:** `sdqctl/commands/run.py` lines 213-218  
@@ -315,7 +315,7 @@ Users cannot register their own adapters without modifying source code.
 | `core/context.py` | 27 | ~90% | Binary file handling |
 | `core/session.py` | 30 | ~80% | Error recovery paths |
 | `adapters/mock.py` | 20 | ~95% | None significant |
-| `adapters/copilot.py` | 0 | 0% | Full module |
+| `adapters/copilot.py` | 25 | ~75% | Real SDK integration |
 | `adapters/registry.py` | 3 | ~60% | Plugin loading |
 | `commands/run.py` | 18 | ~40% | RUN subprocess paths |
 | `commands/cycle.py` | 15 | ~60% | Compaction triggers |
@@ -323,7 +323,7 @@ Users cannot register their own adapters without modifying source code.
 | `commands/apply.py` | 17 | ~65% | Progress file edge cases |
 | `cli.py` | 22 | ~60% | Entry points covered |
 
-**Total estimate:** ~65% code coverage (improved from ~60%)
+**Total estimate:** ~70% code coverage (improved from ~65%)
 
 ---
 
@@ -334,7 +334,9 @@ Users cannot register their own adapters without modifying source code.
 3. ~~**`tests/test_cycle.py`** - Multi-cycle workflow tests~~ ✅ DONE (15 tests)
 4. ~~**`tests/test_apply.py`** - Component iteration tests~~ ✅ DONE (17 tests)
 5. ~~**`tests/test_flow.py`** - Parallel execution tests~~ ✅ DONE (15 tests)
-6. **`tests/test_copilot_adapter.py`** - Mocked Copilot SDK tests
+6. ~~**`tests/test_copilot_adapter.py`** - Mocked Copilot SDK tests~~ ✅ DONE (25 tests)
+7. **`tests/test_status_command.py`** - Status command output (P2)
+8. **`tests/test_logging.py`** - Logging configuration (P2)
 
 ---
 

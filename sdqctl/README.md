@@ -102,10 +102,16 @@ Available in PROLOGUE, EPILOGUE, HEADER, FOOTER, PROMPT, and OUTPUT paths:
 |----------|-------------|---------|
 | `{{DATE}}` | ISO date | 2026-01-21 |
 | `{{DATETIME}}` | ISO datetime | 2026-01-21T12:00:00 |
-| `{{WORKFLOW_NAME}}` | Workflow filename | security-audit |
-| `{{COMPONENT_NAME}}` | Component name (for iterations) | auth |
-| `{{ITERATION_INDEX}}` | Current iteration | 3 |
+| `{{WORKFLOW_NAME}}` | Workflow filename (stem) | security-audit |
+| `{{WORKFLOW_PATH}}` | Full path to workflow | /path/to/security-audit.conv |
+| `{{COMPONENT_NAME}}` | Component name (without extension) | auth |
+| `{{COMPONENT_PATH}}` | Full path to component | /path/to/auth.py |
+| `{{COMPONENT_DIR}}` | Parent directory of component | /path/to |
+| `{{COMPONENT_TYPE}}` | Type from discovery | plugin, api |
+| `{{ITERATION_INDEX}}` | Current iteration (1-based) | 3 |
 | `{{ITERATION_TOTAL}}` | Total iterations | 15 |
+| `{{CYCLE_NUMBER}}` | Current cycle (cycle command) | 2 |
+| `{{CYCLE_TOTAL}}` | Total cycles (cycle command) | 5 |
 | `{{GIT_BRANCH}}` | Current git branch | main |
 | `{{GIT_COMMIT}}` | Short commit SHA | abc1234 |
 | `{{CWD}}` | Current working directory | /home/user/project |

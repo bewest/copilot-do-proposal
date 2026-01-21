@@ -217,7 +217,11 @@ class Session:
         elif conv_inline:
             conv = ConversationFile.parse(conv_inline)
         else:
-            raise ValueError("Checkpoint missing conversation_file reference or inline content")
+            # Provide diagnostic info about what was expected
+            msg = "Checkpoint missing conversation_file reference or inline content"
+            if conv_path:
+                msg = f"Conversation file not found: {conv_path} (checkpoint: {checkpoint_path})"
+            raise ValueError(msg)
 
         # Create session
         session = cls(conv, session_dir=checkpoint_path.parent)
