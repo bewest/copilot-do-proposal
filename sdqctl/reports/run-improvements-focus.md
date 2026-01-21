@@ -158,7 +158,13 @@ else:
 
 ## Completed This Session
 
-**Session: 2026-01-21T19:33**
+**Session: 2026-01-21T21:46**
+
+1. **All 41 tests passing** - Full test suite green (verified)
+2. **R2 bug still confirmed** - run.py:480-486 returns early before output capture at lines 488-498
+3. **Report status review** - All P1 items complete, R2 bug is next priority
+
+**Previous Session: 2026-01-21T19:33**
 
 1. **All 41 tests passing** - Full test suite green (verified)
 2. **R2 bug location confirmed** - run.py:469-475 returns early before output capture at lines 477-487
@@ -204,6 +210,10 @@ else:
 
 8. **Short iterative sessions work well** - Each ~10 min session verified state, made progress, documented findings. Context files enable continuity.
 
+9. **Consistent testing baseline** - Running `pytest tests/test_run_command.py -v` at session start/end confirms no regressions. The 41-test count is stable.
+
+10. **Line numbers shift with edits** - Original bug was at lines 469-475; after fixes, similar code is now at lines 480-486. Always re-verify line numbers before editing.
+
 ---
 
 ## Research Needed
@@ -223,23 +233,28 @@ else:
 ## Next 3 Taskable Areas
 
 ### Priority 1: R2 - RUN Failure Context Fix (BUG)
-**File:** `sdqctl/commands/run.py:469-487`  
+**File:** `sdqctl/commands/run.py:480-498`  
 **Effort:** ~20 min  
 **Unblocked:** Yes - confirmed bug, clear fix path
 
-Fix: Move output capture BEFORE early return. Structure change:
+**Current code (run.py:480-486):**
 ```python
-# Current (buggy): 
-if result.returncode != 0:
-    if conv.run_on_error == "stop":
-        return  # Output never captured!
-if include_output:
-    session.add_message(...)  # Only reached on continue
+if conv.run_on_error == "stop":
+    console.print(f"[red]RUN failed: {command}[/red]")
+    console.print(f"[dim]Exit code: {result.returncode}[/dim]")
+    if result.stderr:
+        console.print(f"[dim]stderr: {result.stderr[:500]}[/dim]")
+    session.state.status = "failed"
+    return  # BUG: Output never captured! Lines 488-498 never reached
+```
 
-# Fixed:
+Fix: Move output capture BEFORE early return:
+```python
+# Fixed structure:
 if include_output:
     session.add_message(...)  # Always capture output first
 if result.returncode != 0 and conv.run_on_error == "stop":
+    session.state.status = "failed"
     return  # Now output is already captured
 ```
 
