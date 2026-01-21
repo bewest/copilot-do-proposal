@@ -9,6 +9,7 @@ Usage:
 """
 
 import asyncio
+import subprocess
 from pathlib import Path
 from typing import Optional
 
@@ -21,6 +22,61 @@ from ..adapters import get_adapter
 from ..adapters.base import AdapterConfig
 from ..core.conversation import ConversationFile, FileRestrictions
 from ..core.session import Session
+
+
+def git_commit_checkpoint(
+    checkpoint_name: str,
+    output_file: Optional[Path] = None,
+    output_dir: Optional[Path] = None,
+) -> bool:
+    """Commit outputs to git as a checkpoint.
+    
+    Returns True if commit succeeded, False otherwise.
+    """
+    try:
+        # Check if we're in a git repo
+        result = subprocess.run(
+            ["git", "rev-parse", "--git-dir"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            return False  # Not in a git repo
+        
+        # Stage output files
+        files_to_add = []
+        if output_file and output_file.exists():
+            files_to_add.append(str(output_file))
+        if output_dir and output_dir.exists():
+            files_to_add.append(str(output_dir))
+        
+        if not files_to_add:
+            return False  # Nothing to commit
+        
+        # Add files
+        subprocess.run(["git", "add"] + files_to_add, check=True)
+        
+        # Check if there are staged changes
+        result = subprocess.run(
+            ["git", "diff", "--cached", "--quiet"],
+            capture_output=True,
+        )
+        if result.returncode == 0:
+            return False  # No changes to commit
+        
+        # Commit
+        commit_msg = f"checkpoint: {checkpoint_name}"
+        subprocess.run(
+            ["git", "commit", "-m", commit_msg],
+            check=True,
+            capture_output=True,
+        )
+        return True
+        
+    except subprocess.CalledProcessError:
+        return False
+    except FileNotFoundError:
+        return False  # git not installed
 
 console = Console()
 
@@ -203,45 +259,122 @@ async def _run_async(
         # Build pause point lookup: {prompt_index: message}
         pause_after = {idx: msg for idx, msg in conv.pause_points}
 
-        for i, prompt in enumerate(conv.prompts):
-            if verbose:
-                console.print(f"\n[bold blue]Sending prompt {i + 1}/{len(conv.prompts)}...[/bold blue]")
+        # Process steps (includes prompts, checkpoints, compact, etc.)
+        # Fall back to prompts list if no steps defined (backward compat)
+        prompt_count = 0
+        total_prompts = len(conv.prompts)
+        first_prompt = True
+        
+        steps_to_process = conv.steps if conv.steps else [
+            {"type": "prompt", "content": p} for p in conv.prompts
+        ]
+        
+        for step in steps_to_process:
+            step_type = step.type if hasattr(step, 'type') else step.get('type')
+            step_content = step.content if hasattr(step, 'content') else step.get('content', '')
+            
+            if step_type == "prompt":
+                prompt = step_content
+                prompt_count += 1
+                
+                if verbose:
+                    console.print(f"\n[bold blue]Sending prompt {prompt_count}/{total_prompts}...[/bold blue]")
 
-            # Add context to first prompt
-            full_prompt = prompt
-            if i == 0 and context_content:
-                full_prompt = f"{context_content}\n\n{prompt}"
+                # Add context to first prompt
+                full_prompt = prompt
+                if first_prompt and context_content:
+                    full_prompt = f"{context_content}\n\n{prompt}"
+                    first_prompt = False
 
-            # Stream response
-            if verbose:
-                console.print("[dim]Response:[/dim]")
+                # Stream response
+                if verbose:
+                    console.print("[dim]Response:[/dim]")
 
-            def on_chunk(chunk: str) -> None:
-                if verbose and not json_output:
-                    console.print(chunk, end="")
+                def on_chunk(chunk: str) -> None:
+                    if verbose and not json_output:
+                        console.print(chunk, end="")
 
-            response = await ai_adapter.send(adapter_session, full_prompt, on_chunk=on_chunk)
+                response = await ai_adapter.send(adapter_session, full_prompt, on_chunk=on_chunk)
 
-            if verbose:
-                console.print()  # Newline after streaming
+                if verbose:
+                    console.print()  # Newline after streaming
 
-            responses.append(response)
-            session.add_message("user", prompt)
-            session.add_message("assistant", response)
+                responses.append(response)
+                session.add_message("user", prompt)
+                session.add_message("assistant", response)
 
-            # Check for PAUSE after this prompt
-            if i in pause_after:
-                pause_msg = pause_after[i]
-                session.state.prompt_index = i + 1  # Next prompt to resume from
-                checkpoint_path = session.save_pause_checkpoint(pause_msg)
+                # Check for PAUSE after this prompt
+                prompt_idx = prompt_count - 1
+                if prompt_idx in pause_after:
+                    pause_msg = pause_after[prompt_idx]
+                    session.state.prompt_index = prompt_count  # Next prompt to resume from
+                    checkpoint_path = session.save_pause_checkpoint(pause_msg)
+                    
+                    await ai_adapter.destroy_session(adapter_session)
+                    await ai_adapter.stop()
+                    
+                    console.print(f"\n[yellow]⏸  PAUSED: {pause_msg}[/yellow]")
+                    console.print(f"[dim]Checkpoint saved: {checkpoint_path}[/dim]")
+                    console.print(f"\n[bold]To resume:[/bold] sdqctl resume {checkpoint_path}")
+                    return
+            
+            elif step_type == "checkpoint":
+                # Save session state and commit outputs to git
+                checkpoint_name = step_content or f"checkpoint-{len(session.state.checkpoints) + 1}"
+                
+                if verbose:
+                    console.print(f"\n[bold yellow]📌 CHECKPOINT: {checkpoint_name}[/bold yellow]")
+                
+                # Write current output to file if configured
+                if conv.output_file and responses:
+                    current_output = "\n\n---\n\n".join(responses)
+                    output_path = Path(conv.output_file)
+                    output_path.parent.mkdir(parents=True, exist_ok=True)
+                    output_path.write_text(current_output)
+                    if verbose:
+                        console.print(f"[dim]Output written to {output_path}[/dim]")
+                
+                # Save session checkpoint
+                checkpoint = session.create_checkpoint(checkpoint_name)
+                
+                # Commit to git
+                output_path = Path(conv.output_file) if conv.output_file else None
+                output_dir = Path(conv.output_dir) if conv.output_dir else None
+                
+                if git_commit_checkpoint(checkpoint_name, output_path, output_dir):
+                    console.print(f"[green]✓ Git commit: checkpoint: {checkpoint_name}[/green]")
+                elif verbose:
+                    console.print("[dim]No git changes to commit[/dim]")
+            
+            elif step_type == "compact":
+                # Request compaction from the AI
+                if verbose:
+                    console.print("\n[bold magenta]🗜  COMPACTING conversation...[/bold magenta]")
+                
+                preserve = step.preserve if hasattr(step, 'preserve') else []
+                compact_prompt = session.get_compaction_prompt()
+                if preserve:
+                    compact_prompt = f"Preserve these items: {', '.join(preserve)}\n\n{compact_prompt}"
+                
+                response = await ai_adapter.send(adapter_session, compact_prompt)
+                session.add_message("system", f"[Compaction summary]\n{response}")
+                
+                if verbose:
+                    console.print("[dim]Conversation compacted[/dim]")
+            
+            elif step_type == "new_conversation":
+                # End current session, start fresh
+                if verbose:
+                    console.print("\n[bold cyan]🔄 Starting new conversation...[/bold cyan]")
                 
                 await ai_adapter.destroy_session(adapter_session)
-                await ai_adapter.stop()
+                adapter_session = await ai_adapter.create_session(
+                    AdapterConfig(model=conv.model, streaming=True)
+                )
+                first_prompt = True  # Re-include context in next prompt
                 
-                console.print(f"\n[yellow]⏸  PAUSED: {pause_msg}[/yellow]")
-                console.print(f"[dim]Checkpoint saved: {checkpoint_path}[/dim]")
-                console.print(f"\n[bold]To resume:[/bold] sdqctl resume {checkpoint_path}")
-                return
+                if verbose:
+                    console.print("[dim]New session created[/dim]")
 
         # Cleanup
         await ai_adapter.destroy_session(adapter_session)
