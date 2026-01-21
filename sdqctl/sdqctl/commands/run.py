@@ -533,6 +533,9 @@ async def _run_async(
                                 if result.stderr:
                                     console.print(f"[dim]stderr: {result.stderr[:500]}[/dim]")
                                 session.state.status = "failed"
+                                # Save checkpoint to preserve captured output before exit
+                                checkpoint_path = session.save_pause_checkpoint(f"RUN failed: {command} (exit {result.returncode})")
+                                console.print(f"[dim]Checkpoint saved: {checkpoint_path}[/dim]")
                                 return  # Session cleanup handled by finally blocks
                     
                     except subprocess.TimeoutExpired as e:
@@ -557,6 +560,9 @@ async def _run_async(
                         if conv.run_on_error == "stop":
                             console.print(f"[red]RUN timed out: {command}[/red]")
                             session.state.status = "failed"
+                            # Save checkpoint to preserve captured output before exit
+                            checkpoint_path = session.save_pause_checkpoint(f"RUN timed out: {command}")
+                            console.print(f"[dim]Checkpoint saved: {checkpoint_path}[/dim]")
                             return  # Session cleanup handled by finally blocks
                     
                     except Exception as e:
@@ -565,6 +571,9 @@ async def _run_async(
                         if conv.run_on_error == "stop":
                             console.print(f"[red]RUN error: {e}[/red]")
                             session.state.status = "failed"
+                            # Save checkpoint to preserve session state before exit
+                            checkpoint_path = session.save_pause_checkpoint(f"RUN error: {e}")
+                            console.print(f"[dim]Checkpoint saved: {checkpoint_path}[/dim]")
                             return
 
             # Mark complete (session cleanup in finally block)
