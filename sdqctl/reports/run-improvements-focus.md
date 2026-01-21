@@ -186,6 +186,19 @@ Reduced duplicated subprocess.run() from 18 lines to 6 lines at call site.
 
 ## Completed This Session
 
+**Session: 2026-01-21T23:07 - RESUME ENHANCEMENTS COMPLETE**
+
+1. **Priority 1 complete:** Enhanced resume command (cli.py:452-605)
+   - Added `--list` flag: lists all available checkpoints
+   - Added `--dry-run` flag: shows resume state without executing
+   - Added `--json` flag: JSON output for all modes
+   - Helper functions: `_list_checkpoints()`, `_dry_run_resume()`
+2. **All 77 tests passing** - no regressions
+3. **New usage examples:**
+   - `sdqctl resume --list` - show available checkpoints
+   - `sdqctl resume --list --json` - JSON checkpoint list
+   - `sdqctl resume --dry-run checkpoint.json` - preview resume
+
 **Session: 2026-01-21T23:05 - RESUME TESTS CREATED**
 
 1. **Priority 1 complete:** Created `tests/test_resume.py` (12 tests)
@@ -502,18 +515,7 @@ Reduced duplicated subprocess.run() from 18 lines to 6 lines at call site.
 
 ## Next 3 Taskable Areas (Future Sprint)
 
-### Priority 1: Resume Command Enhancements ⬅️ NEXT
-**File:** `sdqctl/cli.py` lines 454-580  
-**Effort:** ~30 min  
-**Unblocked:** Yes (tests now exist)
-
-Add missing features to existing resume command:
-- `--list` flag to show available checkpoints
-- `--dry-run` flag to preview resume state
-- `--json` output format
-- Output file handling (respects OUTPUT-FILE directive)
-
-### Priority 2: RUN-CWD Directive (Per-Command Working Directory)
+### Priority 1: RUN-CWD Directive ⬅️ NEXT
 **File:** `sdqctl/core/conversation.py` + `sdqctl/commands/run.py`  
 **Effort:** ~20 min  
 **Unblocked:** Yes
@@ -524,7 +526,7 @@ RUN-CWD ./subdir
 RUN npm install
 ```
 
-### Priority 3: Async RUN Support
+### Priority 2: Async RUN Support
 **File:** `sdqctl/commands/run.py`  
 **Effort:** ~45 min  
 **Unblocked:** Yes
@@ -535,6 +537,16 @@ RUN-ASYNC npm run dev
 RUN-WAIT 5s
 RUN curl localhost:3000/health
 ```
+
+### Priority 3: Resume Command Tests
+**File:** `tests/test_resume.py`  
+**Effort:** ~15 min  
+**Unblocked:** Yes
+
+Add tests for new resume enhancements:
+- Test `--list` flag output
+- Test `--dry-run` flag output
+- Test `--json` flag output
 
 ---
 

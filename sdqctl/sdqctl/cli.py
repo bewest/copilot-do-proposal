@@ -450,19 +450,26 @@ def show(workflow: str) -> None:
 
 
 @cli.command()
-@click.argument("checkpoint", type=click.Path(exists=True))
+@click.argument("checkpoint", type=click.Path(exists=True), required=False)
+@click.option("--list", "list_checkpoints", is_flag=True, help="List available checkpoints")
 @click.option("--adapter", "-a", default=None, help="AI adapter override")
+@click.option("--dry-run", is_flag=True, help="Show what would happen without executing")
+@click.option("--json", "json_output", is_flag=True, help="JSON output format")
 @click.option("--verbose", "-v", is_flag=True, help="Verbose output (deprecated, use -v on main command)")
-def resume(checkpoint: str, adapter: str, verbose: bool) -> None:
+def resume(checkpoint: str, list_checkpoints: bool, adapter: str, dry_run: bool, json_output: bool, verbose: bool) -> None:
     """Resume a paused workflow from checkpoint.
     
     Continues execution from where PAUSE stopped.
     
-    Example:
+    Examples:
         sdqctl resume ~/.sdqctl/sessions/abc123/pause.json
+        sdqctl resume --list
+        sdqctl resume --dry-run checkpoint.json
     """
     import asyncio
+    import json
     import logging
+    import sys
     from pathlib import Path
     from rich.console import Console
     from rich.panel import Panel
@@ -478,11 +485,128 @@ def resume(checkpoint: str, adapter: str, verbose: bool) -> None:
     if verbose and not resume_logger.isEnabledFor(logging.INFO):
         setup_logging(1)
     
-    asyncio.run(_resume_async(checkpoint, adapter, console))
+    # Handle --list flag
+    if list_checkpoints:
+        _list_checkpoints(console, json_output)
+        return
+    
+    # Require checkpoint if not listing
+    if not checkpoint:
+        console.print("[red]Error: checkpoint path required (or use --list)[/red]")
+        sys.exit(1)
+    
+    # Handle --dry-run flag
+    if dry_run:
+        _dry_run_resume(checkpoint, console, json_output)
+        return
+    
+    asyncio.run(_resume_async(checkpoint, adapter, console, json_output))
 
 
-async def _resume_async(checkpoint: str, adapter_name: str, console) -> None:
+def _list_checkpoints(console, json_output: bool) -> None:
+    """List all available pause checkpoints."""
+    import json as json_module
+    from pathlib import Path
+    
+    sessions_dir = Path(".sdqctl/sessions")
+    if not sessions_dir.exists():
+        if json_output:
+            console.print_json('{"checkpoints": []}')
+        else:
+            console.print("[yellow]No sessions directory found[/yellow]")
+        return
+    
+    checkpoints = list(sessions_dir.glob("*/pause.json"))
+    if not checkpoints:
+        if json_output:
+            console.print_json('{"checkpoints": []}')
+        else:
+            console.print("[yellow]No checkpoints found[/yellow]")
+        return
+    
+    if json_output:
+        result = []
+        for cp in sorted(checkpoints, key=lambda p: p.stat().st_mtime, reverse=True):
+            try:
+                data = json_module.loads(cp.read_text())
+                result.append({
+                    "path": str(cp),
+                    "message": data.get("message", ""),
+                    "timestamp": data.get("timestamp", ""),
+                    "session_id": data.get("session_id", ""),
+                })
+            except Exception:
+                result.append({"path": str(cp), "error": "corrupt"})
+        console.print_json(json_module.dumps({"checkpoints": result}))
+    else:
+        console.print("[bold]Available checkpoints:[/bold]\n")
+        for cp in sorted(checkpoints, key=lambda p: p.stat().st_mtime, reverse=True):
+            try:
+                data = json_module.loads(cp.read_text())
+                msg = data.get("message", "")[:60]
+                ts = data.get("timestamp", "")[:19]
+                console.print(f"  {cp}")
+                console.print(f"    [dim]{ts} - {msg}[/dim]\n")
+            except Exception:
+                console.print(f"  {cp} [red](corrupt)[/red]")
+
+
+def _dry_run_resume(checkpoint: str, console, json_output: bool) -> None:
+    """Show what would happen on resume without executing."""
+    import json as json_module
+    from pathlib import Path
+    from rich.panel import Panel
+    from .core.session import Session
+    
+    checkpoint_path = Path(checkpoint)
+    try:
+        session = Session.load_from_pause(checkpoint_path)
+    except ValueError as e:
+        if json_output:
+            console.print_json(json_module.dumps({"error": str(e)}))
+        else:
+            console.print(f"[red]Error loading checkpoint: {e}[/red]")
+        return
+    
+    conv = session.conversation
+    
+    if json_output:
+        result = {
+            "dry_run": True,
+            "session_id": session.id,
+            "workflow": str(conv.source_path) if conv.source_path else None,
+            "adapter": conv.adapter,
+            "model": conv.model,
+            "resume_from_prompt": session.state.prompt_index + 1,
+            "total_prompts": len(conv.prompts),
+            "cycle_number": session.state.cycle_number + 1,
+            "messages_in_context": len(session.state.messages),
+            "prompts_remaining": conv.prompts[session.state.prompt_index:],
+        }
+        console.print_json(json_module.dumps(result))
+    else:
+        console.print(Panel.fit(
+            f"Session ID: {session.id}\n"
+            f"Workflow: {conv.source_path}\n"
+            f"Adapter: {conv.adapter}\n"
+            f"Model: {conv.model}\n"
+            f"Resume from prompt: {session.state.prompt_index + 1}/{len(conv.prompts)}\n"
+            f"Cycle: {session.state.cycle_number + 1}\n"
+            f"Messages in context: {len(session.state.messages)}",
+            title="[yellow]Dry Run - Resume Configuration[/yellow]"
+        ))
+        
+        console.print("\n[bold]Prompts remaining:[/bold]")
+        for i, prompt in enumerate(conv.prompts[session.state.prompt_index:], session.state.prompt_index + 1):
+            preview = prompt[:80] + "..." if len(prompt) > 80 else prompt
+            console.print(f"  {i}. {preview}")
+        
+        console.print("\n[yellow]Dry run - no execution[/yellow]")
+
+
+async def _resume_async(checkpoint: str, adapter_name: str, console, json_output: bool = False) -> None:
     """Async implementation of resume command."""
+    import json as json_module
     import logging
     from pathlib import Path
     from rich.panel import Panel
@@ -498,13 +622,14 @@ async def _resume_async(checkpoint: str, adapter_name: str, console) -> None:
         session = Session.load_from_pause(checkpoint_path)
         conv = session.conversation
         
-        console.print(Panel.fit(
-            f"Session ID: {session.id}\n"
-            f"Workflow: {conv.source_path}\n"
-            f"Resuming from prompt: {session.state.prompt_index + 1}/{len(conv.prompts)}\n"
-            f"Messages in history: {len(session.state.messages)}",
-            title="[blue]Resuming Paused Workflow[/blue]"
-        ))
+        if not json_output:
+            console.print(Panel.fit(
+                f"Session ID: {session.id}\n"
+                f"Workflow: {conv.source_path}\n"
+                f"Resuming from prompt: {session.state.prompt_index + 1}/{len(conv.prompts)}\n"
+                f"Messages in history: {len(session.state.messages)}",
+                title="[blue]Resuming Paused Workflow[/blue]"
+            ))
         
         # Apply adapter override
         if adapter_name:
@@ -514,8 +639,9 @@ async def _resume_async(checkpoint: str, adapter_name: str, console) -> None:
         try:
             ai_adapter = get_adapter(conv.adapter)
         except ValueError as e:
-            console.print(f"[red]Error: {e}[/red]")
-            console.print("[yellow]Using mock adapter instead[/yellow]")
+            if not json_output:
+                console.print(f"[red]Error: {e}[/red]")
+                console.print("[yellow]Using mock adapter instead[/yellow]")
             ai_adapter = get_adapter("mock")
         
         await ai_adapter.start()
@@ -525,6 +651,7 @@ async def _resume_async(checkpoint: str, adapter_name: str, console) -> None:
         )
         
         session.state.status = "running"
+        responses = []
         
         # Build pause point lookup
         pause_after = {idx: msg for idx, msg in conv.pause_points}
@@ -538,6 +665,7 @@ async def _resume_async(checkpoint: str, adapter_name: str, console) -> None:
             resume_logger.info(f"Sending prompt {i + 1}/{len(conv.prompts)}...")
             
             response = await ai_adapter.send(adapter_session, prompt)
+            responses.append(response)
             
             resume_logger.debug(f"{response[:200]}..." if len(response) > 200 else response)
             
@@ -553,9 +681,19 @@ async def _resume_async(checkpoint: str, adapter_name: str, console) -> None:
                 await ai_adapter.destroy_session(adapter_session)
                 await ai_adapter.stop()
                 
-                console.print(f"\n[yellow]⏸  PAUSED: {pause_msg}[/yellow]")
-                console.print(f"[dim]Checkpoint saved: {new_checkpoint}[/dim]")
-                console.print(f"\n[bold]To resume:[/bold] sdqctl resume {new_checkpoint}")
+                if json_output:
+                    result = {
+                        "status": "paused",
+                        "message": pause_msg,
+                        "checkpoint": str(new_checkpoint),
+                        "prompts_completed": i - start_idx + 1,
+                        "responses": responses,
+                    }
+                    console.print_json(json_module.dumps(result))
+                else:
+                    console.print(f"\n[yellow]⏸  PAUSED: {pause_msg}[/yellow]")
+                    console.print(f"[dim]Checkpoint saved: {new_checkpoint}[/dim]")
+                    console.print(f"\n[bold]To resume:[/bold] sdqctl resume {new_checkpoint}")
                 return
         
         # Completed successfully
@@ -563,7 +701,6 @@ async def _resume_async(checkpoint: str, adapter_name: str, console) -> None:
         await ai_adapter.stop()
         
         session.state.status = "completed"
-        console.print("\n[green]✓ Workflow completed[/green]")
         
         # Clean up pause checkpoint
         checkpoint_path.unlink(missing_ok=True)
@@ -574,10 +711,25 @@ async def _resume_async(checkpoint: str, adapter_name: str, console) -> None:
                 m.content for m in session.state.messages if m.role == "assistant"
             )
             Path(conv.output_file).write_text(output_content)
-            console.print(f"[green]Output written to {conv.output_file}[/green]")
+            if not json_output:
+                console.print(f"[green]Output written to {conv.output_file}[/green]")
+        
+        if json_output:
+            result = {
+                "status": "completed",
+                "prompts_completed": len(conv.prompts) - start_idx,
+                "responses": responses,
+                "output_file": conv.output_file,
+            }
+            console.print_json(json_module.dumps(result))
+        else:
+            console.print("\n[green]✓ Workflow completed[/green]")
     
     except Exception as e:
-        console.print(f"[red]Error resuming: {e}[/red]")
+        if json_output:
+            console.print_json(json_module.dumps({"error": str(e)}))
+        else:
+            console.print(f"[red]Error resuming: {e}[/red]")
         raise
 
 
