@@ -566,24 +566,25 @@ RUN-WAIT 5s
 RUN curl localhost:3000/health
 ```
 
-### Priority 2: Resume Command Tests for New Features
-**File:** `tests/test_resume.py`  
-**Effort:** ~15 min  
+### Priority 2: RUN Output Streaming
+**File:** `sdqctl/commands/run.py`  
+**Effort:** ~30 min  
 **Unblocked:** Yes
 
-Add tests for new resume enhancements:
-- Test `--list` flag output
-- Test `--dry-run` flag output
-- Test `--json` flag output
+Add real-time output display for long-running commands:
+- Stream stdout/stderr while command runs
+- Useful for progress indicators in builds/tests
+- Add `RUN-STREAM` directive option
 
-### Priority 3: Documentation Update
-**File:** `README.md`  
-**Effort:** ~10 min  
+### Priority 3: Parallel RUN Execution
+**File:** `sdqctl/commands/run.py`  
+**Effort:** ~45 min  
 **Unblocked:** Yes
 
-Document new directives:
-- RUN-CWD in directives table
-- Resume command enhancements (--list, --dry-run, --json)
+Add concurrent command execution:
+```
+RUN-PARALLEL npm run test:unit & npm run test:integration
+```
 
 ---
 
