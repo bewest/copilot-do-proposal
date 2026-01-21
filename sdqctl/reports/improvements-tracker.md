@@ -1,8 +1,8 @@
 # sdqctl Improvements Tracker
 
 **Analysis Date:** 2026-01-21  
-**Git Branch:** main (40f7701)  
-**Test Status:** 149/149 passing (109 original + 40 new CLI/command tests)
+**Git Branch:** main (7813035)  
+**Test Status:** 179/179 passing (109 original + 70 new CLI/command tests)
 
 ---
 
@@ -11,7 +11,9 @@
 ### ✅ P0-3: CLI Integration Tests - COMPLETED
 - Added `tests/test_cli.py` with 22 tests covering CLI entry points
 - Added `tests/test_run_command.py` with 18 tests for step execution  
-- Total test coverage increased from 109 to 149 tests
+- Added `tests/test_cycle_command.py` with 15 tests for multi-cycle workflows
+- Added `tests/test_flow_command.py` with 15 tests for parallel execution
+- Total test coverage increased from 109 to 179 tests
 
 ### ✅ Code Quality Fixes - COMPLETED
 - Fixed type hint `any` → `Any` in `adapters/copilot.py` line 85
@@ -315,12 +317,12 @@ Users cannot register their own adapters without modifying source code.
 | `adapters/copilot.py` | 0 | 0% | Full module |
 | `adapters/registry.py` | 3 | ~60% | Plugin loading |
 | `commands/run.py` | 18 | ~40% | RUN subprocess paths |
-| `commands/cycle.py` | 2 | ~20% | Multi-cycle iteration |
-| `commands/flow.py` | 0 | 0% | Full module |
+| `commands/cycle.py` | 15 | ~60% | Compaction triggers |
+| `commands/flow.py` | 15 | ~60% | Error aggregation |
 | `commands/apply.py` | 0 | 0% | Full module |
 | `cli.py` | 22 | ~60% | Entry points covered |
 
-**Total estimate:** ~55% code coverage (improved from ~40%)
+**Total estimate:** ~60% code coverage (improved from ~55%)
 
 ---
 
@@ -328,9 +330,9 @@ Users cannot register their own adapters without modifying source code.
 
 1. ~~**`tests/test_cli.py`** - CLI command integration tests using Click test runner~~ ✅ DONE (22 tests)
 2. ~~**`tests/test_run.py`** - `sdqctl run` command with mock adapter~~ ✅ DONE (18 tests)
-3. **`tests/test_cycle.py`** - Multi-cycle workflow tests
+3. ~~**`tests/test_cycle.py`** - Multi-cycle workflow tests~~ ✅ DONE (15 tests)
 4. **`tests/test_apply.py`** - Component iteration tests  
-5. **`tests/test_flow.py`** - Parallel execution tests
+5. ~~**`tests/test_flow.py`** - Parallel execution tests~~ ✅ DONE (15 tests)
 6. **`tests/test_copilot_adapter.py`** - Mocked Copilot SDK tests
 
 ---
