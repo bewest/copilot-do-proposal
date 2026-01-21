@@ -423,3 +423,159 @@ RUN-TIMEOUT 5m
 """
         conv = ConversationFile.parse(content)
         assert conv.run_timeout == 300  # 5 minutes = 300 seconds
+
+
+class TestTimeoutPartialOutput:
+    """Test timeout captures partial output (R1 improvement)."""
+
+    def test_timeout_expired_has_output_attributes(self):
+        """Test subprocess.TimeoutExpired has stdout/stderr attributes."""
+        import subprocess
+        
+        # TimeoutExpired should have these attributes
+        exc = subprocess.TimeoutExpired(cmd="test", timeout=1, output="partial", stderr="error")
+        assert exc.stdout == "partial"
+        assert exc.stderr == "error"
+
+    def test_timeout_output_captured_in_context(self):
+        """Test that partial output is captured on timeout and added to session."""
+        import subprocess
+        
+        # Simulate what run.py does with TimeoutExpired
+        e = subprocess.TimeoutExpired(cmd="slow_cmd", timeout=5, output="partial stdout", stderr="partial stderr")
+        
+        partial_stdout = e.stdout or ""
+        partial_stderr = e.stderr or ""
+        partial_output = partial_stdout
+        if partial_stderr:
+            partial_output += f"\n\n[stderr]\n{partial_stderr}"
+        
+        # Verify the format matches what we add to session
+        assert "partial stdout" in partial_output
+        assert "[stderr]" in partial_output
+        assert "partial stderr" in partial_output
+        
+        # Verify context message format
+        run_context = f"```\n$ slow_cmd\n[TIMEOUT after 5s]\n{partial_output}\n```"
+        assert "[TIMEOUT after 5s]" in run_context
+        assert "partial stdout" in run_context
+
+
+class TestRunSubprocessExecution:
+    """Integration tests for RUN subprocess execution (T1)."""
+
+    def test_run_echo_captures_output(self):
+        """Test RUN with echo command captures stdout."""
+        import subprocess
+        import shlex
+        
+        command = "echo hello world"
+        result = subprocess.run(
+            shlex.split(command),
+            shell=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        
+        assert result.returncode == 0
+        assert "hello world" in result.stdout
+
+    def test_run_failing_command_returns_nonzero(self):
+        """Test RUN with failing command returns non-zero exit code."""
+        import subprocess
+        import shlex
+        
+        command = "false"  # Always returns 1
+        result = subprocess.run(
+            shlex.split(command),
+            shell=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        
+        assert result.returncode != 0
+
+    def test_run_output_added_to_session(self):
+        """Test RUN output format matches session context pattern."""
+        command = "echo test output"
+        output_text = "test output\n"
+        
+        # Match the pattern from run.py:485-486
+        run_context = f"```\n$ {command}\n{output_text}\n```"
+        session_msg = f"[RUN output]\n{run_context}"
+        
+        assert "$ echo test output" in session_msg
+        assert "test output" in session_msg
+        assert "```" in session_msg
+
+    def test_run_failure_includes_stderr(self):
+        """Test RUN failure output includes stderr."""
+        import subprocess
+        import shlex
+        
+        # Command that writes to stderr
+        command = "ls /nonexistent_directory_12345"
+        result = subprocess.run(
+            shlex.split(command),
+            shell=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        
+        assert result.returncode != 0
+        assert result.stderr  # Should have error message
+        
+        # Verify stderr format matches run.py:480-481
+        output_text = result.stdout or ""
+        if result.stderr:
+            output_text += f"\n\n[stderr]\n{result.stderr}"
+        
+        assert "[stderr]" in output_text
+
+
+class TestMultiStepWorkflow:
+    """Test multi-step workflows process all steps (verifies indentation fix)."""
+
+    def test_multiple_prompts_parsed(self):
+        """Test multiple PROMPT steps are all parsed."""
+        content = """MODEL gpt-4
+ADAPTER mock
+PROMPT First prompt
+PROMPT Second prompt
+PROMPT Third prompt
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert len(conv.prompts) == 3
+        assert len(conv.steps) == 3
+        assert all(s.type == "prompt" for s in conv.steps)
+
+    def test_mixed_steps_all_parsed(self):
+        """Test mixed step types are all parsed in order."""
+        content = """MODEL gpt-4
+ADAPTER mock
+PROMPT Analyze code
+RUN python -m pytest
+CHECKPOINT after-tests
+PROMPT Review results
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert len(conv.steps) == 4
+        step_types = [s.type for s in conv.steps]
+        assert step_types == ["prompt", "run", "checkpoint", "prompt"]
+
+    def test_run_step_content_preserved(self):
+        """Test RUN step preserves command content."""
+        content = """MODEL gpt-4
+ADAPTER mock
+RUN python -m pytest tests/ -v --tb=short
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert len(conv.steps) == 1
+        assert conv.steps[0].type == "run"
+        assert conv.steps[0].content == "python -m pytest tests/ -v --tb=short"

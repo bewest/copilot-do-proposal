@@ -311,197 +311,209 @@ async def _run_async(
                 step_type = step.type if hasattr(step, 'type') else step.get('type')
                 step_content = step.content if hasattr(step, 'content') else step.get('content', '')
             
-            if step_type == "prompt":
-                prompt = step_content
-                prompt_count += 1
-                step_start = time.time()
-                
-                logger.info(f"Sending prompt {prompt_count}/{total_prompts}...")
-                progress(f"  Step {prompt_count}/{total_prompts}: Sending prompt...")
-
-                # Build prompt with prologue/epilogue injection
-                base_path = conv.source_path.parent if conv.source_path else Path.cwd()
-                injected_prompt = build_prompt_with_injection(
-                    prompt, conv.prologues, conv.epilogues,
-                    base_path=base_path,
-                    variables=template_vars
-                )
-                
-                # Add context to first prompt
-                full_prompt = injected_prompt
-                if first_prompt and context_content:
-                    full_prompt = f"{context_content}\n\n{injected_prompt}"
-                    first_prompt = False
-
-                # Stream response
-                logger.debug("Awaiting response...")
-
-                def on_chunk(chunk: str) -> None:
-                    if logger.isEnabledFor(logging.DEBUG) and not json_output:
-                        console.print(chunk, end="")
-
-                response = await ai_adapter.send(adapter_session, full_prompt, on_chunk=on_chunk)
-
-                if logger.isEnabledFor(logging.DEBUG):
-                    console.print()  # Newline after streaming
-
-                step_elapsed = time.time() - step_start
-                progress(f"  Step {prompt_count}/{total_prompts}: Response received ({step_elapsed:.1f}s)")
-
-                responses.append(response)
-                session.add_message("user", prompt)
-                session.add_message("assistant", response)
-
-                # Check for PAUSE after this prompt
-                prompt_idx = prompt_count - 1
-                if prompt_idx in pause_after:
-                    pause_msg = pause_after[prompt_idx]
-                    session.state.prompt_index = prompt_count  # Next prompt to resume from
-                    checkpoint_path = session.save_pause_checkpoint(pause_msg)
+                if step_type == "prompt":
+                    prompt = step_content
+                    prompt_count += 1
+                    step_start = time.time()
                     
-                    console.print(f"\n[yellow]⏸  PAUSED: {pause_msg}[/yellow]")
-                    console.print(f"[dim]Checkpoint saved: {checkpoint_path}[/dim]")
-                    console.print(f"\n[bold]To resume:[/bold] sdqctl resume {checkpoint_path}")
-                    return  # Session cleanup handled by finally blocks
-            
-            elif step_type == "checkpoint":
-                # Save session state and commit outputs to git
-                checkpoint_name = step_content or f"checkpoint-{len(session.state.checkpoints) + 1}"
-                
-                logger.info(f"📌 CHECKPOINT: {checkpoint_name}")
-                progress(f"  📌 CHECKPOINT: {checkpoint_name}")
-                
-                # Write current output to file if configured
-                if conv.output_file and responses:
-                    current_output = "\n\n---\n\n".join(responses)
-                    output_path = Path(conv.output_file)
-                    output_path.parent.mkdir(parents=True, exist_ok=True)
-                    output_path.write_text(current_output)
-                    logger.debug(f"Output written to {output_path}")
-                    progress(f"  Writing to {output_path}")
-                
-                # Save session checkpoint
-                checkpoint = session.create_checkpoint(checkpoint_name)
-                
-                # Commit to git
-                output_path = Path(conv.output_file) if conv.output_file else None
-                output_dir = Path(conv.output_dir) if conv.output_dir else None
-                
-                if git_commit_checkpoint(checkpoint_name, output_path, output_dir):
-                    console.print(f"[green]✓ Git commit: checkpoint: {checkpoint_name}[/green]")
-                    progress(f"  ✓ Git commit created")
-                else:
-                    logger.debug("No git changes to commit")
-            
-            elif step_type == "compact":
-                # Request compaction from the AI
-                logger.info("🗜  COMPACTING conversation...")
-                progress("  🗜  Compacting conversation...")
-                
-                preserve = step.preserve if hasattr(step, 'preserve') else []
-                compact_prompt = session.get_compaction_prompt()
-                if preserve:
-                    compact_prompt = f"Preserve these items: {', '.join(preserve)}\n\n{compact_prompt}"
-                
-                response = await ai_adapter.send(adapter_session, compact_prompt)
-                session.add_message("system", f"[Compaction summary]\n{response}")
-                
-                logger.debug("Conversation compacted")
-                progress("  🗜  Compaction complete")
-            
-            elif step_type == "new_conversation":
-                # End current session, start fresh
-                logger.info("🔄 Starting new conversation...")
-                progress("  🔄 Starting new conversation...")
-                
-                await ai_adapter.destroy_session(adapter_session)
-                adapter_session = await ai_adapter.create_session(
-                    AdapterConfig(model=conv.model, streaming=True)
-                )
-                first_prompt = True  # Re-include context in next prompt
-                
-                logger.debug("New session created")
-            
-            elif step_type == "run":
-                # Execute shell command
-                command = step_content
-                logger.info(f"🔧 RUN: {command}")
-                progress(f"  🔧 Running: {command[:50]}...")
-                
-                run_start = time.time()
-                try:
-                    # Security: Use shell=False by default, require ALLOW-SHELL for shell features
-                    if conv.allow_shell:
-                        # Shell mode enabled - allows pipes, redirects, etc.
-                        result = subprocess.run(
-                            command,
-                            shell=True,
-                            capture_output=True,
-                            text=True,
-                            timeout=conv.run_timeout,
-                            cwd=conv.cwd or Path.cwd(),
-                        )
-                    else:
-                        # Safe mode - no shell injection possible
-                        result = subprocess.run(
-                            shlex.split(command),
-                            shell=False,
-                            capture_output=True,
-                            text=True,
-                            timeout=conv.run_timeout,
-                            cwd=conv.cwd or Path.cwd(),
-                        )
-                    run_elapsed = time.time() - run_start
-                    
-                    # Determine if we should include output
-                    include_output = (
-                        conv.run_output == "always" or
-                        (conv.run_output == "on-error" and result.returncode != 0)
+                    logger.info(f"Sending prompt {prompt_count}/{total_prompts}...")
+                    progress(f"  Step {prompt_count}/{total_prompts}: Sending prompt...")
+
+                    # Build prompt with prologue/epilogue injection
+                    base_path = conv.source_path.parent if conv.source_path else Path.cwd()
+                    injected_prompt = build_prompt_with_injection(
+                        prompt, conv.prologues, conv.epilogues,
+                        base_path=base_path,
+                        variables=template_vars
                     )
                     
-                    if result.returncode == 0:
-                        logger.info(f"  ✓ Command succeeded ({run_elapsed:.1f}s)")
-                        progress(f"  ✓ Command succeeded ({run_elapsed:.1f}s)")
+                    # Add context to first prompt
+                    full_prompt = injected_prompt
+                    if first_prompt and context_content:
+                        full_prompt = f"{context_content}\n\n{injected_prompt}"
+                        first_prompt = False
+
+                    # Stream response
+                    logger.debug("Awaiting response...")
+
+                    def on_chunk(chunk: str) -> None:
+                        if logger.isEnabledFor(logging.DEBUG) and not json_output:
+                            console.print(chunk, end="")
+
+                    response = await ai_adapter.send(adapter_session, full_prompt, on_chunk=on_chunk)
+
+                    if logger.isEnabledFor(logging.DEBUG):
+                        console.print()  # Newline after streaming
+
+                    step_elapsed = time.time() - step_start
+                    progress(f"  Step {prompt_count}/{total_prompts}: Response received ({step_elapsed:.1f}s)")
+
+                    responses.append(response)
+                    session.add_message("user", prompt)
+                    session.add_message("assistant", response)
+
+                    # Check for PAUSE after this prompt
+                    prompt_idx = prompt_count - 1
+                    if prompt_idx in pause_after:
+                        pause_msg = pause_after[prompt_idx]
+                        session.state.prompt_index = prompt_count  # Next prompt to resume from
+                        checkpoint_path = session.save_pause_checkpoint(pause_msg)
+                        
+                        console.print(f"\n[yellow]⏸  PAUSED: {pause_msg}[/yellow]")
+                        console.print(f"[dim]Checkpoint saved: {checkpoint_path}[/dim]")
+                        console.print(f"\n[bold]To resume:[/bold] sdqctl resume {checkpoint_path}")
+                        return  # Session cleanup handled by finally blocks
+            
+                elif step_type == "checkpoint":
+                    # Save session state and commit outputs to git
+                    checkpoint_name = step_content or f"checkpoint-{len(session.state.checkpoints) + 1}"
+                    
+                    logger.info(f"📌 CHECKPOINT: {checkpoint_name}")
+                    progress(f"  📌 CHECKPOINT: {checkpoint_name}")
+                    
+                    # Write current output to file if configured
+                    if conv.output_file and responses:
+                        current_output = "\n\n---\n\n".join(responses)
+                        output_path = Path(conv.output_file)
+                        output_path.parent.mkdir(parents=True, exist_ok=True)
+                        output_path.write_text(current_output)
+                        logger.debug(f"Output written to {output_path}")
+                        progress(f"  Writing to {output_path}")
+                    
+                    # Save session checkpoint
+                    checkpoint = session.create_checkpoint(checkpoint_name)
+                    
+                    # Commit to git
+                    output_path = Path(conv.output_file) if conv.output_file else None
+                    output_dir = Path(conv.output_dir) if conv.output_dir else None
+                    
+                    if git_commit_checkpoint(checkpoint_name, output_path, output_dir):
+                        console.print(f"[green]✓ Git commit: checkpoint: {checkpoint_name}[/green]")
+                        progress(f"  ✓ Git commit created")
                     else:
-                        logger.warning(f"  ✗ Command failed with exit code {result.returncode}")
-                        progress(f"  ✗ Command failed (exit {result.returncode})")
+                        logger.debug("No git changes to commit")
+            
+                elif step_type == "compact":
+                    # Request compaction from the AI
+                    logger.info("🗜  COMPACTING conversation...")
+                    progress("  🗜  Compacting conversation...")
+                    
+                    preserve = step.preserve if hasattr(step, 'preserve') else []
+                    compact_prompt = session.get_compaction_prompt()
+                    if preserve:
+                        compact_prompt = f"Preserve these items: {', '.join(preserve)}\n\n{compact_prompt}"
+                    
+                    response = await ai_adapter.send(adapter_session, compact_prompt)
+                    session.add_message("system", f"[Compaction summary]\n{response}")
+                    
+                    logger.debug("Conversation compacted")
+                    progress("  🗜  Compaction complete")
+            
+                elif step_type == "new_conversation":
+                    # End current session, start fresh
+                    logger.info("🔄 Starting new conversation...")
+                    progress("  🔄 Starting new conversation...")
+                    
+                    await ai_adapter.destroy_session(adapter_session)
+                    adapter_session = await ai_adapter.create_session(
+                        AdapterConfig(model=conv.model, streaming=True)
+                    )
+                    first_prompt = True  # Re-include context in next prompt
+                    
+                    logger.debug("New session created")
+            
+                elif step_type == "run":
+                    # Execute shell command
+                    command = step_content
+                    logger.info(f"🔧 RUN: {command}")
+                    progress(f"  🔧 Running: {command[:50]}...")
+                    
+                    run_start = time.time()
+                    try:
+                        # Security: Use shell=False by default, require ALLOW-SHELL for shell features
+                        if conv.allow_shell:
+                            # Shell mode enabled - allows pipes, redirects, etc.
+                            result = subprocess.run(
+                                command,
+                                shell=True,
+                                capture_output=True,
+                                text=True,
+                                timeout=conv.run_timeout,
+                                cwd=conv.cwd or Path.cwd(),
+                            )
+                        else:
+                            # Safe mode - no shell injection possible
+                            result = subprocess.run(
+                                shlex.split(command),
+                                shell=False,
+                                capture_output=True,
+                                text=True,
+                                timeout=conv.run_timeout,
+                                cwd=conv.cwd or Path.cwd(),
+                            )
+                        run_elapsed = time.time() - run_start
+                        
+                        # Determine if we should include output
+                        include_output = (
+                            conv.run_output == "always" or
+                            (conv.run_output == "on-error" and result.returncode != 0)
+                        )
+                        
+                        if result.returncode == 0:
+                            logger.info(f"  ✓ Command succeeded ({run_elapsed:.1f}s)")
+                            progress(f"  ✓ Command succeeded ({run_elapsed:.1f}s)")
+                        else:
+                            logger.warning(f"  ✗ Command failed with exit code {result.returncode}")
+                            progress(f"  ✗ Command failed (exit {result.returncode})")
+                            
+                            if conv.run_on_error == "stop":
+                                console.print(f"[red]RUN failed: {command}[/red]")
+                                console.print(f"[dim]Exit code: {result.returncode}[/dim]")
+                                if result.stderr:
+                                    console.print(f"[dim]stderr: {result.stderr[:500]}[/dim]")
+                                session.state.status = "failed"
+                                return  # Session cleanup handled by finally blocks
+                        
+                        # Add output to context for next prompt if configured
+                        if include_output:
+                            output_text = result.stdout or ""
+                            if result.stderr:
+                                output_text += f"\n\n[stderr]\n{result.stderr}"
+                            
+                            # Store as context for next prompt (add to session messages)
+                            if output_text.strip():
+                                run_context = f"```\n$ {command}\n{output_text}\n```"
+                                session.add_message("system", f"[RUN output]\n{run_context}")
+                                logger.debug(f"Added RUN output to context ({len(output_text)} chars)")
+                    
+                    except subprocess.TimeoutExpired as e:
+                        logger.error(f"  ✗ Command timed out after {conv.run_timeout}s")
+                        progress(f"  ✗ Command timed out after {conv.run_timeout}s")
+                        
+                        # Capture partial output (always - timeout output is valuable for debugging)
+                        partial_stdout = e.stdout or ""
+                        partial_stderr = e.stderr or ""
+                        partial_output = partial_stdout
+                        if partial_stderr:
+                            partial_output += f"\n\n[stderr]\n{partial_stderr}"
+                        
+                        if partial_output.strip():
+                            run_context = f"```\n$ {command}\n[TIMEOUT after {conv.run_timeout}s]\n{partial_output}\n```"
+                            session.add_message("system", f"[RUN timeout - partial output]\n{run_context}")
+                            logger.debug(f"Captured partial output on timeout ({len(partial_output)} chars)")
                         
                         if conv.run_on_error == "stop":
-                            console.print(f"[red]RUN failed: {command}[/red]")
-                            console.print(f"[dim]Exit code: {result.returncode}[/dim]")
-                            if result.stderr:
-                                console.print(f"[dim]stderr: {result.stderr[:500]}[/dim]")
+                            console.print(f"[red]RUN timed out: {command}[/red]")
                             session.state.status = "failed"
                             return  # Session cleanup handled by finally blocks
                     
-                    # Add output to context for next prompt if configured
-                    if include_output:
-                        output_text = result.stdout or ""
-                        if result.stderr:
-                            output_text += f"\n\n[stderr]\n{result.stderr}"
+                    except Exception as e:
+                        logger.error(f"  ✗ Command error: {e}")
                         
-                        # Store as context for next prompt (add to session messages)
-                        if output_text.strip():
-                            run_context = f"```\n$ {command}\n{output_text}\n```"
-                            session.add_message("system", f"[RUN output]\n{run_context}")
-                            logger.debug(f"Added RUN output to context ({len(output_text)} chars)")
-                
-                except subprocess.TimeoutExpired:
-                    logger.error(f"  ✗ Command timed out")
-                    progress(f"  ✗ Command timed out")
-                    
-                    if conv.run_on_error == "stop":
-                        console.print(f"[red]RUN timed out: {command}[/red]")
-                        session.state.status = "failed"
-                        return  # Session cleanup handled by finally blocks
-                
-                except Exception as e:
-                    logger.error(f"  ✗ Command error: {e}")
-                    
-                    if conv.run_on_error == "stop":
-                        console.print(f"[red]RUN error: {e}[/red]")
-                        session.state.status = "failed"
-                        return
+                        if conv.run_on_error == "stop":
+                            console.print(f"[red]RUN error: {e}[/red]")
+                            session.state.status = "failed"
+                            return
 
             # Mark complete (session cleanup in finally block)
             session.state.status = "completed"
