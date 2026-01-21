@@ -2,11 +2,17 @@
 
 **Analysis Date:** 2026-01-21  
 **Git Branch:** main  
-**Test Status:** 351/351 passing (342 previous + 9 shell security tests)
+**Test Status:** 351/351 passing
 
 ---
 
 ## Completed Items (2026-01-21)
+
+### ✅ P1-1: Resource Leak in Error Paths - COMPLETED
+- Restructured `run.py` with nested try/finally for proper session cleanup
+- Restructured `cycle.py` with same pattern
+- destroy_session() now called in finally block (handles both success and error paths)
+- Early returns no longer manually call cleanup (handled by finally)
 
 ### ✅ P0-2: Shell Injection Vulnerability Fixed - COMPLETED
 - Added `ALLOW-SHELL` directive (default: false for security)
@@ -103,34 +109,24 @@
 
 ## Next Three Highest Priority Work Areas
 
-### 1. Resource Leak in Error Paths (P1)
-**Location:** `sdqctl/commands/run.py` lines 287-510
-
-The adapter start/stop pattern has gaps in error handling where sessions may not be destroyed:
-
-```python
-try:
-    await ai_adapter.start()
-    adapter_session = await ai_adapter.create_session(...)  # If this fails...
-    # ... processing
-finally:
-    await ai_adapter.stop()  # stop() called but destroy_session() never was
-```
-
-**Fix:** Restructure to ensure cleanup in all paths with nested try/finally.
-
-### 2. No Retry Logic (P1)
+### 1. No Retry Logic (P1)
 **Files:** `adapters/copilot.py`, `commands/run.py`  
 **Issue:** Network errors and transient failures cause immediate failure
 
 **Recommendation:** Add configurable retry with exponential backoff.
 
-### 3. Context Files Not Filtered by Restrictions (P1)
+### 2. Context Files Not Filtered by Restrictions (P1)
 **File:** `sdqctl/core/session.py` lines 86-87
 
 Context files are loaded without checking `FileRestrictions`. A workflow could load denied files via CONTEXT directive even with DENY-FILES set.
 
 **Recommendation:** Apply file restrictions when loading context.
+
+### 3. RUN Directive Timeout Hardcoded (P2)
+**File:** `sdqctl/commands/run.py` line 448
+**Issue:** RUN directive uses hardcoded 60s timeout
+
+**Recommendation:** Add RUN-TIMEOUT directive or configuration option.
 
 ---
 
@@ -169,22 +165,11 @@ The CLI layer (`cli.py`, commands/*) handles argument parsing, async orchestrati
 
 ### P1 - High Priority Issues
 
-#### P1-1: Resource Leak in Adapter Error Paths
-**File:** `sdqctl/commands/run.py` lines 287-534  
+#### P1-1: Resource Leak in Adapter Error Paths ✅ FIXED
+**File:** `sdqctl/commands/run.py`, `sdqctl/commands/cycle.py`  
 **Issue:** Adapter sessions may leak if create_session() fails
 
-The try/finally structure at line 287 only protects the processing loop, not session creation:
-
-```python
-try:
-    await ai_adapter.start()
-    adapter_session = await ai_adapter.create_session(...)  # If this throws...
-    # session.state.status set here
-    responses = []
-    # ... long processing block
-finally:
-    await ai_adapter.stop()  # stop() called but destroy_session() never was
-```
+**Resolution:** Restructured with nested try/finally. destroy_session() now in finally block.
 
 **Recommendation:** Add nested try/finally for session lifecycle.
 

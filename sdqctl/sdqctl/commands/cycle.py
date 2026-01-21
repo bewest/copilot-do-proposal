@@ -157,159 +157,163 @@ async def _cycle_async(
         adapter_session = await ai_adapter.create_session(
             AdapterConfig(model=conv.model, streaming=True)
         )
-
-        session.state.status = "running"
-        all_responses = []
-
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
-
-            cycle_task = progress.add_task(
-                f"Cycle 1/{conv.max_cycles}",
-                total=conv.max_cycles
-            )
-
-            # Run cycles
-            for cycle_num in range(conv.max_cycles):
-                session.state.cycle_number = cycle_num
-                progress.update(
-                    cycle_task,
-                    description=f"Cycle {cycle_num + 1}/{conv.max_cycles}",
-                    completed=cycle_num
-                )
-                progress_print(f"  Cycle {cycle_num + 1}/{conv.max_cycles}...")
-                
-                # Add cycle number to template variables
-                cycle_vars = template_vars.copy()
-                cycle_vars["CYCLE_NUMBER"] = str(cycle_num + 1)
-                cycle_vars["CYCLE_TOTAL"] = str(conv.max_cycles)
-                cycle_vars["MAX_CYCLES"] = str(conv.max_cycles)
-
-                # Session mode: fresh = new session each cycle
-                if session_mode == "fresh" and cycle_num > 0:
-                    await ai_adapter.destroy_session(adapter_session)
-                    adapter_session = await ai_adapter.create_session(
-                        AdapterConfig(model=conv.model, streaming=True)
-                    )
-                    progress_print(f"  🔄 New session for cycle {cycle_num + 1}")
-
-                # Session mode: compact = compact at start of each cycle (after first)
-                if session_mode == "compact" and cycle_num > 0:
-                    console.print(f"\n[yellow]Compacting before cycle {cycle_num + 1}...[/yellow]")
-                    progress_print(f"  🗜  Compacting context...")
-                    
-                    compact_result = await ai_adapter.compact(
-                        adapter_session,
-                        conv.compact_preserve,
-                        session.get_compaction_prompt()
-                    )
-                    
-                    console.print(f"[green]Compacted: {compact_result.tokens_before} → {compact_result.tokens_after} tokens[/green]")
-                    progress_print(f"  🗜  Compacted: {compact_result.tokens_before} → {compact_result.tokens_after} tokens")
-
-                # Check for compaction (shared mode, or when context limit reached)
-                if session_mode == "shared" and session.needs_compaction():
-                    console.print(f"\n[yellow]Context near limit, compacting...[/yellow]")
-                    progress_print(f"  🗜  Compacting context...")
-                    
-                    compact_result = await ai_adapter.compact(
-                        adapter_session,
-                        conv.compact_preserve,
-                        session.get_compaction_prompt()
-                    )
-                    
-                    console.print(f"[green]Compacted: {compact_result.tokens_before} → {compact_result.tokens_after} tokens[/green]")
-                    progress_print(f"  🗜  Compacted: {compact_result.tokens_before} → {compact_result.tokens_after} tokens")
-
-                # Checkpoint if configured
-                if session.should_checkpoint():
-                    checkpoint = session.create_checkpoint(f"cycle-{cycle_num}")
-                    console.print(f"[blue]Checkpoint saved: {checkpoint.name}[/blue]")
-                    progress_print(f"  📌 Checkpoint: {checkpoint.name}")
-
-                # Run all prompts in this cycle
-                # For fresh mode: re-inject context on each cycle (like cycle 0)
-                if session_mode == "fresh":
-                    context_content = session.context.get_context_content()
-                else:
-                    context_content = session.context.get_context_content() if cycle_num == 0 else ""
-
-                for prompt_idx, prompt in enumerate(conv.prompts):
-                    session.state.prompt_index = prompt_idx
-
-                    # Build prompt with prologue/epilogue injection
-                    full_prompt = build_prompt_with_injection(
-                        prompt, conv.prologues, conv.epilogues, 
-                        conv.source_path.parent if conv.source_path else None,
-                        cycle_vars
-                    )
-                    
-                    # Add context to first prompt (always for fresh, only cycle 0 for others)
-                    if prompt_idx == 0 and context_content:
-                        full_prompt = f"{context_content}\n\n{full_prompt}"
-                    
-                    # On subsequent cycles (shared mode), add continuation context
-                    if session_mode == "shared" and cycle_num > 0 and prompt_idx == 0 and conv.on_context_limit_prompt:
-                        full_prompt = f"{conv.on_context_limit_prompt}\n\n{full_prompt}"
-
-                    if logger.isEnabledFor(10):  # DEBUG level
-                        console.print(f"\n[dim]Prompt {prompt_idx + 1}/{len(conv.prompts)}:[/dim]")
-                        console.print(f"[dim]{prompt[:100]}...[/dim]" if len(prompt) > 100 else f"[dim]{prompt}[/dim]")
-
-                    response = await ai_adapter.send(adapter_session, full_prompt)
-                    
-                    session.add_message("user", prompt)
-                    session.add_message("assistant", response)
-                    all_responses.append({
-                        "cycle": cycle_num + 1,
-                        "prompt": prompt_idx + 1,
-                        "response": response
-                    })
-
-                progress.update(cycle_task, completed=cycle_num + 1)
-
-        # Cleanup
-        await ai_adapter.destroy_session(adapter_session)
-        session.state.status = "completed"
-        cycle_elapsed = time.time() - cycle_start
-
-        # Output
-        if json_output:
-            import json
-            result = {
-                "status": "completed",
-                "cycles_completed": conv.max_cycles,
-                "responses": all_responses,
-                "session": session.to_dict(),
-            }
-            console.print_json(json.dumps(result))
-        else:
-            console.print(f"\n[green]✓ Completed {conv.max_cycles} cycles[/green]")
-            console.print(f"[dim]Total messages: {len(session.state.messages)}[/dim]")
-            
-            if conv.output_file:
-                # Substitute template variables in output path
-                effective_output = substitute_template_variables(conv.output_file, template_vars)
-                
-                # Write final summary with header/footer injection
-                output_content = "\n\n---\n\n".join(
-                    f"## Cycle {r['cycle']}, Prompt {r['prompt']}\n\n{r['response']}"
-                    for r in all_responses
-                )
-                output_content = build_output_with_injection(
-                    output_content, conv.headers, conv.footers,
-                    conv.source_path.parent if conv.source_path else None,
-                    template_vars
-                )
-                Path(effective_output).parent.mkdir(parents=True, exist_ok=True)
-                Path(effective_output).write_text(output_content)
-                progress_print(f"  Writing to {effective_output}")
-                console.print(f"[green]Output written to {effective_output}[/green]")
         
-        progress_print(f"Done in {cycle_elapsed:.1f}s")
+        try:
+            session.state.status = "running"
+            all_responses = []
+
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console,
+            ) as progress:
+
+                cycle_task = progress.add_task(
+                    f"Cycle 1/{conv.max_cycles}",
+                    total=conv.max_cycles
+                )
+
+                # Run cycles
+                for cycle_num in range(conv.max_cycles):
+                    session.state.cycle_number = cycle_num
+                    progress.update(
+                        cycle_task,
+                        description=f"Cycle {cycle_num + 1}/{conv.max_cycles}",
+                        completed=cycle_num
+                    )
+                    progress_print(f"  Cycle {cycle_num + 1}/{conv.max_cycles}...")
+                    
+                    # Add cycle number to template variables
+                    cycle_vars = template_vars.copy()
+                    cycle_vars["CYCLE_NUMBER"] = str(cycle_num + 1)
+                    cycle_vars["CYCLE_TOTAL"] = str(conv.max_cycles)
+                    cycle_vars["MAX_CYCLES"] = str(conv.max_cycles)
+
+                    # Session mode: fresh = new session each cycle
+                    if session_mode == "fresh" and cycle_num > 0:
+                        await ai_adapter.destroy_session(adapter_session)
+                        adapter_session = await ai_adapter.create_session(
+                            AdapterConfig(model=conv.model, streaming=True)
+                        )
+                        progress_print(f"  🔄 New session for cycle {cycle_num + 1}")
+
+                    # Session mode: compact = compact at start of each cycle (after first)
+                    if session_mode == "compact" and cycle_num > 0:
+                        console.print(f"\n[yellow]Compacting before cycle {cycle_num + 1}...[/yellow]")
+                        progress_print(f"  🗜  Compacting context...")
+                        
+                        compact_result = await ai_adapter.compact(
+                            adapter_session,
+                            conv.compact_preserve,
+                            session.get_compaction_prompt()
+                        )
+                        
+                        console.print(f"[green]Compacted: {compact_result.tokens_before} → {compact_result.tokens_after} tokens[/green]")
+                        progress_print(f"  🗜  Compacted: {compact_result.tokens_before} → {compact_result.tokens_after} tokens")
+
+                    # Check for compaction (shared mode, or when context limit reached)
+                    if session_mode == "shared" and session.needs_compaction():
+                        console.print(f"\n[yellow]Context near limit, compacting...[/yellow]")
+                        progress_print(f"  🗜  Compacting context...")
+                        
+                        compact_result = await ai_adapter.compact(
+                            adapter_session,
+                            conv.compact_preserve,
+                            session.get_compaction_prompt()
+                        )
+                        
+                        console.print(f"[green]Compacted: {compact_result.tokens_before} → {compact_result.tokens_after} tokens[/green]")
+                        progress_print(f"  🗜  Compacted: {compact_result.tokens_before} → {compact_result.tokens_after} tokens")
+
+                    # Checkpoint if configured
+                    if session.should_checkpoint():
+                        checkpoint = session.create_checkpoint(f"cycle-{cycle_num}")
+                        console.print(f"[blue]Checkpoint saved: {checkpoint.name}[/blue]")
+                        progress_print(f"  📌 Checkpoint: {checkpoint.name}")
+
+                    # Run all prompts in this cycle
+                    # For fresh mode: re-inject context on each cycle (like cycle 0)
+                    if session_mode == "fresh":
+                        context_content = session.context.get_context_content()
+                    else:
+                        context_content = session.context.get_context_content() if cycle_num == 0 else ""
+
+                    for prompt_idx, prompt in enumerate(conv.prompts):
+                        session.state.prompt_index = prompt_idx
+
+                        # Build prompt with prologue/epilogue injection
+                        full_prompt = build_prompt_with_injection(
+                            prompt, conv.prologues, conv.epilogues, 
+                            conv.source_path.parent if conv.source_path else None,
+                            cycle_vars
+                        )
+                        
+                        # Add context to first prompt (always for fresh, only cycle 0 for others)
+                        if prompt_idx == 0 and context_content:
+                            full_prompt = f"{context_content}\n\n{full_prompt}"
+                        
+                        # On subsequent cycles (shared mode), add continuation context
+                        if session_mode == "shared" and cycle_num > 0 and prompt_idx == 0 and conv.on_context_limit_prompt:
+                            full_prompt = f"{conv.on_context_limit_prompt}\n\n{full_prompt}"
+
+                        if logger.isEnabledFor(10):  # DEBUG level
+                            console.print(f"\n[dim]Prompt {prompt_idx + 1}/{len(conv.prompts)}:[/dim]")
+                            console.print(f"[dim]{prompt[:100]}...[/dim]" if len(prompt) > 100 else f"[dim]{prompt}[/dim]")
+
+                        response = await ai_adapter.send(adapter_session, full_prompt)
+                        
+                        session.add_message("user", prompt)
+                        session.add_message("assistant", response)
+                        all_responses.append({
+                            "cycle": cycle_num + 1,
+                            "prompt": prompt_idx + 1,
+                            "response": response
+                        })
+
+                    progress.update(cycle_task, completed=cycle_num + 1)
+
+            # Mark complete (session cleanup in finally block)
+            session.state.status = "completed"
+            cycle_elapsed = time.time() - cycle_start
+
+            # Output
+            if json_output:
+                import json
+                result = {
+                    "status": "completed",
+                    "cycles_completed": conv.max_cycles,
+                    "responses": all_responses,
+                    "session": session.to_dict(),
+                }
+                console.print_json(json.dumps(result))
+            else:
+                console.print(f"\n[green]✓ Completed {conv.max_cycles} cycles[/green]")
+                console.print(f"[dim]Total messages: {len(session.state.messages)}[/dim]")
+                
+                if conv.output_file:
+                    # Substitute template variables in output path
+                    effective_output = substitute_template_variables(conv.output_file, template_vars)
+                    
+                    # Write final summary with header/footer injection
+                    output_content = "\n\n---\n\n".join(
+                        f"## Cycle {r['cycle']}, Prompt {r['prompt']}\n\n{r['response']}"
+                        for r in all_responses
+                    )
+                    output_content = build_output_with_injection(
+                        output_content, conv.headers, conv.footers,
+                        conv.source_path.parent if conv.source_path else None,
+                        template_vars
+                    )
+                    Path(effective_output).parent.mkdir(parents=True, exist_ok=True)
+                    Path(effective_output).write_text(output_content)
+                    progress_print(f"  Writing to {effective_output}")
+                    console.print(f"[green]Output written to {effective_output}[/green]")
+            
+            progress_print(f"Done in {cycle_elapsed:.1f}s")
+        
+        finally:
+            # Always destroy session (handles both success and error paths)
+            await ai_adapter.destroy_session(adapter_session)
 
     except Exception as e:
         session.state.status = "failed"

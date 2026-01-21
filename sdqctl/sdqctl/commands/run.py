@@ -289,29 +289,30 @@ async def _run_async(
                 streaming=True,
             )
         )
-
-        session.state.status = "running"
-        responses = []
-
-        # Include context in first prompt
-        context_content = session.context.get_context_content()
-
-        # Build pause point lookup: {prompt_index: message}
-        pause_after = {idx: msg for idx, msg in conv.pause_points}
-
-        # Process steps (includes prompts, checkpoints, compact, etc.)
-        # Fall back to prompts list if no steps defined (backward compat)
-        prompt_count = 0
-        total_prompts = len(conv.prompts)
-        first_prompt = True
         
-        steps_to_process = conv.steps if conv.steps else [
-            {"type": "prompt", "content": p} for p in conv.prompts
-        ]
-        
-        for step in steps_to_process:
-            step_type = step.type if hasattr(step, 'type') else step.get('type')
-            step_content = step.content if hasattr(step, 'content') else step.get('content', '')
+        try:
+            session.state.status = "running"
+            responses = []
+
+            # Include context in first prompt
+            context_content = session.context.get_context_content()
+
+            # Build pause point lookup: {prompt_index: message}
+            pause_after = {idx: msg for idx, msg in conv.pause_points}
+
+            # Process steps (includes prompts, checkpoints, compact, etc.)
+            # Fall back to prompts list if no steps defined (backward compat)
+            prompt_count = 0
+            total_prompts = len(conv.prompts)
+            first_prompt = True
+            
+            steps_to_process = conv.steps if conv.steps else [
+                {"type": "prompt", "content": p} for p in conv.prompts
+            ]
+            
+            for step in steps_to_process:
+                step_type = step.type if hasattr(step, 'type') else step.get('type')
+                step_content = step.content if hasattr(step, 'content') else step.get('content', '')
             
             if step_type == "prompt":
                 prompt = step_content
@@ -361,13 +362,10 @@ async def _run_async(
                     session.state.prompt_index = prompt_count  # Next prompt to resume from
                     checkpoint_path = session.save_pause_checkpoint(pause_msg)
                     
-                    await ai_adapter.destroy_session(adapter_session)
-                    await ai_adapter.stop()
-                    
                     console.print(f"\n[yellow]⏸  PAUSED: {pause_msg}[/yellow]")
                     console.print(f"[dim]Checkpoint saved: {checkpoint_path}[/dim]")
                     console.print(f"\n[bold]To resume:[/bold] sdqctl resume {checkpoint_path}")
-                    return
+                    return  # Session cleanup handled by finally blocks
             
             elif step_type == "checkpoint":
                 # Save session state and commit outputs to git
@@ -477,9 +475,7 @@ async def _run_async(
                             if result.stderr:
                                 console.print(f"[dim]stderr: {result.stderr[:500]}[/dim]")
                             session.state.status = "failed"
-                            await ai_adapter.destroy_session(adapter_session)
-                            await ai_adapter.stop()
-                            return
+                            return  # Session cleanup handled by finally blocks
                     
                     # Add output to context for next prompt if configured
                     if include_output:
@@ -500,9 +496,7 @@ async def _run_async(
                     if conv.run_on_error == "stop":
                         console.print(f"[red]RUN timed out: {command}[/red]")
                         session.state.status = "failed"
-                        await ai_adapter.destroy_session(adapter_session)
-                        await ai_adapter.stop()
-                        return
+                        return  # Session cleanup handled by finally blocks
                 
                 except Exception as e:
                     logger.error(f"  ✗ Command error: {e}")
@@ -510,49 +504,50 @@ async def _run_async(
                     if conv.run_on_error == "stop":
                         console.print(f"[red]RUN error: {e}[/red]")
                         session.state.status = "failed"
-                        await ai_adapter.destroy_session(adapter_session)
-                        await ai_adapter.stop()
                         return
 
-        # Cleanup
-        await ai_adapter.destroy_session(adapter_session)
-        session.state.status = "completed"
+            # Mark complete (session cleanup in finally block)
+            session.state.status = "completed"
 
-        # Output with header/footer injection
-        raw_output = "\n\n---\n\n".join(responses)
-        base_path = conv.source_path.parent if conv.source_path else Path.cwd()
-        final_output = build_output_with_injection(
-            raw_output, conv.headers, conv.footers,
-            base_path=base_path,
-            variables=template_vars
-        )
-        total_elapsed = time.time() - start_time
+            # Output with header/footer injection
+            raw_output = "\n\n---\n\n".join(responses)
+            base_path = conv.source_path.parent if conv.source_path else Path.cwd()
+            final_output = build_output_with_injection(
+                raw_output, conv.headers, conv.footers,
+                base_path=base_path,
+                variables=template_vars
+            )
+            total_elapsed = time.time() - start_time
 
-        if json_output:
-            import json
-            result = {
-                "status": "completed",
-                "prompts": len(conv.prompts),
-                "responses": responses,
-                "session": session.to_dict(),
-            }
-            console.print_json(json.dumps(result))
-        else:
-            # Use conv.output_file which includes both CLI override and workflow OUTPUT-FILE
-            effective_output = conv.output_file
-            if effective_output:
-                # Substitute template variables in output path
-                effective_output = substitute_template_variables(effective_output, template_vars)
-                output_path = Path(effective_output)
-                output_path.parent.mkdir(parents=True, exist_ok=True)
-                output_path.write_text(final_output)
-                progress(f"  Writing to {effective_output}")
-                console.print(f"\n[green]Output written to {effective_output}[/green]")
+            if json_output:
+                import json
+                result = {
+                    "status": "completed",
+                    "prompts": len(conv.prompts),
+                    "responses": responses,
+                    "session": session.to_dict(),
+                }
+                console.print_json(json.dumps(result))
             else:
-                console.print("\n" + "=" * 60)
-                console.print(Markdown(final_output))
+                # Use conv.output_file which includes both CLI override and workflow OUTPUT-FILE
+                effective_output = conv.output_file
+                if effective_output:
+                    # Substitute template variables in output path
+                    effective_output = substitute_template_variables(effective_output, template_vars)
+                    output_path = Path(effective_output)
+                    output_path.parent.mkdir(parents=True, exist_ok=True)
+                    output_path.write_text(final_output)
+                    progress(f"  Writing to {effective_output}")
+                    console.print(f"\n[green]Output written to {effective_output}[/green]")
+                else:
+                    console.print("\n" + "=" * 60)
+                    console.print(Markdown(final_output))
+            
+            progress(f"Done in {total_elapsed:.1f}s")
         
-        progress(f"Done in {total_elapsed:.1f}s")
+        finally:
+            # Always destroy session (handles both success and error paths)
+            await ai_adapter.destroy_session(adapter_session)
 
     except Exception as e:
         session.state.status = "failed"
