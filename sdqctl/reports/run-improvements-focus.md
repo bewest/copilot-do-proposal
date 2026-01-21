@@ -214,6 +214,8 @@ else:
 
 10. **Line numbers shift with edits** - Original bug was at lines 469-475; after fixes, similar code is now at lines 480-486. Always re-verify line numbers before editing.
 
+11. **Documentation cycles without implementation create no-ops** - Running `cycle` with only documentation prompts (no implementation steps) causes repeated identical iterations. Workflows should alternate documentation with implementation tasks.
+
 ---
 
 ## Research Needed
