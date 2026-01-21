@@ -152,7 +152,17 @@ Reduced duplicated subprocess.run() from 18 lines to 6 lines at call site.
 
 ## Completed This Session
 
-**Session: 2026-01-21T22:28 - E1 OUTPUT LIMIT COMPLETE**
+**Session: 2026-01-21T22:31 - GIT COMMITS SAVED**
+
+1. **Commit `2dcdf24`** - feat: Q1 subprocess helper + E1 RUN-OUTPUT-LIMIT
+   - `_run_subprocess()` helper (run.py:36-61)
+   - `_truncate_output()` helper (run.py:64-79)
+   - RUN-OUTPUT-LIMIT directive parsing (conversation.py:77, 248, 591-601)
+   - 9 new tests (52 total)
+2. **Commit `549b86b`** - docs: report update tracking Q1/E1 completion
+3. **All 52 tests passing** - verified before commit
+
+**Previous Session: 2026-01-21T22:28 - E1 OUTPUT LIMIT COMPLETE**
 
 1. **E1: RUN Output Limit - DONE**
    - Added `RUN-OUTPUT-LIMIT` directive to DirectiveType enum (conversation.py:77)
@@ -283,6 +293,10 @@ Reduced duplicated subprocess.run() from 18 lines to 6 lines at call site.
 15. **Git commit flow works** - Commits `af908ee` and `6f28bd2` show the fix-then-document pattern. The R2 fix is now permanent.
 
 16. **All P1 reliability items complete** - R1 (timeout partial output) and R2 (failure context) were the hardest reliability improvements. Both are now tested and committed.
+
+17. **Refactor before feature** - Q1 (subprocess helper) made E1 (output limit) cleaner to implement. The helper centralizes subprocess logic.
+
+18. **Incremental commits work** - Separate commits for implementation (`2dcdf24`) and docs (`549b86b`) keep history clean.
 
 ---
 
