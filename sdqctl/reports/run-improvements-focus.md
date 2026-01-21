@@ -152,6 +152,13 @@ Reduced duplicated subprocess.run() from 18 lines to 6 lines at call site.
 
 ## Completed This Session
 
+**Session: 2026-01-21T22:40 - GIT PUSH COMPLETE**
+
+1. **Git Push - DONE**
+   - Pushed 5 commits to origin/main (128b750..15375fb)
+   - R3 (auto-checkpoint), T2 (helper tests), T3 (integration tests) now on remote
+2. **All 61 tests passing** - verified before push
+
 **Session: 2026-01-21T22:39 - T3 IMPLEMENTED**
 
 1. **T3: R3 Integration Test - DONE**
@@ -359,14 +366,7 @@ Reduced duplicated subprocess.run() from 18 lines to 6 lines at call site.
 
 ## Next 3 Taskable Areas
 
-### Priority 1: Git Push
-**Effort:** ~2 min  
-**Unblocked:** Yes
-
-Push completed work to origin/main:
-- Commits: `d9482a5` (R3), `d3521b3` (T2), + T3 commit
-
-### Priority 2: E2 - RUN Environment Variables
+### Priority 1: E2 - RUN Environment Variables
 **File:** `sdqctl/core/conversation.py` + `sdqctl/commands/run.py`  
 **Effort:** ~30 min  
 **Unblocked:** Yes
@@ -378,7 +378,7 @@ RUN-ENV DEBUG=1
 RUN ./deploy.sh
 ```
 
-### Priority 3: Documentation Update
+### Priority 2: Documentation Update
 **File:** `README.md` or dedicated docs  
 **Effort:** ~20 min  
 **Unblocked:** Yes
@@ -387,6 +387,15 @@ Document new RUN features:
 - RUN-OUTPUT-LIMIT directive
 - ALLOW-SHELL security model
 - Auto-checkpoint on failure behavior
+
+### Priority 3: cycle.py R3 Parity
+**File:** `sdqctl/commands/cycle.py`  
+**Effort:** ~15 min  
+**Unblocked:** Yes
+
+Apply R3 auto-checkpoint pattern to cycle.py:
+- Check if cycle.py has similar early return paths
+- Add checkpoint saves before returns on failure
 
 ---
 
