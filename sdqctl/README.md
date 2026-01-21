@@ -86,6 +86,10 @@ OUTPUT-FILE security-report.md
 | `RUN` | Execute shell command |
 | `RUN-ON-ERROR` | Behavior on command failure (stop, continue) |
 | `RUN-OUTPUT` | When to include output (always, on-error, never) |
+| `RUN-OUTPUT-LIMIT` | Max output chars (10K, 50K, 1M, none) |
+| `RUN-ENV` | Set environment variable (KEY=value) |
+| `RUN-TIMEOUT` | Command timeout (30, 30s, 2m) |
+| `ALLOW-SHELL` | Enable shell features like pipes (true/false) |
 | `PAUSE` | Checkpoint and exit for human review |
 | `CHECKPOINT-AFTER` | When to checkpoint (each-cycle, each-prompt) |
 | `COMPACT-PRESERVE` | What to preserve during compaction |
@@ -159,6 +163,53 @@ RUN make test
 RUN-OUTPUT on-error
 RUN npm run lint
 ```
+
+#### Security: Shell Mode
+
+By default, RUN commands are executed **without a shell** for security (no shell injection):
+
+```dockerfile
+# Safe: parsed as ["echo", "hello", "world"]
+RUN echo hello world
+
+# To enable shell features (pipes, redirects, variables):
+ALLOW-SHELL true
+RUN cat data.json | jq '.items[]' > output.txt
+```
+
+#### Environment Variables
+
+Set environment variables for RUN commands:
+
+```dockerfile
+RUN-ENV API_KEY=secret123
+RUN-ENV DEBUG=1
+RUN ./deploy.sh
+```
+
+#### Output Limits
+
+Limit captured output to prevent context bloat:
+
+```dockerfile
+RUN-OUTPUT-LIMIT 10K    # Max 10,000 characters
+RUN python long_test.py
+```
+
+Supported formats: `10K`, `50K`, `1M`, `100000`, `none` (unlimited).
+
+#### Timeout
+
+Set command timeout (default: 60 seconds):
+
+```dockerfile
+RUN-TIMEOUT 2m          # 2 minutes
+RUN npm run build
+```
+
+#### Auto-Checkpoint on Failure
+
+When a RUN command fails with `RUN-ON-ERROR stop` (default), sdqctl automatically saves a checkpoint containing all captured output. This preserves debugging context even on failure.
 
 ### Human-in-the-Loop with PAUSE
 

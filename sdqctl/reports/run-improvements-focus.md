@@ -152,6 +152,14 @@ Reduced duplicated subprocess.run() from 18 lines to 6 lines at call site.
 
 ## Completed This Session
 
+**Session: 2026-01-21T22:44 - DOCUMENTATION COMPLETE**
+
+1. **Documentation Update - DONE**
+   - Updated README.md directives table with RUN-OUTPUT-LIMIT, RUN-ENV, RUN-TIMEOUT, ALLOW-SHELL
+   - Expanded RUN section with 5 subsections: Security, Environment Variables, Output Limits, Timeout, Auto-Checkpoint
+   - All 65 tests passing
+2. **README now documents all RUN features from this sprint**
+
 **Session: 2026-01-21T22:43 - CYCLE.PY R3 PARITY IMPLEMENTED**
 
 1. **cycle.py R3 Parity - DONE**
@@ -388,18 +396,7 @@ Reduced duplicated subprocess.run() from 18 lines to 6 lines at call site.
 
 ## Next 3 Taskable Areas
 
-### Priority 1: Documentation Update
-**File:** `README.md` or dedicated docs  
-**Effort:** ~20 min  
-**Unblocked:** Yes
-
-Document new RUN features:
-- RUN-ENV directive
-- RUN-OUTPUT-LIMIT directive
-- ALLOW-SHELL security model
-- Auto-checkpoint on failure behavior
-
-### Priority 2: Resume Command Enhancement
+### Priority 1: Resume Command Enhancement
 **File:** `sdqctl/commands/resume.py`  
 **Effort:** ~20 min  
 **Unblocked:** Yes
@@ -408,11 +405,21 @@ Verify resume command works with new checkpoint format:
 - Test resuming from failure checkpoint
 - Ensure RUN output context is restored
 
+### Priority 2: Sprint Summary
+**File:** `reports/run-improvements-focus.md`  
+**Effort:** ~10 min  
+**Unblocked:** Yes
+
+Create summary of all items completed this sprint:
+- List all P1 items: R1, R2, R3, S1, T1, T2, T3, Q1, E1, E2
+- Count total tests added
+- Note key lessons learned
+
 ### Priority 3: Git Push + Sync
 **Effort:** ~2 min  
 **Unblocked:** Yes
 
-Push cycle.py R3 parity to origin/main
+Push documentation update to origin/main
 
 ---
 
