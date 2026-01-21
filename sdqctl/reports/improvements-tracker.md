@@ -145,11 +145,9 @@
 **File:** `sdqctl/core/context.py`  
 **Resolution:** Added documentation about limitation in module docstring and `estimate_tokens()` helper function. Explains ~4 chars/token heuristic and notes that tiktoken provides accurate counts.
 
-### 3. Async Pattern Duplication (P2)
+### 3. Async Pattern Duplication ✅ FIXED
 **Files:** `commands/run.py`, `commands/cycle.py`, `commands/flow.py`, `commands/apply.py`  
-**Issue:** Each command duplicates the async runner pattern
-
-**Recommendation:** Create shared async wrapper decorator or context manager.
+**Resolution:** Created `commands/utils.py` with shared `run_async()` helper. All commands now use this centralized function instead of direct `asyncio.run()` calls.
 
 ---
 

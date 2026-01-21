@@ -6,7 +6,6 @@ Usage:
     sdqctl cycle workflow.conv --checkpoint-dir ./checkpoints
 """
 
-import asyncio
 from pathlib import Path
 from typing import Optional
 
@@ -21,6 +20,7 @@ from ..core.conversation import ConversationFile
 from ..core.logging import get_logger
 from ..core.progress import progress as progress_print
 from ..core.session import Session
+from .utils import run_async
 
 logger = get_logger(__name__)
 console = Console()
@@ -57,7 +57,7 @@ def cycle(
     dry_run: bool,
 ) -> None:
     """Run multi-cycle workflow with compaction."""
-    asyncio.run(_cycle_async(
+    run_async(_cycle_async(
         workflow, max_cycles, session_mode, adapter, model, checkpoint_dir,
         prologue, epilogue, header, footer,
         output, json_output, dry_run

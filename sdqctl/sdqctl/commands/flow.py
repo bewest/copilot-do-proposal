@@ -20,6 +20,7 @@ from ..adapters.base import AdapterConfig
 from ..core.conversation import ConversationFile
 from ..core.logging import get_logger
 from ..core.session import Session
+from .utils import run_async
 
 logger = get_logger(__name__)
 console = Console()
@@ -53,7 +54,7 @@ def flow(
     continue_on_error: bool,
 ) -> None:
     """Execute batch/parallel workflows."""
-    asyncio.run(_flow_async(
+    run_async(_flow_async(
         patterns, parallel, adapter, model, 
         prologue, epilogue, header, footer,
         output_dir, json_output, dry_run, continue_on_error

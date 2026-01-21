@@ -8,7 +8,6 @@ Usage:
     sdqctl run workflow.conv --allow-files "./lib/*" --deny-files "./lib/special"
 """
 
-import asyncio
 import logging
 import shlex
 import subprocess
@@ -23,6 +22,7 @@ from rich.panel import Panel
 
 from ..adapters import get_adapter
 from ..adapters.base import AdapterConfig
+from .utils import run_async
 from ..core.conversation import ConversationFile, FileRestrictions, substitute_template_variables
 from ..core.logging import get_logger
 from ..core.progress import progress, ProgressTracker
@@ -145,7 +145,7 @@ def run(
     # Add header/footer to output
     sdqctl run workflow.conv --header "# Report" --footer @templates/disclaimer.md
     """
-    asyncio.run(_run_async(
+    run_async(_run_async(
         target, adapter, model, context, 
         allow_files, deny_files, allow_dir, deny_dir,
         prologue, epilogue, header, footer,

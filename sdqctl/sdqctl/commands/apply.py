@@ -23,6 +23,7 @@ from rich.table import Table
 
 from ..adapters import get_adapter
 from ..adapters.base import AdapterConfig
+from .utils import run_async
 from ..core.conversation import ConversationFile, apply_iteration_context
 from ..core.logging import get_logger
 from ..core.progress import progress as progress_print
@@ -86,7 +87,7 @@ def apply(
     # Parallel execution
     sdqctl apply workflow.conv -c "lib/**/*.js" --parallel 4
     """
-    asyncio.run(_apply_async(
+    run_async(_apply_async(
         workflow, components, discovery_file, progress_file,
         parallel, adapter, model, prologue, epilogue, header, footer,
         output_dir, dry_run
