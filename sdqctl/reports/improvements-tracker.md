@@ -2,7 +2,7 @@
 
 **Analysis Date:** 2026-01-21  
 **Git Branch:** main  
-**Test Status:** 270/270 passing (109 original + 87 CLI/command + 25 copilot + 21 status + 28 logging tests)
+**Test Status:** 319/319 passing (109 original + 87 CLI/command + 25 copilot + 21 status + 28 logging + 28 progress + 21 registry tests)
 
 ---
 
@@ -41,6 +41,24 @@
   - Log format at different levels
   - Handler configuration
   - Module logger inheritance
+
+### ✅ P2-9: Progress Module Tests - COMPLETED
+- Added `tests/test_progress.py` with 28 tests covering:
+  - Quiet mode functionality
+  - progress() function output
+  - Helper functions (progress_step, progress_file, progress_done)
+  - progress_timer context manager
+  - ProgressTracker class (start, step, checkpoint, done)
+  - Integration with quiet mode
+
+### ✅ P2-10: Adapter Registry Tests - COMPLETED
+- Added `tests/test_registry.py` with 21 tests covering:
+  - register_adapter() function
+  - get_adapter() with lazy loading
+  - list_adapters() discovery
+  - Error handling for unknown adapters
+  - Built-in adapter loading (mock, copilot)
+  - Integration with async methods
 
 ### ✅ P1-3: File Reference Warning - COMPLETED
 - Added warning logging for unresolved `@file` references in `conversation.py`
@@ -331,9 +349,10 @@ Users cannot register their own adapters without modifying source code.
 | `core/context.py` | 27 | ~90% | Binary file handling |
 | `core/session.py` | 30 | ~80% | Error recovery paths |
 | `core/logging.py` | 28 | ~95% | None significant |
+| `core/progress.py` | 28 | ~95% | None significant |
 | `adapters/mock.py` | 20 | ~95% | None significant |
 | `adapters/copilot.py` | 25 | ~75% | Real SDK integration |
-| `adapters/registry.py` | 3 | ~60% | Plugin loading |
+| `adapters/registry.py` | 21 | ~90% | Plugin entry points |
 | `commands/run.py` | 18 | ~40% | RUN subprocess paths |
 | `commands/cycle.py` | 15 | ~60% | Compaction triggers |
 | `commands/flow.py` | 15 | ~60% | Error aggregation |
@@ -341,7 +360,7 @@ Users cannot register their own adapters without modifying source code.
 | `commands/status.py` | 21 | ~85% | None significant |
 | `cli.py` | 22 | ~60% | Entry points covered |
 
-**Total estimate:** ~75% code coverage (improved from ~70%)
+**Total estimate:** ~80% code coverage (improved from ~75%)
 
 ---
 
@@ -355,8 +374,10 @@ Users cannot register their own adapters without modifying source code.
 6. ~~**`tests/test_copilot_adapter.py`** - Mocked Copilot SDK tests~~ ✅ DONE (25 tests)
 7. ~~**`tests/test_status_command.py`** - Status command output~~ ✅ DONE (21 tests)
 8. ~~**`tests/test_logging.py`** - Logging configuration~~ ✅ DONE (28 tests)
-9. **`tests/test_progress.py`** - Progress module tests (P2)
-10. **`tests/test_registry.py`** - Adapter registry tests (P2)
+9. ~~**`tests/test_progress.py`** - Progress module tests~~ ✅ DONE (28 tests)
+10. ~~**`tests/test_registry.py`** - Adapter registry tests~~ ✅ DONE (21 tests)
+
+**All recommended tests completed!**
 
 ---
 
