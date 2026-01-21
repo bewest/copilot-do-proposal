@@ -367,3 +367,59 @@ class TestShellExecutionSecurity:
         malicious2 = 'echo $(whoami)'
         parsed2 = shlex.split(malicious2)
         assert '$(whoami)' in parsed2  # Treated literally, not expanded
+
+
+class TestRunTimeout:
+    """Test RUN-TIMEOUT directive."""
+
+    def test_run_timeout_default(self, tmp_path, monkeypatch):
+        """Test run_timeout defaults to 60 seconds."""
+        from sdqctl.core.config import clear_config_cache
+        monkeypatch.chdir(tmp_path)
+        clear_config_cache()
+        
+        content = """MODEL gpt-4
+ADAPTER mock
+RUN echo hello
+"""
+        conv = ConversationFile.parse(content)
+        assert conv.run_timeout == 60
+
+    def test_run_timeout_seconds(self):
+        """Test RUN-TIMEOUT with seconds value."""
+        content = """MODEL gpt-4
+ADAPTER mock
+RUN-TIMEOUT 30
+RUN echo hello
+"""
+        conv = ConversationFile.parse(content)
+        assert conv.run_timeout == 30
+
+    def test_run_timeout_with_s_suffix(self):
+        """Test RUN-TIMEOUT with 's' suffix."""
+        content = """MODEL gpt-4
+ADAPTER mock
+RUN-TIMEOUT 45s
+RUN echo hello
+"""
+        conv = ConversationFile.parse(content)
+        assert conv.run_timeout == 45
+
+    def test_run_timeout_with_m_suffix(self):
+        """Test RUN-TIMEOUT with 'm' suffix for minutes."""
+        content = """MODEL gpt-4
+ADAPTER mock
+RUN-TIMEOUT 2m
+RUN echo hello
+"""
+        conv = ConversationFile.parse(content)
+        assert conv.run_timeout == 120  # 2 minutes = 120 seconds
+
+    def test_run_timeout_five_minutes(self):
+        """Test RUN-TIMEOUT with 5 minutes."""
+        content = """MODEL gpt-4
+ADAPTER mock
+RUN-TIMEOUT 5m
+"""
+        conv = ConversationFile.parse(content)
+        assert conv.run_timeout == 300  # 5 minutes = 300 seconds

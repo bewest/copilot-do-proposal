@@ -2,11 +2,17 @@
 
 **Analysis Date:** 2026-01-21  
 **Git Branch:** main  
-**Test Status:** 357/357 passing
+**Test Status:** 362/362 passing
 
 ---
 
 ## Completed Items (2026-01-21)
+
+### ✅ P2-3: RUN-TIMEOUT Directive - COMPLETED
+- Added `RUN-TIMEOUT` directive (default: 60s)
+- Supports seconds (`30`), with suffix (`30s`), or minutes (`2m`)
+- Updated run.py to use `conv.run_timeout`
+- Added 5 tests for timeout parsing
 
 ### ✅ P1-2: Context Files Now Filtered by Restrictions - COMPLETED
 - Added `path_filter` parameter to ContextManager
@@ -125,17 +131,17 @@
 
 **Recommendation:** Add configurable retry with exponential backoff.
 
-### 2. RUN Directive Timeout Hardcoded (P2)
-**File:** `sdqctl/commands/run.py` line 448
-**Issue:** RUN directive uses hardcoded 60s timeout
-
-**Recommendation:** Add RUN-TIMEOUT directive or configuration option.
-
-### 3. Progress Tracker File Format Not Documented (P2)
+### 2. Progress Tracker File Format Not Documented (P2)
 **File:** `sdqctl/commands/apply.py`, lines 341-431  
 **Issue:** The `ProgressTracker` class writes markdown but format isn't documented
 
 **Recommendation:** Add format documentation to README.md or add JSON output option.
+
+### 3. Token Estimation Inaccurate (P2)
+**File:** `sdqctl/core/context.py`, lines 112-113  
+**Issue:** Token estimation uses `len(content) // 4` which is rough approximation
+
+**Recommendation:** Use tiktoken library for accurate GPT tokenization, or document limitation.
 
 ---
 
@@ -414,14 +420,11 @@ max_tokens: int = 128000  # Default for modern models
 
 **Recommendation:** Move to configuration constant or config file.
 
-#### Q3: Subprocess Timeout Hardcoded (P2)
-**File:** `sdqctl/commands/run.py`, line 248  
+#### Q3: Subprocess Timeout Hardcoded ✅ FIXED
+**File:** `sdqctl/commands/run.py`  
 **Issue:** RUN directive uses hardcoded 60s timeout
 
-```python
-# Line 248
-timeout=60,  # Default timeout
-```
+**Resolution:** Added RUN-TIMEOUT directive. Supports seconds, `30s`, or `2m` format.
 
 **Recommendation:** Add RUN-TIMEOUT directive or configuration option.
 

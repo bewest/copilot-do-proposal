@@ -441,7 +441,7 @@ async def _run_async(
                             shell=True,
                             capture_output=True,
                             text=True,
-                            timeout=60,
+                            timeout=conv.run_timeout,
                             cwd=conv.cwd or Path.cwd(),
                         )
                     else:
@@ -451,7 +451,7 @@ async def _run_async(
                             shell=False,
                             capture_output=True,
                             text=True,
-                            timeout=60,
+                            timeout=conv.run_timeout,
                             cwd=conv.cwd or Path.cwd(),
                         )
                     run_elapsed = time.time() - run_start

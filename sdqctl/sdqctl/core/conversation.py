@@ -75,6 +75,7 @@ class DirectiveType(Enum):
     RUN_ON_ERROR = "RUN-ON-ERROR"
     RUN_OUTPUT = "RUN-OUTPUT"
     ALLOW_SHELL = "ALLOW-SHELL"  # Enable shell=True for RUN (security opt-in)
+    RUN_TIMEOUT = "RUN-TIMEOUT"  # Timeout in seconds for RUN commands
 
     # Flow control
     PAUSE = "PAUSE"
@@ -244,6 +245,7 @@ class ConversationFile:
     run_on_error: str = "stop"  # stop, continue
     run_output: str = "always"  # always, on-error, never
     allow_shell: bool = False  # Security: must opt-in to shell=True for RUN
+    run_timeout: int = 60  # Timeout in seconds for RUN commands
 
     # Flow control
     pause_points: list[tuple[int, str]] = field(default_factory=list)  # (after_prompt_index, message)
@@ -533,6 +535,15 @@ def _apply_directive(conv: ConversationFile, directive: Directive) -> None:
         case DirectiveType.ALLOW_SHELL:
             # Parse "true", "yes", "1" as True, anything else as False
             conv.allow_shell = directive.value.lower() in ("true", "yes", "1", "")
+        case DirectiveType.RUN_TIMEOUT:
+            # Parse timeout in seconds (supports "30", "30s", "2m")
+            value = directive.value.strip().lower()
+            if value.endswith("m"):
+                conv.run_timeout = int(value[:-1]) * 60
+            elif value.endswith("s"):
+                conv.run_timeout = int(value[:-1])
+            else:
+                conv.run_timeout = int(value)
         
         case DirectiveType.PAUSE:
             # PAUSE after the last prompt added so far
