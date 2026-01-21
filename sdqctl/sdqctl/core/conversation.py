@@ -165,20 +165,47 @@ class ConversationStep:
     preserve: list[str] = field(default_factory=list)  # For compact
     
 
+def _get_default_model() -> str:
+    """Get default model from config (lazy import to avoid circular deps)."""
+    try:
+        from .config import get_default_model
+        return get_default_model()
+    except ImportError:
+        return "gpt-4"
+
+
+def _get_default_adapter() -> str:
+    """Get default adapter from config (lazy import to avoid circular deps)."""
+    try:
+        from .config import get_default_adapter
+        return get_default_adapter()
+    except ImportError:
+        return "copilot"
+
+
+def _get_default_context_limit() -> float:
+    """Get default context limit from config (lazy import to avoid circular deps)."""
+    try:
+        from .config import get_context_limit
+        return get_context_limit()
+    except ImportError:
+        return 0.8
+
+
 @dataclass
 class ConversationFile:
     """Parsed representation of a .conv file."""
 
-    # Metadata
-    model: str = "gpt-4"
-    adapter: str = "copilot"
+    # Metadata - defaults loaded from .sdqctl.yaml config if available
+    model: str = field(default_factory=_get_default_model)
+    adapter: str = field(default_factory=_get_default_adapter)
     mode: str = "full"
     max_cycles: int = 1
     cwd: Optional[str] = None
 
-    # Context
+    # Context - context_limit default loaded from config
     context_files: list[str] = field(default_factory=list)
-    context_limit: float = 0.8  # 80% of context window
+    context_limit: float = field(default_factory=_get_default_context_limit)
     on_context_limit: str = "compact"  # compact, stop, continue
 
     # File restrictions

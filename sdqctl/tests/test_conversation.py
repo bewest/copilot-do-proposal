@@ -444,8 +444,13 @@ class TestConversationFileFromFile:
 class TestConversationDefaults:
     """Test default values when directives not specified."""
 
-    def test_defaults(self):
-        """Test all defaults are set correctly."""
+    def test_defaults(self, tmp_path, monkeypatch):
+        """Test all defaults are set correctly (with no config file)."""
+        # Ensure no config file affects defaults
+        from sdqctl.core.config import clear_config_cache
+        monkeypatch.chdir(tmp_path)
+        clear_config_cache()
+        
         conv = ConversationFile()
         
         assert conv.model == "gpt-4"
