@@ -186,6 +186,14 @@ Reduced duplicated subprocess.run() from 18 lines to 6 lines at call site.
 
 ## Completed This Session
 
+**Session: 2026-01-21T23:12 - RESUME FLAG TESTS ADDED**
+
+1. **Priority 2 complete:** Added tests for resume --list and --dry-run
+   - `TestResumeListFlag` (2 tests): empty sessions, JSON output
+   - `TestResumeDryRunFlag` (2 tests): loads checkpoint, JSON output
+2. **All 85 tests passing** (81 + 4 new)
+3. **Test coverage now includes CLI helper functions**
+
 **Session: 2026-01-21T23:11 - GIT SAVED & STATUS VERIFIED**
 
 1. **All 81 tests passing** - verified via `pytest`

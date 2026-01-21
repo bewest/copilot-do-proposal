@@ -207,3 +207,83 @@ class TestCheckpointRoundTrip:
         data = json.loads(checkpoint_path.read_text())
         assert data["conversation_inline"] is not None
         assert "PROMPT Test prompt" in data["conversation_inline"]
+
+
+class TestResumeListFlag:
+    """Test resume --list flag functionality."""
+    
+    def test_list_checkpoints_empty_sessions_dir(self, tmp_path, monkeypatch):
+        """--list handles missing sessions directory gracefully."""
+        from sdqctl.cli import _list_checkpoints
+        from unittest.mock import MagicMock
+        
+        monkeypatch.chdir(tmp_path)  # No .sdqctl/sessions here
+        console = MagicMock()
+        
+        _list_checkpoints(console, json_output=False)
+        
+        # Should print "No sessions directory found"
+        console.print.assert_called()
+    
+    def test_list_checkpoints_json_empty(self, tmp_path, monkeypatch):
+        """--list --json returns empty array for no checkpoints."""
+        from sdqctl.cli import _list_checkpoints
+        from unittest.mock import MagicMock
+        
+        monkeypatch.chdir(tmp_path)
+        console = MagicMock()
+        
+        _list_checkpoints(console, json_output=True)
+        
+        console.print_json.assert_called_with('{"checkpoints": []}')
+
+
+class TestResumeDryRunFlag:
+    """Test resume --dry-run flag functionality."""
+    
+    def test_dry_run_loads_checkpoint(self, tmp_path):
+        """--dry-run loads and displays checkpoint without executing."""
+        from sdqctl.cli import _dry_run_resume
+        from unittest.mock import MagicMock
+        
+        # Create a checkpoint
+        conv = ConversationFile(prompts=["Prompt 1", "Prompt 2"])
+        conv.source_path = tmp_path / "test.conv"
+        conv.source_path.write_text("PROMPT Prompt 1\nPROMPT Prompt 2")
+        
+        session = Session(conv, session_dir=tmp_path)
+        session.state.prompt_index = 1
+        checkpoint_path = session.save_pause_checkpoint("Test pause")
+        
+        console = MagicMock()
+        _dry_run_resume(str(checkpoint_path), console, json_output=False)
+        
+        # Should have printed a Panel
+        console.print.assert_called()
+    
+    def test_dry_run_json_output(self, tmp_path):
+        """--dry-run --json returns structured data."""
+        import json as json_module
+        from sdqctl.cli import _dry_run_resume
+        from unittest.mock import MagicMock
+        
+        # Create a checkpoint
+        conv = ConversationFile(prompts=["Prompt 1", "Prompt 2"])
+        conv.source_path = tmp_path / "test.conv"
+        conv.source_path.write_text("PROMPT Prompt 1\nPROMPT Prompt 2")
+        
+        session = Session(conv, session_dir=tmp_path)
+        session.state.prompt_index = 1
+        checkpoint_path = session.save_pause_checkpoint("Test pause")
+        
+        console = MagicMock()
+        _dry_run_resume(str(checkpoint_path), console, json_output=True)
+        
+        # Should have called print_json
+        console.print_json.assert_called_once()
+        call_args = console.print_json.call_args[0][0]
+        result = json_module.loads(call_args)
+        
+        assert result["dry_run"] is True
+        assert result["resume_from_prompt"] == 2
+        assert result["total_prompts"] == 2
