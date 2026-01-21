@@ -186,6 +186,16 @@ Reduced duplicated subprocess.run() from 18 lines to 6 lines at call site.
 
 ## Completed This Session
 
+**Session: 2026-01-21T23:11 - GIT SAVED & STATUS VERIFIED**
+
+1. **All 81 tests passing** - verified via `pytest`
+2. **Git synced to origin/main** - commit `ac313fa`
+3. **Sprint progress:**
+   - Resume tests (12 tests)
+   - Resume enhancements (--list, --dry-run, --json)
+   - RUN-CWD directive (4 tests)
+4. **No uncommitted changes** - all work pushed
+
 **Session: 2026-01-21T23:09 - RUN-CWD IMPLEMENTED**
 
 1. **Priority 1 complete:** Added RUN-CWD directive
@@ -491,6 +501,8 @@ Reduced duplicated subprocess.run() from 18 lines to 6 lines at call site.
 25. **Research before implementation** - RN2 research discovered the resume command doesn't exist, changing Priority 1 from "test resume" to "create resume". Research prevents wasted implementation time.
 
 26. **Check existing code first** - Attempted to create resume.py but resume command already existed in cli.py:454-560. Always grep for existing implementations before creating new files.
+
+27. **git add -A can be dangerous** - Accidentally committed .venv directory. Use explicit file lists or .gitignore before `git add -A`.
 
 ---
 
