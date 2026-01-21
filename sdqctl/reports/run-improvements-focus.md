@@ -3,7 +3,7 @@
 **Topic:** RUN directive (subprocess execution in .conv files)  
 **Source:** `reports/improvements-tracker.md`  
 **Created:** 2026-01-21  
-**Status:** In Progress
+**Status:** ✅ All P1 items COMPLETE (R1, R2, S1, T1)
 
 ---
 
@@ -97,42 +97,38 @@ except subprocess.TimeoutExpired as e:
 
 ### 3. Ergonomics
 
-#### E1: RUN Output Limit ⏳
-**File:** `sdqctl/commands/run.py` lines 477-487  
-**Issue:** No limit on output size - massive logs could overwhelm context
+#### E1: RUN Output Limit ✅ DONE
+**File:** `sdqctl/core/conversation.py` (lines 77, 248) + `sdqctl/commands/run.py` (lines 64-79, 519, 550)  
+**Completed:** 2026-01-21
 
-**Design decision:** 
-- Default: no limit (matches current behavior)
-- Add `RUN-OUTPUT-LIMIT` directive for users who want limits
-- Syntax: `RUN-OUTPUT-LIMIT 10K`, `RUN-OUTPUT-LIMIT none`
-- Future: add truncation modes (`head`, `tail`, `head+tail`)
+Added `RUN-OUTPUT-LIMIT` directive:
+- Syntax: `10K`, `50K`, `1M`, `100000`, `none` (default: unlimited)
+- Truncation preserves head (2/3) and tail (1/3) with `[... N chars truncated ...]` marker
+- Applied to both normal output and timeout partial output
+- 9 tests added: `TestRunOutputLimit` (5 tests) + `TestTruncateOutput` (4 tests)
 
-**Tasks:**
-- [ ] Add `run_output_limit` field to ConversationFile (default: None = unlimited)
-- [ ] Parse `RUN-OUTPUT-LIMIT` directive
-- [ ] Truncate output before adding to context if limit set
-- [ ] Add tests for output limiting
+```
+RUN-OUTPUT-LIMIT 10K    # Limit to 10,000 chars
+RUN python long_test.py
+```
 
 #### ~~E2: RUN Working Directory~~ SKIPPED
 **Decision:** Skip - users can `cd subdir && command` with ALLOW-SHELL or use wrapper scripts.
 
 ### 4. Code Quality
 
-#### Q1: Subprocess Handling Duplication ⏳
-**File:** `sdqctl/commands/run.py` lines 430-453  
-**Issue:** Similar subprocess.run() call duplicated for shell vs non-shell
+#### Q1: Subprocess Handling Duplication ✅ DONE
+**File:** `sdqctl/commands/run.py` lines 36-58 (helper), 471-477 (usage)  
+**Completed:** 2026-01-21
 
+Extracted `_run_subprocess()` helper function:
 ```python
-if conv.allow_shell:
-    result = subprocess.run(command, shell=True, ...)
-else:
-    result = subprocess.run(shlex.split(command), shell=False, ...)
+def _run_subprocess(command: str, allow_shell: bool, timeout: int, cwd: Path) -> subprocess.CompletedProcess:
+    args = command if allow_shell else shlex.split(command)
+    return subprocess.run(args, shell=allow_shell, capture_output=True, text=True, timeout=timeout, cwd=cwd)
 ```
 
-**Tasks:**
-- [ ] Extract to helper function with shell parameter
-- [ ] Reduce code duplication
-- [ ] Make timeout and capture_output configurable per-call
+Reduced duplicated subprocess.run() from 18 lines to 6 lines at call site.
 
 ### 5. Testing
 
@@ -156,7 +152,32 @@ else:
 
 ## Completed This Session
 
-**Session: 2026-01-21T22:19 - R2 BUG FIXED**
+**Session: 2026-01-21T22:28 - E1 OUTPUT LIMIT COMPLETE**
+
+1. **E1: RUN Output Limit - DONE**
+   - Added `RUN-OUTPUT-LIMIT` directive to DirectiveType enum (conversation.py:77)
+   - Added `run_output_limit` field to ConversationFile (conversation.py:248)
+   - Added `_truncate_output()` helper (run.py:64-79)
+   - Applied truncation in both output capture points (run.py:519, 550)
+   - 9 tests added (52 total now)
+2. **Truncation algorithm:** 2/3 head + 1/3 tail with clear marker
+
+**Previous Session: 2026-01-21T22:27 - Q1 REFACTOR COMPLETE**
+
+1. **Q1: Subprocess Handling Refactor - DONE**
+   - Extracted `_run_subprocess()` helper at run.py:36-58
+   - Replaced 18 lines of duplicated code with 6-line call at run.py:471-477
+   - All 43 tests pass - pure refactor, no behavioral change
+2. **Code quality improved** - Single point of change for subprocess settings
+
+**Previous Session: 2026-01-21T22:26 - STATUS VERIFICATION**
+
+1. **All 43 tests passing** - `pytest tests/test_run_command.py -v` confirms full green
+2. **R2 fix committed** - Git commit `af908ee` contains the fix
+3. **All P1 items COMPLETE** - R1 (timeout), R2 (failure context), S1 (shell security), T1 (integration tests)
+4. **Report verified accurate** - Line numbers and implementation status confirmed
+
+**Previous Session: 2026-01-21T22:19 - R2 BUG FIXED**
 
 1. **R2: RUN Failure Context Enhancement - FIXED**
    - Root cause: output capture was AFTER early return on stop-on-error
@@ -259,6 +280,10 @@ else:
 
 14. **Direct intervention beats cycles** - When cycles loop on verification, a direct human request ("Let's fix R2 now") immediately resolves the issue.
 
+15. **Git commit flow works** - Commits `af908ee` and `6f28bd2` show the fix-then-document pattern. The R2 fix is now permanent.
+
+16. **All P1 reliability items complete** - R1 (timeout partial output) and R2 (failure context) were the hardest reliability improvements. Both are now tested and committed.
+
 ---
 
 ## Research Needed
@@ -269,39 +294,39 @@ else:
 
 ## Next 3 Taskable Areas
 
-### Priority 1: Q1 - Subprocess Handling Refactor
-**File:** `sdqctl/commands/run.py:434-456`  
-**Effort:** ~30 min  
-**Unblocked:** Yes - pure refactor, no behavioral change
-
-```python
-# Extract helper:
-def _run_subprocess(command: str, allow_shell: bool, timeout: int, cwd: Path) -> subprocess.CompletedProcess:
-    args = command if allow_shell else shlex.split(command)
-    return subprocess.run(args, shell=allow_shell, capture_output=True, text=True, timeout=timeout, cwd=cwd)
-```
-
-### Priority 2: E1 - RUN Output Limit
-**File:** `sdqctl/core/conversation.py` + `sdqctl/commands/run.py`  
-**Effort:** ~45 min  
-**Unblocked:** Yes
-
-Tasks:
-- [ ] Add `run_output_limit` field to ConversationFile (default: None = unlimited)
-- [ ] Add `RUN-OUTPUT-LIMIT` directive type and parsing
-- [ ] Truncate output before adding to context if limit set
-- [ ] Add tests for output limiting
-
-### Priority 3: RN1 - Session Message Persistence Research
+### Priority 1: RN1 - Session Message Persistence Research
 **File:** `sdqctl/core/session.py` + `sdqctl/commands/run.py`  
 **Effort:** ~30 min research  
 **Unblocked:** Yes
 
 Research questions:
-- When `run.py` returns early at line 501 (stop on error), are session messages persisted?
+- When `run.py` returns early at line 536 (stop on error), are session messages persisted?
 - Trace `session.add_message()` to understand storage mechanism
 - Check if checkpoint files contain messages added before early return
 - Test with a failing RUN + RUN-ON-ERROR stop workflow
+
+### Priority 2: T2 - Helper Function Unit Tests
+**File:** `tests/test_run_command.py`  
+**Effort:** ~20 min  
+**Unblocked:** Yes
+
+Tasks:
+- [ ] Add tests for `_run_subprocess()` helper directly
+- [ ] Test shell vs non-shell argument handling
+- [ ] Test timeout parameter passed correctly
+- [ ] Test cwd parameter passed correctly
+
+### Priority 3: E2 - RUN Environment Variables
+**File:** `sdqctl/core/conversation.py` + `sdqctl/commands/run.py`  
+**Effort:** ~30 min  
+**Unblocked:** Yes
+
+Add `RUN-ENV` directive to set environment variables for RUN commands:
+```
+RUN-ENV API_KEY=secret
+RUN-ENV DEBUG=1
+RUN ./deploy.sh
+```
 
 ---
 
