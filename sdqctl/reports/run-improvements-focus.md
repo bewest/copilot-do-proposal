@@ -186,6 +186,22 @@ Reduced duplicated subprocess.run() from 18 lines to 6 lines at call site.
 
 ## Completed This Session
 
+**Session: 2026-01-21T23:16 - ASYNC RUN SUPPORT IMPLEMENTED**
+
+1. **Priority 1 complete:** Added RUN-ASYNC and RUN-WAIT directives
+   - Added `RUN_ASYNC`, `RUN_WAIT` to DirectiveType (conversation.py:82-83)
+   - Added `async_processes` field to ConversationFile (conversation.py:258)
+   - Added step parsing in `_apply_directive` (conversation.py:594-597)
+   - Added handlers in run.py for background execution (run.py:603-659)
+   - RUN-WAIT supports: `5`, `5s`, `500ms`, `2m` formats
+2. **All 89 tests passing** (85 + 4 new)
+3. **Usage:**
+   ```
+   RUN-ASYNC npm run dev
+   RUN-WAIT 5s
+   RUN curl localhost:3000/health
+   ```
+
 **Session: 2026-01-21T23:13 - DOCUMENTATION UPDATED**
 
 1. **Priority 3 complete:** Updated README.md with new features

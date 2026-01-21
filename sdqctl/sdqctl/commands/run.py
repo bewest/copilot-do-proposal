@@ -599,6 +599,66 @@ async def _run_async(
                             checkpoint_path = session.save_pause_checkpoint(f"RUN error: {e}")
                             console.print(f"[dim]Checkpoint saved: {checkpoint_path}[/dim]")
                             return
+                
+                elif step_type == "run_async":
+                    # Execute command in background without waiting
+                    command = step_content
+                    logger.info(f"🔧 RUN-ASYNC: {command}")
+                    progress(f"  🔧 Starting background: {command[:50]}...")
+                    
+                    # Determine working directory
+                    if conv.run_cwd:
+                        run_dir = Path(conv.run_cwd)
+                        if not run_dir.is_absolute():
+                            base = conv.source_path.parent if conv.source_path else Path.cwd()
+                            run_dir = base / run_dir
+                    elif conv.cwd:
+                        run_dir = Path(conv.cwd)
+                    else:
+                        run_dir = Path.cwd()
+                    
+                    # Build environment
+                    run_env = None
+                    if conv.run_env:
+                        import os
+                        run_env = os.environ.copy()
+                        run_env.update(conv.run_env)
+                    
+                    # Start process in background
+                    args = command if conv.allow_shell else shlex.split(command)
+                    proc = subprocess.Popen(
+                        args,
+                        shell=conv.allow_shell,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                        cwd=run_dir,
+                        env=run_env,
+                    )
+                    conv.async_processes.append((command, proc))
+                    logger.info(f"  ✓ Background process started (PID {proc.pid})")
+                    progress(f"  ✓ Background process started (PID {proc.pid})")
+                    session.add_message("system", f"[RUN-ASYNC started]\n$ {command} (PID {proc.pid})")
+                
+                elif step_type == "run_wait":
+                    # Wait/sleep for specified duration
+                    wait_spec = step_content.strip().lower()
+                    logger.info(f"⏱️ RUN-WAIT: {wait_spec}")
+                    
+                    # Parse duration: "5", "5s", "1m", "500ms"
+                    if wait_spec.endswith("ms"):
+                        wait_seconds = float(wait_spec[:-2]) / 1000
+                    elif wait_spec.endswith("m"):
+                        wait_seconds = float(wait_spec[:-1]) * 60
+                    elif wait_spec.endswith("s"):
+                        wait_seconds = float(wait_spec[:-1])
+                    else:
+                        wait_seconds = float(wait_spec)
+                    
+                    progress(f"  ⏱️ Waiting {wait_seconds}s...")
+                    time.sleep(wait_seconds)
+                    logger.info(f"  ✓ Wait complete")
+                    progress(f"  ✓ Wait complete")
 
             # Mark complete (session cleanup in finally block)
             session.state.status = "completed"

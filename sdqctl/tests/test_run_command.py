@@ -966,3 +966,55 @@ RUN pwd
         )
         assert result.returncode == 0
         assert "mysubdir" in result.stdout
+
+
+class TestRunAsyncDirective:
+    """Test RUN-ASYNC directive for background command execution."""
+    
+    def test_run_async_parsed(self):
+        """Test RUN-ASYNC directive is parsed correctly."""
+        content = """
+MODEL gpt-4
+RUN-ASYNC sleep 10
+PROMPT Check status
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert len(conv.steps) == 2
+        assert conv.steps[0].type == "run_async"
+        assert conv.steps[0].content == "sleep 10"
+        assert conv.steps[1].type == "prompt"
+    
+    def test_run_wait_parsed_seconds(self):
+        """Test RUN-WAIT directive with seconds."""
+        content = """
+MODEL gpt-4
+RUN-WAIT 5s
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert len(conv.steps) == 1
+        assert conv.steps[0].type == "run_wait"
+        assert conv.steps[0].content == "5s"
+    
+    def test_run_wait_parsed_milliseconds(self):
+        """Test RUN-WAIT directive with milliseconds."""
+        content = """
+MODEL gpt-4
+RUN-WAIT 500ms
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert conv.steps[0].type == "run_wait"
+        assert conv.steps[0].content == "500ms"
+    
+    def test_run_wait_parsed_minutes(self):
+        """Test RUN-WAIT directive with minutes."""
+        content = """
+MODEL gpt-4
+RUN-WAIT 2m
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert conv.steps[0].type == "run_wait"
+        assert conv.steps[0].content == "2m"

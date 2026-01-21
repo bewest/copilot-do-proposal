@@ -79,6 +79,8 @@ class DirectiveType(Enum):
     RUN_CWD = "RUN-CWD"  # Working directory for RUN commands
     ALLOW_SHELL = "ALLOW-SHELL"  # Enable shell=True for RUN (security opt-in)
     RUN_TIMEOUT = "RUN-TIMEOUT"  # Timeout in seconds for RUN commands
+    RUN_ASYNC = "RUN-ASYNC"  # Run command in background, don't wait
+    RUN_WAIT = "RUN-WAIT"  # Wait/sleep (e.g., 5s, 1m)
 
     # Flow control
     PAUSE = "PAUSE"
@@ -252,6 +254,7 @@ class ConversationFile:
     run_cwd: Optional[str] = None  # Working directory for RUN commands (relative to workflow dir)
     allow_shell: bool = False  # Security: must opt-in to shell=True for RUN
     run_timeout: int = 60  # Timeout in seconds for RUN commands
+    async_processes: list = field(default_factory=list)  # Background processes from RUN-ASYNC
 
     # Flow control
     pause_points: list[tuple[int, str]] = field(default_factory=list)  # (after_prompt_index, message)
@@ -587,6 +590,10 @@ def _apply_directive(conv: ConversationFile, directive: Directive) -> None:
         # Command execution settings
         case DirectiveType.RUN:
             conv.steps.append(ConversationStep(type="run", content=directive.value))
+        case DirectiveType.RUN_ASYNC:
+            conv.steps.append(ConversationStep(type="run_async", content=directive.value))
+        case DirectiveType.RUN_WAIT:
+            conv.steps.append(ConversationStep(type="run_wait", content=directive.value))
         case DirectiveType.RUN_ON_ERROR:
             conv.run_on_error = directive.value.lower()
         case DirectiveType.RUN_OUTPUT:
