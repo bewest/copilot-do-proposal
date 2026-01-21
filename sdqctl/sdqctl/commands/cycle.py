@@ -29,6 +29,8 @@ console = Console()
 @click.command("cycle")
 @click.argument("workflow", type=click.Path(exists=True))
 @click.option("--max-cycles", "-n", type=int, default=None, help="Override max cycles")
+@click.option("--session-mode", "-s", type=click.Choice(["shared", "compact", "fresh"]), 
+              default="shared", help="Session handling: shared (accumulate), compact (summarize each cycle), fresh (new session each cycle)")
 @click.option("--adapter", "-a", default=None, help="AI adapter override")
 @click.option("--model", "-m", default=None, help="Model override")
 @click.option("--checkpoint-dir", type=click.Path(), default=None, help="Checkpoint directory")
@@ -43,6 +45,7 @@ console = Console()
 def cycle(
     workflow: str,
     max_cycles: Optional[int],
+    session_mode: str,
     adapter: Optional[str],
     model: Optional[str],
     checkpoint_dir: Optional[str],
@@ -57,7 +60,7 @@ def cycle(
 ) -> None:
     """Run multi-cycle workflow with compaction."""
     asyncio.run(_cycle_async(
-        workflow, max_cycles, adapter, model, checkpoint_dir,
+        workflow, max_cycles, session_mode, adapter, model, checkpoint_dir,
         prologue, epilogue, header, footer,
         output, json_output, verbose, dry_run
     ))
@@ -66,6 +69,7 @@ def cycle(
 async def _cycle_async(
     workflow_path: str,
     max_cycles_override: Optional[int],
+    session_mode: str,
     adapter_name: Optional[str],
     model: Optional[str],
     checkpoint_dir: Optional[str],
@@ -90,7 +94,7 @@ async def _cycle_async(
 
     # Load workflow
     conv = ConversationFile.from_file(Path(workflow_path))
-    progress_print(f"Running {Path(workflow_path).name} (cycle mode)...")
+    progress_print(f"Running {Path(workflow_path).name} (cycle mode, session={session_mode})...")
 
     # Apply overrides
     if max_cycles_override:
@@ -176,9 +180,37 @@ async def _cycle_async(
                     completed=cycle_num
                 )
                 progress_print(f"  Cycle {cycle_num + 1}/{conv.max_cycles}...")
+                
+                # Add cycle number to template variables
+                cycle_vars = template_vars.copy()
+                cycle_vars["CYCLE_NUMBER"] = str(cycle_num + 1)
+                cycle_vars["CYCLE_TOTAL"] = str(conv.max_cycles)
+                cycle_vars["MAX_CYCLES"] = str(conv.max_cycles)
 
-                # Check for compaction
-                if session.needs_compaction():
+                # Session mode: fresh = new session each cycle
+                if session_mode == "fresh" and cycle_num > 0:
+                    await ai_adapter.destroy_session(adapter_session)
+                    adapter_session = await ai_adapter.create_session(
+                        AdapterConfig(model=conv.model, streaming=True)
+                    )
+                    progress_print(f"  🔄 New session for cycle {cycle_num + 1}")
+
+                # Session mode: compact = compact at start of each cycle (after first)
+                if session_mode == "compact" and cycle_num > 0:
+                    console.print(f"\n[yellow]Compacting before cycle {cycle_num + 1}...[/yellow]")
+                    progress_print(f"  🗜  Compacting context...")
+                    
+                    compact_result = await ai_adapter.compact(
+                        adapter_session,
+                        conv.compact_preserve,
+                        session.get_compaction_prompt()
+                    )
+                    
+                    console.print(f"[green]Compacted: {compact_result.tokens_before} → {compact_result.tokens_after} tokens[/green]")
+                    progress_print(f"  🗜  Compacted: {compact_result.tokens_before} → {compact_result.tokens_after} tokens")
+
+                # Check for compaction (shared mode, or when context limit reached)
+                if session_mode == "shared" and session.needs_compaction():
                     console.print(f"\n[yellow]Context near limit, compacting...[/yellow]")
                     progress_print(f"  🗜  Compacting context...")
                     
@@ -198,7 +230,11 @@ async def _cycle_async(
                     progress_print(f"  📌 Checkpoint: {checkpoint.name}")
 
                 # Run all prompts in this cycle
-                context_content = session.context.get_context_content() if cycle_num == 0 else ""
+                # For fresh mode: re-inject context on each cycle (like cycle 0)
+                if session_mode == "fresh":
+                    context_content = session.context.get_context_content()
+                else:
+                    context_content = session.context.get_context_content() if cycle_num == 0 else ""
 
                 for prompt_idx, prompt in enumerate(conv.prompts):
                     session.state.prompt_index = prompt_idx
@@ -207,15 +243,15 @@ async def _cycle_async(
                     full_prompt = build_prompt_with_injection(
                         prompt, conv.prologues, conv.epilogues, 
                         conv.source_path.parent if conv.source_path else None,
-                        template_vars
+                        cycle_vars
                     )
                     
-                    # Add context to first prompt of first cycle
-                    if cycle_num == 0 and prompt_idx == 0 and context_content:
+                    # Add context to first prompt (always for fresh, only cycle 0 for others)
+                    if prompt_idx == 0 and context_content:
                         full_prompt = f"{context_content}\n\n{full_prompt}"
                     
-                    # On subsequent cycles, add continuation context
-                    if cycle_num > 0 and prompt_idx == 0 and conv.on_context_limit_prompt:
+                    # On subsequent cycles (shared mode), add continuation context
+                    if session_mode == "shared" and cycle_num > 0 and prompt_idx == 0 and conv.on_context_limit_prompt:
                         full_prompt = f"{conv.on_context_limit_prompt}\n\n{full_prompt}"
 
                     if logger.isEnabledFor(10):  # DEBUG level
