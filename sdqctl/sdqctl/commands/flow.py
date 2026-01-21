@@ -36,7 +36,6 @@ console = Console()
 @click.option("--footer", multiple=True, help="Append to output (inline text or @file)")
 @click.option("--output-dir", "-o", type=click.Path(), default=None, help="Output directory")
 @click.option("--json", "json_output", is_flag=True, help="JSON output")
-@click.option("--verbose", "-v", is_flag=True, help="Verbose output")
 @click.option("--dry-run", is_flag=True, help="Show what would happen")
 @click.option("--continue-on-error", is_flag=True, help="Continue if a workflow fails")
 def flow(
@@ -50,7 +49,6 @@ def flow(
     footer: tuple[str, ...],
     output_dir: Optional[str],
     json_output: bool,
-    verbose: bool,
     dry_run: bool,
     continue_on_error: bool,
 ) -> None:
@@ -58,7 +56,7 @@ def flow(
     asyncio.run(_flow_async(
         patterns, parallel, adapter, model, 
         prologue, epilogue, header, footer,
-        output_dir, json_output, verbose, dry_run, continue_on_error
+        output_dir, json_output, dry_run, continue_on_error
     ))
 
 
@@ -73,7 +71,6 @@ async def _flow_async(
     cli_footers: tuple[str, ...],
     output_dir: Optional[str],
     json_output: bool,
-    verbose: bool,
     dry_run: bool,
     continue_on_error: bool,
 ) -> None:

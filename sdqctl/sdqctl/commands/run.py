@@ -103,7 +103,6 @@ console = Console()
 @click.option("--footer", multiple=True, help="Append to output (inline text or @file)")
 @click.option("--output", "-o", default=None, help="Output file")
 @click.option("--json", "json_output", is_flag=True, help="JSON output")
-@click.option("--verbose", "-v", is_flag=True, help="Verbose output")
 @click.option("--dry-run", is_flag=True, help="Show what would happen")
 def run(
     target: str,
@@ -120,7 +119,6 @@ def run(
     footer: tuple[str, ...],
     output: Optional[str],
     json_output: bool,
-    verbose: bool,
     dry_run: bool,
 ) -> None:
     """Execute a single prompt or ConversationFile.
@@ -151,7 +149,7 @@ def run(
         target, adapter, model, context, 
         allow_files, deny_files, allow_dir, deny_dir,
         prologue, epilogue, header, footer,
-        output, json_output, verbose, dry_run
+        output, json_output, dry_run
     ))
 
 
@@ -170,7 +168,6 @@ async def _run_async(
     cli_footers: tuple[str, ...],
     output_file: Optional[str],
     json_output: bool,
-    verbose: bool,
     dry_run: bool,
 ) -> None:
     """Async implementation of run command."""

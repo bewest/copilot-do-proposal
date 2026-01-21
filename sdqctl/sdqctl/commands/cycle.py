@@ -40,7 +40,6 @@ console = Console()
 @click.option("--footer", multiple=True, help="Append to output (inline text or @file)")
 @click.option("--output", "-o", default=None, help="Output file")
 @click.option("--json", "json_output", is_flag=True, help="JSON output")
-@click.option("--verbose", "-v", is_flag=True, help="Verbose output")
 @click.option("--dry-run", is_flag=True, help="Show what would happen")
 def cycle(
     workflow: str,
@@ -55,14 +54,13 @@ def cycle(
     footer: tuple[str, ...],
     output: Optional[str],
     json_output: bool,
-    verbose: bool,
     dry_run: bool,
 ) -> None:
     """Run multi-cycle workflow with compaction."""
     asyncio.run(_cycle_async(
         workflow, max_cycles, session_mode, adapter, model, checkpoint_dir,
         prologue, epilogue, header, footer,
-        output, json_output, verbose, dry_run
+        output, json_output, dry_run
     ))
 
 
@@ -79,7 +77,6 @@ async def _cycle_async(
     cli_footers: tuple[str, ...],
     output_file: Optional[str],
     json_output: bool,
-    verbose: bool,
     dry_run: bool,
 ) -> None:
     """Async implementation of cycle command."""

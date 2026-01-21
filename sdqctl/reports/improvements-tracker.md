@@ -8,6 +8,11 @@
 
 ## Completed Items (2026-01-21)
 
+### ✅ IQ-5: Verbose Flag Removed from Commands - COMPLETED
+- Removed duplicate `--verbose/-v` from run, cycle, flow, apply commands
+- Verbosity is handled by global `-v` flag in CLI group (setup_logging)
+- Reduces confusion about where to set verbosity
+
 ### ✅ P2-1: Progress Tracker Format Documented - COMPLETED
 - Added `sdqctl apply` command section to README.md
 - Documented `--progress` file format with example
@@ -142,11 +147,11 @@
 
 **Recommendation:** Use tiktoken library for accurate GPT tokenization, or document limitation.
 
-### 3. Verbose Flag Ignored in Commands (P2)
-**File:** `sdqctl/commands/run.py` line 105, 122  
-**Issue:** `--verbose` flag accepted but never used in function body
+### 3. Async Pattern Duplication (P2)
+**Files:** `commands/run.py`, `commands/cycle.py`, `commands/flow.py`, `commands/apply.py`  
+**Issue:** Each command duplicates the async runner pattern
 
-**Recommendation:** Remove duplicate flag from individual commands, or document deprecation.
+**Recommendation:** Create shared async wrapper decorator or context manager.
 
 ---
 
@@ -542,17 +547,10 @@ Mixed handling of dataclass `ConversationStep` vs dict creates fragile duck typi
 
 **Recommendation:** Ensure `conv.steps` is always a list of `ConversationStep` objects.
 
-#### IQ-5: Verbose Flag Ignored (P2)
-**File:** `sdqctl/commands/run.py` line 105, 122
+#### IQ-5: Verbose Flag Ignored ✅ FIXED
+**File:** `sdqctl/commands/run.py`, `cycle.py`, `flow.py`, `apply.py`
 
-```python
-@click.option("--verbose", "-v", is_flag=True, help="Verbose output")
-def run(..., verbose: bool, ...):
-```
-
-The `verbose` parameter is accepted but **never used** in the function body. Verbosity is controlled by the global `-v` flag instead.
-
-**Recommendation:** Remove the duplicate `--verbose` flag from individual commands, or document that it's deprecated.
+**Resolution:** Removed duplicate `--verbose/-v` flags from all commands. Verbosity is handled by global `-v` flag.
 
 #### IQ-6: Context Files Not Filtered by Restrictions ✅ FIXED
 **File:** `sdqctl/core/session.py`, `sdqctl/core/context.py`

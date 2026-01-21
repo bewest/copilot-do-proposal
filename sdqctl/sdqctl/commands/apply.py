@@ -46,7 +46,6 @@ console = Console()
 @click.option("--header", multiple=True, help="Prepend to output (inline text or @file)")
 @click.option("--footer", multiple=True, help="Append to output (inline text or @file)")
 @click.option("--output-dir", "-o", default=None, help="Output directory for results")
-@click.option("--verbose", "-v", is_flag=True, help="Verbose output")
 @click.option("--dry-run", is_flag=True, help="Show what would happen")
 def apply(
     workflow: str,
@@ -61,7 +60,6 @@ def apply(
     header: tuple[str, ...],
     footer: tuple[str, ...],
     output_dir: Optional[str],
-    verbose: bool,
     dry_run: bool,
 ) -> None:
     """Apply a workflow to multiple components.
@@ -91,7 +89,7 @@ def apply(
     asyncio.run(_apply_async(
         workflow, components, discovery_file, progress_file,
         parallel, adapter, model, prologue, epilogue, header, footer,
-        output_dir, verbose, dry_run
+        output_dir, dry_run
     ))
 
 
@@ -108,7 +106,6 @@ async def _apply_async(
     cli_headers: tuple[str, ...],
     cli_footers: tuple[str, ...],
     output_dir: Optional[str],
-    verbose: bool,
     dry_run: bool,
 ) -> None:
     """Async implementation of apply command."""
