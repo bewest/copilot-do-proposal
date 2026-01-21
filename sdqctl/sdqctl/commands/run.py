@@ -33,6 +33,53 @@ from ..core.session import Session
 logger = get_logger(__name__)
 
 
+def _run_subprocess(
+    command: str,
+    allow_shell: bool,
+    timeout: int,
+    cwd: Path,
+) -> subprocess.CompletedProcess:
+    """Execute a subprocess with consistent settings.
+    
+    Args:
+        command: Command string to execute
+        allow_shell: If True, use shell=True (allows pipes, redirects)
+        timeout: Timeout in seconds
+        cwd: Working directory for command
+        
+    Returns:
+        CompletedProcess with stdout/stderr captured as text
+    """
+    args = command if allow_shell else shlex.split(command)
+    return subprocess.run(
+        args,
+        shell=allow_shell,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        cwd=cwd,
+    )
+
+
+def _truncate_output(text: str, limit: Optional[int]) -> str:
+    """Truncate output to limit if set.
+    
+    Args:
+        text: Output text to potentially truncate
+        limit: Max characters (None = no limit)
+        
+    Returns:
+        Original text or truncated text with marker
+    """
+    if limit is None or len(text) <= limit:
+        return text
+    # Keep first half and last quarter, with truncation marker
+    head_size = limit * 2 // 3
+    tail_size = limit // 3
+    truncated = len(text) - limit
+    return f"{text[:head_size]}\n\n[... {truncated} chars truncated ...]\n\n{text[-tail_size:]}"
+
+
 def git_commit_checkpoint(
     checkpoint_name: str,
     output_file: Optional[Path] = None,
@@ -441,27 +488,12 @@ async def _run_async(
                     
                     run_start = time.time()
                     try:
-                        # Security: Use shell=False by default, require ALLOW-SHELL for shell features
-                        if conv.allow_shell:
-                            # Shell mode enabled - allows pipes, redirects, etc.
-                            result = subprocess.run(
-                                command,
-                                shell=True,
-                                capture_output=True,
-                                text=True,
-                                timeout=conv.run_timeout,
-                                cwd=conv.cwd or Path.cwd(),
-                            )
-                        else:
-                            # Safe mode - no shell injection possible
-                            result = subprocess.run(
-                                shlex.split(command),
-                                shell=False,
-                                capture_output=True,
-                                text=True,
-                                timeout=conv.run_timeout,
-                                cwd=conv.cwd or Path.cwd(),
-                            )
+                        result = _run_subprocess(
+                            command,
+                            allow_shell=conv.allow_shell,
+                            timeout=conv.run_timeout,
+                            cwd=Path(conv.cwd) if conv.cwd else Path.cwd(),
+                        )
                         run_elapsed = time.time() - run_start
                         
                         # Determine if we should include output
@@ -483,6 +515,9 @@ async def _run_async(
                             output_text = result.stdout or ""
                             if result.stderr:
                                 output_text += f"\n\n[stderr]\n{result.stderr}"
+                            
+                            # Apply output limit if configured
+                            output_text = _truncate_output(output_text, conv.run_output_limit)
                             
                             # Store as context for next prompt (add to session messages)
                             if output_text.strip():
@@ -510,6 +545,9 @@ async def _run_async(
                         partial_output = partial_stdout
                         if partial_stderr:
                             partial_output += f"\n\n[stderr]\n{partial_stderr}"
+                        
+                        # Apply output limit if configured
+                        partial_output = _truncate_output(partial_output, conv.run_output_limit)
                         
                         if partial_output.strip():
                             run_context = f"```\n$ {command}\n[TIMEOUT after {conv.run_timeout}s]\n{partial_output}\n```"

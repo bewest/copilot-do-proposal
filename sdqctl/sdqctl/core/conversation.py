@@ -74,6 +74,7 @@ class DirectiveType(Enum):
     RUN = "RUN"
     RUN_ON_ERROR = "RUN-ON-ERROR"
     RUN_OUTPUT = "RUN-OUTPUT"
+    RUN_OUTPUT_LIMIT = "RUN-OUTPUT-LIMIT"  # Max chars to capture (e.g., 10K, 50K, none)
     ALLOW_SHELL = "ALLOW-SHELL"  # Enable shell=True for RUN (security opt-in)
     RUN_TIMEOUT = "RUN-TIMEOUT"  # Timeout in seconds for RUN commands
 
@@ -244,6 +245,7 @@ class ConversationFile:
     # Command execution settings
     run_on_error: str = "stop"  # stop, continue
     run_output: str = "always"  # always, on-error, never
+    run_output_limit: Optional[int] = None  # Max chars to capture (None = unlimited)
     allow_shell: bool = False  # Security: must opt-in to shell=True for RUN
     run_timeout: int = 60  # Timeout in seconds for RUN commands
 
@@ -585,6 +587,17 @@ def _apply_directive(conv: ConversationFile, directive: Directive) -> None:
             conv.run_on_error = directive.value.lower()
         case DirectiveType.RUN_OUTPUT:
             conv.run_output = directive.value.lower()
+        case DirectiveType.RUN_OUTPUT_LIMIT:
+            # Parse limit: "10K", "50K", "100000", "none"
+            value = directive.value.strip().lower()
+            if value in ("none", "unlimited", ""):
+                conv.run_output_limit = None
+            elif value.endswith("k"):
+                conv.run_output_limit = int(value[:-1]) * 1000
+            elif value.endswith("m"):
+                conv.run_output_limit = int(value[:-1]) * 1000000
+            else:
+                conv.run_output_limit = int(value)
         case DirectiveType.ALLOW_SHELL:
             # Parse "true", "yes", "1" as True, anything else as False
             conv.allow_shell = directive.value.lower() in ("true", "yes", "1", "")

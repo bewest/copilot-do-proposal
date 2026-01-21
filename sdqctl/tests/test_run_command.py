@@ -635,3 +635,90 @@ class TestR2FailureOutputCapture:
         
         assert "[stderr]" in output_text
         assert "nonexistent" in output_text.lower() or "cannot access" in output_text.lower() or "no such" in output_text.lower()
+
+
+class TestRunOutputLimit:
+    """Test RUN-OUTPUT-LIMIT directive parsing and truncation."""
+
+    def test_run_output_limit_default_none(self):
+        """Test default is no limit."""
+        content = """MODEL gpt-4
+ADAPTER mock
+RUN echo test
+"""
+        conv = ConversationFile.parse(content)
+        assert conv.run_output_limit is None
+
+    def test_run_output_limit_numeric(self):
+        """Test parsing numeric limit."""
+        content = """MODEL gpt-4
+ADAPTER mock
+RUN-OUTPUT-LIMIT 5000
+RUN echo test
+"""
+        conv = ConversationFile.parse(content)
+        assert conv.run_output_limit == 5000
+
+    def test_run_output_limit_with_k_suffix(self):
+        """Test parsing K suffix (thousands)."""
+        content = """MODEL gpt-4
+ADAPTER mock
+RUN-OUTPUT-LIMIT 10K
+RUN echo test
+"""
+        conv = ConversationFile.parse(content)
+        assert conv.run_output_limit == 10000
+
+    def test_run_output_limit_with_m_suffix(self):
+        """Test parsing M suffix (millions)."""
+        content = """MODEL gpt-4
+ADAPTER mock
+RUN-OUTPUT-LIMIT 1M
+RUN echo test
+"""
+        conv = ConversationFile.parse(content)
+        assert conv.run_output_limit == 1000000
+
+    def test_run_output_limit_none_keyword(self):
+        """Test 'none' keyword for unlimited."""
+        content = """MODEL gpt-4
+ADAPTER mock
+RUN-OUTPUT-LIMIT none
+RUN echo test
+"""
+        conv = ConversationFile.parse(content)
+        assert conv.run_output_limit is None
+
+
+class TestTruncateOutput:
+    """Test _truncate_output helper function."""
+
+    def test_no_truncation_under_limit(self):
+        """Text under limit is unchanged."""
+        from sdqctl.commands.run import _truncate_output
+        text = "Hello world"
+        result = _truncate_output(text, 100)
+        assert result == text
+
+    def test_no_truncation_when_limit_none(self):
+        """None limit means no truncation."""
+        from sdqctl.commands.run import _truncate_output
+        text = "x" * 10000
+        result = _truncate_output(text, None)
+        assert result == text
+
+    def test_truncation_includes_marker(self):
+        """Truncated output includes marker."""
+        from sdqctl.commands.run import _truncate_output
+        text = "x" * 1000
+        result = _truncate_output(text, 100)
+        assert "truncated" in result
+        assert len(result) < len(text)
+
+    def test_truncation_preserves_head_and_tail(self):
+        """Truncated output keeps head and tail."""
+        from sdqctl.commands.run import _truncate_output
+        text = "HEAD" + "x" * 1000 + "TAIL"
+        result = _truncate_output(text, 200)
+        assert "HEAD" in result
+        assert "TAIL" in result
