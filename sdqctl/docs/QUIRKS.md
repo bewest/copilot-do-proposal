@@ -12,6 +12,7 @@ This document catalogs non-obvious behaviors discovered while developing and usi
 | [Q-002](#q-002-sdk-abort-events-not-emitted) | SDK abort events not emitted | P1 | ✅ IMPROVED |
 | [Q-003](#q-003-template-variables-in-examples-encourage-problematic-patterns) | Template variables in examples encourage problematic patterns | P2 | ✅ RESOLVED |
 | [Q-004](#q-004-verbose-logging-shows-duplicate-content) | Verbose logging shows duplicate content | P2 | ✅ IMPROVED |
+| [Q-005](#q-005-tool-names-show-unknown-in-verbose-logs) | Tool names show "unknown" in verbose logs | P2 | ✅ FIXED |
 | [Q-010](#q-010-compact-directive-ignored-by-cycle-command) | COMPACT directive ignored by cycle command | P1 | ✅ FIXED |
 
 ---
@@ -55,6 +56,64 @@ Refactored `cycle.py` to iterate `conv.steps` instead of just `conv.prompts`:
 # COMPACT directives now execute during cycle
 sdqctl cycle examples/workflows/fix-quirks.conv --adapter copilot
 # 🗜  Compacting conversation... (now appears after phase 2)
+```
+
+---
+
+## Q-005: Tool Names Show "unknown" in Verbose Logs
+
+**Priority:** P2 - Low Impact  
+**Discovered:** 2026-01-22  
+**Status:** ✅ FIXED
+
+### Description
+
+When using `-vvv` verbose mode, tool execution events sometimes showed "unknown" as the tool name instead of the actual tool being executed.
+
+### Root Cause
+
+The Copilot SDK Data object can provide tool information in multiple locations:
+- `data.tool_name` - Direct field (most common)
+- `data.name` - Generic name field  
+- `data.tool_requests` - Nested list of ToolRequest objects (for batch tool calls)
+
+The original `_get_field()` helper only checked top-level fields. When the SDK returned tool info nested in `tool_requests`, the extraction failed and fell back to "unknown".
+
+### Fix Applied (2026-01-22)
+
+Added dedicated `_get_tool_name()` helper function that:
+1. First tries direct fields: `tool_name`, `name`, `tool`
+2. Falls back to checking `tool_requests[0].name` for nested tool info
+3. Returns "unknown" only if all extraction attempts fail
+
+**Files modified:** `sdqctl/adapters/copilot.py`
+
+```python
+def _get_tool_name(data: Any) -> str:
+    """Extract tool name from event data, handling nested structures."""
+    # Try direct fields first
+    name = _get_field(data, "tool_name", "name", "tool")
+    if name:
+        return name
+    
+    # Check for tool_requests list (contains ToolRequest objects)
+    tool_requests = _get_field(data, "tool_requests")
+    if tool_requests and isinstance(tool_requests, list) and len(tool_requests) > 0:
+        first_request = tool_requests[0]
+        name = _get_field(first_request, "name", "tool_name")
+        if name:
+            return name
+    
+    return "unknown"
+```
+
+### Verification
+
+Tool events now show actual tool names at all verbosity levels:
+```bash
+sdqctl -vvv run "Check files"
+# 🔧 Tool: view  (not "🔧 Tool: unknown")
+#   ✓ view (1.2s)
 ```
 
 ---

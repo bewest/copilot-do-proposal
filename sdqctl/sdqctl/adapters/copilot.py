@@ -56,6 +56,34 @@ def _get_field(data: Any, *keys: str, default: Any = None) -> Any:
     return default
 
 
+def _get_tool_name(data: Any) -> str:
+    """Extract tool name from event data, handling nested structures.
+    
+    Tool name can appear in:
+    - data.tool_name (direct field)
+    - data.name (generic name field)
+    - data.tool (short name)
+    - data.tool_requests[0].name (nested in tool_requests list)
+    
+    Returns:
+        Tool name string, or "unknown" if not found
+    """
+    # Try direct fields first
+    name = _get_field(data, "tool_name", "name", "tool")
+    if name:
+        return name
+    
+    # Check for tool_requests list (contains ToolRequest objects)
+    tool_requests = _get_field(data, "tool_requests")
+    if tool_requests and isinstance(tool_requests, list) and len(tool_requests) > 0:
+        first_request = tool_requests[0]
+        name = _get_field(first_request, "name", "tool_name")
+        if name:
+            return name
+    
+    return "unknown"
+
+
 def _format_data(data: Any, include_fields: list[str] | None = None) -> str:
     """Format SDK Data object for logging, filtering out None values.
     
@@ -458,7 +486,7 @@ class CopilotAdapter(AdapterBase):
 
             # Tool events
             elif event_type == "tool.execution_start":
-                tool_name = _get_field(data, "tool_name", "name", "tool", default="unknown")
+                tool_name = _get_tool_name(data)
                 tool_call_id = _get_field(data, "tool_call_id", "id", default=str(turn_stats.tool_calls))
                 tool_args = _get_field(data, "arguments", "args", default={})
                 
@@ -481,7 +509,7 @@ class CopilotAdapter(AdapterBase):
                     logger.debug(f"  Args: {args_str}")
 
             elif event_type == "tool.execution_complete":
-                tool_name = _get_field(data, "tool_name", "name", "tool", default="unknown")
+                tool_name = _get_tool_name(data)
                 tool_call_id = _get_field(data, "tool_call_id", "id")
                 success = _get_field(data, "success", default=True)
                 
@@ -508,7 +536,7 @@ class CopilotAdapter(AdapterBase):
                     logger.log(TRACE, "Tool partial result")
 
             elif event_type == "tool.user_requested":
-                tool_name = _get_field(data, "tool_name", "name", "tool", default="unknown")
+                tool_name = _get_tool_name(data)
                 logger.info(f"Tool requested (user): {tool_name}")
 
             # Compaction events
