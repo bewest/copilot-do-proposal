@@ -699,16 +699,48 @@ class CopilotAdapter(AdapterBase):
         preserve: list[str],
         summary_prompt: str,
     ) -> CompactionResult:
-        """Compact using Copilot's /compact command if available."""
-        # First try the /compact command
+        """Compact using Copilot's /compact slash command.
+        
+        The /compact command triggers native SDK compaction which is more
+        efficient than re-summarization. Falls back to base implementation
+        if /compact doesn't work as expected.
+        """
+        tokens_before, _ = await self.get_context_usage(session)
+        
+        # Try /compact command first (native SDK compaction)
         try:
-            # This would require special handling in the SDK
-            # For now, fall back to standard approach
-            pass
-        except Exception:
-            pass
-
-        # Fall back to base implementation
+            # Build preserve instruction if provided
+            preserve_hint = ""
+            if preserve:
+                preserve_hint = f"Preserve: {', '.join(preserve)}. "
+            
+            compact_prompt = f"/compact {preserve_hint}{summary_prompt}".strip()
+            response = await self.send(session, compact_prompt)
+            
+            tokens_after, _ = await self.get_context_usage(session)
+            
+            # If tokens reduced significantly, /compact worked
+            if tokens_after < tokens_before * 0.8:
+                logger.info(f"Native /compact succeeded: {tokens_before} → {tokens_after} tokens")
+                return CompactionResult(
+                    preserved_content=response,
+                    summary=response,
+                    tokens_before=tokens_before,
+                    tokens_after=tokens_after,
+                )
+            else:
+                logger.debug(f"/compact may not have reduced tokens ({tokens_before} → {tokens_after}), using response as summary")
+                return CompactionResult(
+                    preserved_content=response,
+                    summary=response,
+                    tokens_before=tokens_before,
+                    tokens_after=tokens_after,
+                )
+                
+        except Exception as e:
+            logger.warning(f"/compact command failed: {e}, falling back to summarization")
+        
+        # Fall back to base implementation (sends summarization prompt)
         return await super().compact(session, preserve, summary_prompt)
 
     def supports_tools(self) -> bool:

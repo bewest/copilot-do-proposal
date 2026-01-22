@@ -446,3 +446,100 @@ This is functional but:
 - Events auto-generated from schema (forward-compatible via `UNKNOWN`)
 - Permission handler is async-capable (can prompt user)
 - Intent is ephemeral (not persisted) - must capture explicitly
+
+---
+
+## Gap: Programmatic Compaction API
+
+**Status:** ❓ Partial - Slash command exists, no direct API  
+**Investigated:** 2026-01-22
+
+### Current State
+
+The SDK **emits** compaction events but doesn't expose a direct API to **trigger** compaction:
+
+**Events available (read-only):**
+```python
+SESSION_COMPACTION_START = "session.compaction_start"   # Fired when compaction begins
+SESSION_COMPACTION_COMPLETE = "session.compaction_complete"  # Fired when done
+```
+
+**CopilotSession methods (no compact):**
+```python
+abort()           # Abort current operation
+destroy()         # End session
+get_messages()    # Get message history
+on()              # Subscribe to events
+send()            # Send message
+send_and_wait()   # Send and await response
+```
+
+### Slash Command Works
+
+The `/compact` slash command works when sent as a user message:
+
+```bash
+$ copilot -p "/compact"
+The `/compact` command summarizes conversation history to reduce context window usage.
+Since this is a fresh conversation with no prior history to summarize, there's nothing to compact.
+```
+
+### Current Implementation in sdqctl
+
+```python
+# sdqctl/adapters/copilot.py
+async def compact(self, session, preserve, summary_prompt) -> CompactionResult:
+    """Compact using Copilot's /compact slash command."""
+    # Try /compact command (generates summary but doesn't reduce context)
+    compact_prompt = f"/compact Preserve: {', '.join(preserve)}. {summary_prompt}"
+    response = await self.send(session, compact_prompt)
+    
+    # Return the summary (context window not actually reduced)
+    return CompactionResult(summary=response, ...)
+```
+
+### Testing Results (2026-01-22)
+
+**Finding:** The `/compact` slash command generates a summary but **does NOT reduce the context window**.
+
+```
+Tokens before /compact: 9,076
+Tokens after /compact:  27,392  ← INCREASED (summary added to context)
+```
+
+The `/compact` command:
+- ✅ Generates a useful summary of the conversation
+- ✅ Works as a user message
+- ❌ Does NOT trigger actual context truncation
+- ❌ Does NOT fire `session.compaction_start/complete` events
+- ❌ Adds to token count rather than reducing it
+
+**Conclusion:** `/compact` is a **summary generation** command, not a true compaction mechanism. To actually reduce context, we would need either:
+1. A native `session.compact()` API that truncates message history
+2. Manual session reset with summary injection
+
+### Feature Request
+
+**Ideal API:**
+```python
+# Programmatic compaction that actually reduces context
+result = await session.compact(preserve=["key decisions"])
+# result.tokens_before = 50000
+# result.tokens_after = 5000  ← Actually reduced
+
+# Or truncation API
+await session.truncate(keep_last=10, summary="Previous context summary...")
+```
+
+**Benefits of native compaction:**
+- Actually reduces token count
+- SDK handles message history truncation
+- Preserves internal structure
+- Fires proper `session.compaction_*` events
+
+### Current Best Practice
+
+For now, the most reliable approach is **fresh session mode** for long workflows:
+- Start new session each cycle
+- Inject summary from previous session as context
+- Reload CONTEXT files from disk (picks up any changes)
