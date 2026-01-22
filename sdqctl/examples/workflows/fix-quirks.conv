@@ -1,0 +1,121 @@
+# fix-quirks.conv - Iterate through quirks with research/implement phases
+#
+# An optimized workflow for addressing known quirks one at a time.
+# Designed to minimize context usage while maintaining focus.
+#
+# Usage:
+#   sdqctl cycle examples/workflows/fix-quirks.conv --adapter copilot -n 3
+#
+# Design principles (following QUIRKS.md guidance):
+# 1. Implementation-oriented filename (fix-, not track-)
+# 2. Minimal context injection - agent reads files on demand
+# 3. Explicit role clarification in PROLOGUE
+# 4. Single quirk focus per session
+# 5. Research blockers handled before implementation
+
+MODEL claude-opus-4.5
+ADAPTER copilot
+MODE implement
+MAX-CYCLES 3
+
+# === Role Clarification ===
+# Explicit implementation intent to override any filename inference
+PROLOGUE You are an implementation assistant. Your job is to EDIT FILES directly.
+PROLOGUE Do not describe changes - make them using edit tools.
+PROLOGUE When blocked by missing information, document the blocker and stop.
+
+# === Minimal Session Context ===
+PROLOGUE ---
+PROLOGUE Session: {{DATETIME}} | Branch: {{GIT_BRANCH}}
+PROLOGUE ---
+
+# === Implementation Reminders ===
+EPILOGUE ---
+EPILOGUE Remember:
+EPILOGUE - ONE quirk per session (do not batch)
+EPILOGUE - Research blockers → document and stop
+EPILOGUE - Implementation ready → edit files directly
+EPILOGUE - Test changes before marking complete
+
+# === Cycle 1: Select and Assess ===
+PROMPT ## Quirk Selection
+
+Review the quirks backlog at `docs/QUIRKS.md`.
+
+**Task:** Select ONE quirk to work on this session.
+
+Selection criteria:
+1. P0 quirks before P1/P2
+2. Quirks with clear "Future Fix Options" 
+3. Quirks where implementation is unblocked
+
+**Output format:**
+```
+### Selected: Q-XXX
+**Title:** [from QUIRKS.md]
+**Priority:** P0/P1/P2
+**Status:** Research needed | Ready to implement
+**Blocker (if any):** [what's missing]
+**Approach:** [which fix option, or research needed]
+```
+
+If the quirk needs research first, state what information is missing.
+If ready to implement, state which fix option you'll use.
+
+# === Cycle 2: Research or Implement ===
+PROMPT ## Execute
+
+Based on your assessment:
+
+**If research needed:**
+1. Investigate the codebase to gather missing information
+2. Document findings in a new section of `docs/QUIRKS.md` under the quirk
+3. Update the quirk's status with research results
+4. If now unblocked, proceed to implementation
+
+**If ready to implement:**
+1. Implement the fix using the approach you identified
+2. Make minimal, surgical changes
+3. Add or update tests if the fix is testable
+4. Run `pytest tests/ -v --tb=short` to verify
+
+**Do NOT just describe changes. Edit files directly.**
+
+# === Cycle 3: Verify and Document ===
+PROMPT ## Completion
+
+Summarize the work and update tracking.
+
+**If implementation completed:**
+1. Update `docs/QUIRKS.md`:
+   - Change quirk status to "Fixed" or "Mitigated"
+   - Add implementation notes
+2. List files modified
+3. Confirm tests pass
+
+**If blocked:**
+1. Update `docs/QUIRKS.md` with:
+   - What was learned
+   - What's still missing
+   - Suggested next steps
+2. Do NOT attempt workarounds - document and stop
+
+**Output:**
+```
+### Session Result: Q-XXX
+**Outcome:** Completed | Blocked | Partial
+**Files changed:** [list]
+**Tests:** Pass | Fail | N/A
+**Next action:** [if blocked, what's needed]
+```
+
+# === Output Configuration ===
+OUTPUT-FORMAT markdown
+
+# === Notes ===
+# This workflow intentionally:
+# - Does NOT inject docs/QUIRKS.md as CONTEXT (agent reads on demand)
+# - Does NOT use {{WORKFLOW_NAME}} in prompts (avoids Q-001)
+# - Uses explicit implementation language in PROLOGUE
+# - Limits to 3 cycles for focus (select → execute → verify)
+# - Stops on blockers rather than working around them
