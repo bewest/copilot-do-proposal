@@ -1,0 +1,61 @@
+# code-analysis.conv - Analyze codebase structure for documentation
+#
+# Usage:
+#   sdqctl run examples/workflows/reverse-engineering/code-analysis.conv --adapter copilot
+#
+# This workflow explores an unfamiliar codebase to understand its architecture.
+# It demonstrates the first phase of reverse engineering.
+
+MODEL gpt-4
+ADAPTER copilot
+MODE audit
+MAX-CYCLES 1
+
+PROMPT ## Codebase Analysis
+
+Explore this codebase to understand its structure and architecture.
+
+**Discovery process:**
+1. List the top-level directories and files
+2. Identify the entry points (main, CLI, API handlers)
+3. Trace from entry points to understand module structure
+4. Note key patterns and conventions
+
+**For each major component, document:**
+- Purpose: What does it do?
+- Location: Where is it?
+- Dependencies: What does it import/use?
+- Public API: What does it expose?
+
+**Output an architecture overview:**
+
+```
+project/
+├── [dir]/ - [purpose]
+│   ├── [subdir]/ - [purpose]
+│   └── [file] - [purpose]
+└── ...
+```
+
+**Key components to investigate further:**
+1. [Component] - [why interesting]
+2. [Component] - [why interesting]
+
+**Patterns observed:**
+- [Pattern name]: [where used, example]
+
+**Questions for deeper analysis:**
+- [Question about unclear area]
+
+HEADER # Architecture Overview
+HEADER Generated: {{DATETIME}}
+HEADER ---
+
+FOOTER ---
+FOOTER ## Next Steps
+FOOTER 1. Run api-docs-generator.conv for detailed API docs
+FOOTER 2. Run architecture-extraction.conv for component diagrams
+FOOTER 3. Review and validate with team members
+
+OUTPUT-FORMAT markdown
+OUTPUT-FILE docs/architecture-overview.md

@@ -1,0 +1,72 @@
+# api-docs-generator.conv - Generate API documentation from code
+#
+# Usage:
+#   sdqctl run examples/workflows/reverse-engineering/api-docs-generator.conv --adapter copilot
+#
+# This workflow generates API documentation by analyzing public interfaces.
+# Run after code-analysis.conv to have architecture context.
+
+MODEL gpt-4
+ADAPTER copilot
+MODE audit
+MAX-CYCLES 1
+
+PROMPT ## API Documentation Generation
+
+Generate API documentation for the public interfaces in this codebase.
+
+**Reference:**
+- Architecture overview is in docs/architecture-overview.md (if available)
+- Focus on public modules, classes, and functions
+
+**For each public interface, document:**
+
+### Module/Class Name
+
+**Purpose:** [description]
+
+**Location:** `path/to/file.py`
+
+#### `function_name(param1, param2, **kwargs)`
+
+[Description of what the function does]
+
+**Parameters:**
+- `param1` (type): Description
+- `param2` (type, optional): Description. Default: value
+
+**Returns:** type - Description of return value
+
+**Raises:**
+- `ErrorType`: When this condition occurs
+
+**Example:**
+```python
+result = function_name("value", 42)
+```
+
+---
+
+**Prioritize documenting:**
+1. Entry points (CLI commands, API endpoints)
+2. Core abstractions (base classes, interfaces)
+3. Public utilities (helpers users will call)
+
+**Skip:**
+- Internal/private functions (prefixed with _)
+- Test utilities
+- Build/config scripts
+
+HEADER # API Reference
+HEADER Generated: {{DATETIME}}
+HEADER ---
+
+FOOTER ---
+FOOTER ## Coverage Notes
+FOOTER - Documented: [list of modules]
+FOOTER - Skipped: [list and why]
+FOOTER 
+FOOTER For architecture context, see docs/architecture-overview.md
+
+OUTPUT-FORMAT markdown
+OUTPUT-FILE docs/API.md

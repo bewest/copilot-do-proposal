@@ -2,6 +2,17 @@
 
 This directory contains example workflows for sdqctl.
 
+## 📚 Documentation Guides
+
+For in-depth explanations, see the guides in `docs/`:
+
+| Guide | Use Case |
+|-------|----------|
+| [Getting Started](../../docs/GETTING-STARTED.md) | First steps with sdqctl |
+| [Quine Workflows](../../docs/QUINE-WORKFLOWS.md) | Self-improving iteration loops |
+| [Traceability](../../docs/TRACEABILITY-WORKFLOW.md) | Requirements → code → verification |
+| [Reverse Engineering](../../docs/REVERSE-ENGINEERING.md) | Code → documentation |
+
 ## Running Examples
 
 ```bash
@@ -24,11 +35,23 @@ sdqctl run examples/workflows/human-review.conv --adapter mock --verbose
 
 ## Available Workflows
 
+### Core Examples
 - `security-audit.conv` - Security vulnerability analysis
 - `typescript-migration.conv` - Multi-cycle TypeScript conversion
 - `documentation-sync.conv` - Documentation consistency check
 - `human-review.conv` - Human-in-the-loop review with PAUSE directive
 - `progress-tracker.conv` - Quine-like self-improving workflow
+- `test-discovery.conv` - Analyze code for test requirements
+
+### Pattern Quick Reference
+
+| Pattern | Command | When to Use |
+|---------|---------|-------------|
+| **Testing a workflow** | `sdqctl run workflow.conv --dry-run` | Before committing to cycles |
+| **Single execution** | `sdqctl run workflow.conv` | One-off tasks, priming |
+| **Iterative refinement** | `sdqctl cycle workflow.conv -n 3` | Multi-step improvements |
+| **Quine loop** | `sdqctl cycle progress-tracker.conv` | Self-improving workflows |
+| **Batch processing** | `sdqctl apply workflow.conv --components "*.py"` | Per-component work |
 
 ---
 

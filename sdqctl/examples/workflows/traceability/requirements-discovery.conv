@@ -1,0 +1,53 @@
+# requirements-discovery.conv - Extract requirements from documentation
+#
+# Usage:
+#   sdqctl run examples/workflows/traceability/requirements-discovery.conv --adapter copilot
+#
+# This workflow analyzes project documentation to extract and catalog requirements.
+# It demonstrates the first phase of forward traceability.
+
+MODEL gpt-4
+ADAPTER copilot
+MODE audit
+MAX-CYCLES 1
+
+PROLOGUE ## Context
+PROLOGUE Date: {{DATE}}
+PROLOGUE Project: {{CWD}}
+
+PROMPT ## Requirements Extraction
+
+Analyze the project documentation to extract requirements.
+
+Key documents to review:
+- README.md (project overview)
+- docs/ directory (detailed documentation)  
+- Any PROPOSAL.md or SPEC.md files
+
+For each requirement discovered:
+1. Assign a unique ID (REQ-001, REQ-002, etc.)
+2. Classify as Functional (F) or Non-Functional (NF)
+3. Write a clear, testable statement
+4. Note the source location (file:line or section)
+
+Output format:
+```markdown
+| ID | Type | Requirement | Source | Priority |
+|----|------|-------------|--------|----------|
+| REQ-001 | F | ... | README.md:45 | P1 |
+```
+
+After the table, list any ambiguous areas that need clarification.
+
+HEADER # Requirements Discovery Report
+HEADER Generated: {{DATETIME}}
+HEADER ---
+
+FOOTER ---
+FOOTER ## Next Steps
+FOOTER 1. Review and validate requirements with stakeholders
+FOOTER 2. Run spec-generator.conv to create specifications
+FOOTER 3. Update traceability matrix
+
+OUTPUT-FORMAT markdown
+OUTPUT-FILE requirements/requirements-{{DATE}}.md

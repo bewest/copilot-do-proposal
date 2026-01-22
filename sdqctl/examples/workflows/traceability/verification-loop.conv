@@ -1,0 +1,79 @@
+# verification-loop.conv - Verify traceability links across artifacts
+#
+# Usage:
+#   sdqctl run examples/workflows/traceability/verification-loop.conv --adapter copilot
+#
+# This workflow checks that requirements, specs, tests, and code are properly linked.
+# Run after creating requirements, specs, and tests.
+
+MODEL gpt-4
+ADAPTER copilot
+MODE audit
+MAX-CYCLES 1
+
+# Run any verification tools that exist
+RUN-ON-ERROR continue
+RUN-OUTPUT always
+RUN-OUTPUT-LIMIT 10K
+
+# Check for verification tooling
+RUN python tools/verify_refs.py --json 2>/dev/null || echo "No verification tool found"
+
+PROMPT ## Traceability Verification
+
+Verify that all artifacts are properly linked.
+
+**Artifacts to check:**
+- Requirements: requirements/ directory
+- Specifications: specs/ directory  
+- Tests: tests/ directory
+- Traceability matrices: traceability/ directory
+
+**Verification checklist:**
+
+1. **Requirements Coverage**
+   - How many requirements exist?
+   - Which requirements have specifications?
+   - Which requirements lack specifications?
+
+2. **Specification Coverage**
+   - Which specifications have tests?
+   - Which specifications lack tests?
+   - Are all acceptance criteria testable?
+
+3. **Test Coverage**
+   - Which tests are implemented (not TODO)?
+   - Which tests reference their specification?
+   - Are there orphan tests (no spec)?
+
+4. **Link Validity**
+   - Do all REQ-XXX references exist?
+   - Do all SPEC-XXX references exist?
+   - Are there broken references?
+
+**Output a traceability matrix:**
+
+| Requirement | Specification | Test | Status |
+|-------------|---------------|------|--------|
+| REQ-001 | SPEC-001 | test_spec001_* | ✅ Complete |
+| REQ-002 | SPEC-002 | - | ⚠️ Missing test |
+| REQ-003 | - | - | ❌ No spec |
+
+**Summary metrics:**
+- Requirements with specs: X/Y (Z%)
+- Specs with tests: X/Y (Z%)
+- Tests implemented: X/Y (Z%)
+
+HEADER # Traceability Verification Report
+HEADER Generated: {{DATETIME}}
+HEADER ---
+
+FOOTER ---
+FOOTER ## Gap Priorities
+FOOTER Address gaps in this order:
+FOOTER 1. Requirements without specs (can't test what's not specified)
+FOOTER 2. Specs without tests (can't verify compliance)
+FOOTER 3. TODO tests (can't run incomplete tests)
+
+OUTPUT-FORMAT markdown
+OUTPUT-FILE reports/traceability-verification-{{DATE}}.md
