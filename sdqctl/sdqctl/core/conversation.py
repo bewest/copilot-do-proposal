@@ -708,12 +708,16 @@ def resolve_content_reference(value: str, base_path: Optional[Path] = None) -> s
     
     Args:
         value: Either inline text or @path/to/file reference
-        base_path: Base path for relative file references
+        base_path: Base path for relative file references (workflow directory)
         
     Returns:
         The resolved content (file contents or original value)
         
     Note:
+        Resolution order for relative paths:
+        1. CWD (current working directory) - intuitive for CLI users
+        2. base_path (workflow file directory) - for self-contained workflows
+        
         Logs a warning if file reference cannot be resolved.
     """
     import logging
@@ -721,17 +725,33 @@ def resolve_content_reference(value: str, base_path: Optional[Path] = None) -> s
     
     if value.startswith("@"):
         file_path = value[1:]  # Remove @ prefix
+        
+        # Absolute paths resolve directly
+        if Path(file_path).is_absolute():
+            full_path = Path(file_path)
+            if full_path.exists():
+                return full_path.read_text()
+            else:
+                logger.warning(f"File reference not found: {value} (resolved to {full_path})")
+                return value
+        
+        # Try CWD first (intuitive for CLI users)
+        cwd_path = Path.cwd() / file_path
+        if cwd_path.exists():
+            return cwd_path.read_text()
+        
+        # Fall back to base_path (workflow directory)
         if base_path:
             full_path = base_path / file_path
-        else:
-            full_path = Path(file_path)
+            if full_path.exists():
+                return full_path.read_text()
         
-        if full_path.exists():
-            return full_path.read_text()
+        # Neither worked - log warning with both attempted paths
+        if base_path:
+            logger.warning(f"File reference not found: {value} (tried {cwd_path} and {base_path / file_path})")
         else:
-            # Log warning for unresolved file reference
-            logger.warning(f"File reference not found: {value} (resolved to {full_path})")
-            return value
+            logger.warning(f"File reference not found: {value} (resolved to {cwd_path})")
+        return value
     return value
 
 
