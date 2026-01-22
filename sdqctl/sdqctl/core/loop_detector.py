@@ -43,6 +43,30 @@ MIN_RESPONSE_LENGTH = 100
 # Lowered to 2 for faster loop detection (Q-002 fix)
 IDENTICAL_RESPONSE_THRESHOLD = 2
 
+# Default instruction template for agent stop signaling
+# Injected on first prompt when stop file support is enabled
+STOP_FILE_INSTRUCTION = """## Automation Control
+
+If you detect you are in a repetitive loop, cannot make further progress,
+or need human review, create this file to stop automation:
+
+    ${STOP_FILE}
+
+Include JSON explaining why: {"reason": "...", "needs_review": true}
+"""
+
+
+def get_stop_file_instruction(stop_file_name: str) -> str:
+    """Get the stop file instruction with the filename substituted.
+    
+    Args:
+        stop_file_name: The actual stop file name (e.g., STOPAUTOMATION-abc123.json)
+        
+    Returns:
+        Instruction text ready to inject into prompt
+    """
+    return STOP_FILE_INSTRUCTION.replace("${STOP_FILE}", stop_file_name)
+
 
 @dataclass
 class LoopDetector:

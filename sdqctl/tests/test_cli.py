@@ -34,6 +34,12 @@ class TestCliHelp:
 class TestRunCommand:
     """Test sdqctl run command."""
 
+    def test_run_help_shows_stop_file_option(self, cli_runner):
+        """Test run --help shows --no-stop-file-prologue option."""
+        result = cli_runner.invoke(cli, ["run", "--help"])
+        assert result.exit_code == 0
+        assert "--no-stop-file-prologue" in result.output
+
     def test_run_dry_run_inline_prompt(self, cli_runner):
         """Test sdqctl run --dry-run with inline prompt."""
         result = cli_runner.invoke(cli, ["run", "Test prompt", "--dry-run"])

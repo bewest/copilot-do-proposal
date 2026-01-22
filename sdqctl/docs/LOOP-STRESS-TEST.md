@@ -77,9 +77,20 @@ The agent can create a stop file to explicitly request automation stop:
 - `STOP_FILE` triggers when the file is detected during any cycle
 - Session hash is derived from session ID for security (agent must know the ID)
 
-**Enabling Stop File Support:**
+**Default Behavior (Enabled by Default):**
 
-The `${STOP_FILE}` template variable is now available in prompts. Add this to your workflow's PROLOGUE to enable agent-initiated stops:
+Stop file instructions are now **automatically injected** on the first prompt of each session. The agent is told the exact filename to create. To disable:
+
+```bash
+# Disable automatic stop file instructions
+sdqctl run workflow.conv --no-stop-file-prologue
+sdqctl cycle workflow.conv --no-stop-file-prologue
+sdqctl apply workflow.conv --components "*.py" --no-stop-file-prologue
+```
+
+**Manual Configuration (Legacy):**
+
+If you've disabled the automatic injection, you can still use the `${STOP_FILE}` template variable in a custom PROLOGUE:
 
 ```conv
 PROLOGUE @stop-file-instructions.md

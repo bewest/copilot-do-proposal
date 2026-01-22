@@ -27,6 +27,7 @@ from .utils import run_async
 from ..core.conversation import ConversationFile, FileRestrictions, substitute_template_variables
 from ..core.exceptions import MissingContextFiles
 from ..core.logging import get_logger
+from ..core.loop_detector import get_stop_file_instruction
 from ..core.progress import progress, ProgressTracker
 from ..core.session import Session
 
@@ -166,6 +167,7 @@ console = Console()
 @click.option("--json", "json_output", is_flag=True, help="JSON output")
 @click.option("--dry-run", is_flag=True, help="Show what would happen")
 @click.option("--render-only", is_flag=True, help="Render prompts without executing (no AI calls)")
+@click.option("--no-stop-file-prologue", is_flag=True, help="Disable automatic stop file instructions")
 def run(
     target: str,
     adapter: Optional[str],
@@ -184,6 +186,7 @@ def run(
     json_output: bool,
     dry_run: bool,
     render_only: bool,
+    no_stop_file_prologue: bool,
 ) -> None:
     """Execute a single prompt or ConversationFile.
     
@@ -252,7 +255,7 @@ def run(
         target, adapter, model, context, 
         allow_files, deny_files, allow_dir, deny_dir,
         prologue, epilogue, header, footer,
-        output, event_log, json_output, dry_run
+        output, event_log, json_output, dry_run, no_stop_file_prologue
     ))
 
 
@@ -273,6 +276,7 @@ async def _run_async(
     event_log_path: Optional[str],
     json_output: bool,
     dry_run: bool,
+    no_stop_file_prologue: bool = False,
 ) -> None:
     """Async implementation of run command."""
     from ..core.conversation import (
@@ -465,6 +469,17 @@ async def _run_async(
                     full_prompt = injected_prompt
                     if first_prompt and context_content:
                         full_prompt = f"{context_content}\n\n{injected_prompt}"
+                    
+                    # Add stop file instruction on first prompt (Q-002)
+                    if first_prompt and not no_stop_file_prologue:
+                        # Generate stop file name from session ID
+                        import hashlib
+                        session_hash = hashlib.sha256(session.id.encode()).hexdigest()[:12]
+                        stop_file_name = f"STOPAUTOMATION-{session_hash}.json"
+                        stop_instruction = get_stop_file_instruction(stop_file_name)
+                        full_prompt = f"{full_prompt}\n\n{stop_instruction}"
+                    
+                    if first_prompt:
                         first_prompt = False
 
                     # Stream response

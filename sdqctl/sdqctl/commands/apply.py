@@ -26,6 +26,7 @@ from ..adapters.base import AdapterConfig
 from .utils import run_async
 from ..core.conversation import ConversationFile, apply_iteration_context
 from ..core.logging import get_logger
+from ..core.loop_detector import get_stop_file_instruction
 from ..core.progress import progress as progress_print
 from ..core.session import Session
 
@@ -48,6 +49,7 @@ console = Console()
 @click.option("--footer", multiple=True, help="Append to output (inline text or @file)")
 @click.option("--output-dir", "-o", default=None, help="Output directory for results")
 @click.option("--dry-run", is_flag=True, help="Show what would happen")
+@click.option("--no-stop-file-prologue", is_flag=True, help="Disable automatic stop file instructions")
 def apply(
     workflow: str,
     components: Optional[str],
@@ -62,6 +64,7 @@ def apply(
     footer: tuple[str, ...],
     output_dir: Optional[str],
     dry_run: bool,
+    no_stop_file_prologue: bool,
 ) -> None:
     """Apply a workflow to multiple components.
     
@@ -90,7 +93,7 @@ def apply(
     run_async(_apply_async(
         workflow, components, discovery_file, progress_file,
         parallel, adapter, model, prologue, epilogue, header, footer,
-        output_dir, dry_run
+        output_dir, dry_run, no_stop_file_prologue
     ))
 
 
@@ -108,6 +111,7 @@ async def _apply_async(
     cli_footers: tuple[str, ...],
     output_dir: Optional[str],
     dry_run: bool,
+    no_stop_file_prologue: bool = False,
 ) -> None:
     """Async implementation of apply command."""
     from ..core.conversation import (
@@ -243,7 +247,7 @@ async def _apply_async(
                 for i, comp in enumerate(component_list, 1):
                     task = _process_component_with_semaphore(
                         semaphore, conv, comp, i, len(component_list),
-                        ai_adapter, progress_data
+                        ai_adapter, progress_data, no_stop_file_prologue
                     )
                     tasks.append(task)
                 await asyncio.gather(*tasks)
@@ -262,7 +266,7 @@ async def _apply_async(
                         progress.update(task, description=f"[{i}/{len(component_list)}] {comp['path']}")
                         await _process_single_component(
                             conv, comp, i, len(component_list),
-                            ai_adapter, progress_data
+                            ai_adapter, progress_data, no_stop_file_prologue
                         )
                         progress.advance(task)
     
@@ -286,11 +290,12 @@ async def _process_component_with_semaphore(
     total: int,
     ai_adapter,
     progress_data: "ProgressTracker",
+    no_stop_file_prologue: bool = False,
 ) -> None:
     """Process a single component with semaphore for parallel limiting."""
     async with semaphore:
         await _process_single_component(
-            conv, component, index, total, ai_adapter, progress_data
+            conv, component, index, total, ai_adapter, progress_data, no_stop_file_prologue
         )
 
 
@@ -301,6 +306,7 @@ async def _process_single_component(
     total: int,
     ai_adapter,
     progress_data: "ProgressTracker",
+    no_stop_file_prologue: bool = False,
 ) -> None:
     """Process a single component through the workflow."""
     from ..core.conversation import (
@@ -347,6 +353,14 @@ async def _process_single_component(
             )
             if i == 0 and context_content:
                 full_prompt = f"{context_content}\n\n{full_prompt}"
+            
+            # Add stop file instruction on first prompt of each component (Q-002)
+            if i == 0 and not no_stop_file_prologue:
+                import hashlib
+                session_hash = hashlib.sha256(session.id.encode()).hexdigest()[:12]
+                stop_file_name = f"STOPAUTOMATION-{session_hash}.json"
+                stop_instruction = get_stop_file_instruction(stop_file_name)
+                full_prompt = f"{full_prompt}\n\n{stop_instruction}"
             
             response = await ai_adapter.send(adapter_session, full_prompt)
             responses.append(response)

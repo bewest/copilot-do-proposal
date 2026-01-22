@@ -31,9 +31,9 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from ..adapters import get_adapter
 from ..adapters.base import AdapterConfig
 from ..core.conversation import ConversationFile
-from ..core.exceptions import ExitCode, LoopDetected, MissingContextFiles
+from ..core.exceptions import ExitCode, LoopDetected, LoopReason, MissingContextFiles
 from ..core.logging import get_logger
-from ..core.loop_detector import LoopDetector
+from ..core.loop_detector import LoopDetector, get_stop_file_instruction
 from ..core.progress import progress as progress_print
 from ..core.session import Session
 from .utils import run_async
@@ -67,6 +67,7 @@ SESSION_MODES = {
 @click.option("--json", "json_output", is_flag=True, help="JSON output")
 @click.option("--dry-run", is_flag=True, help="Show what would happen")
 @click.option("--render-only", is_flag=True, help="Render prompts without executing (no AI calls)")
+@click.option("--no-stop-file-prologue", is_flag=True, help="Disable automatic stop file instructions")
 def cycle(
     workflow: str,
     max_cycles: Optional[int],
@@ -83,6 +84,7 @@ def cycle(
     json_output: bool,
     dry_run: bool,
     render_only: bool,
+    no_stop_file_prologue: bool,
 ) -> None:
     """Run multi-cycle workflow with compaction."""
     # Handle --render-only by delegating to render logic
@@ -151,7 +153,7 @@ def cycle(
     run_async(_cycle_async(
         workflow, max_cycles, session_mode, adapter, model, checkpoint_dir,
         prologue, epilogue, header, footer,
-        output, event_log, json_output, dry_run
+        output, event_log, json_output, dry_run, no_stop_file_prologue
     ))
 
 
@@ -170,6 +172,7 @@ async def _cycle_async(
     event_log_path: Optional[str],
     json_output: bool,
     dry_run: bool,
+    no_stop_file_prologue: bool = False,
 ) -> None:
     """Execute multi-cycle workflow with session management.
     
@@ -410,6 +413,17 @@ async def _cycle_async(
                             if prompt_idx == 0 and context_content:
                                 full_prompt = f"{context_content}\n\n{full_prompt}"
                             
+                            # Add stop file instruction on first prompt of session (Q-002)
+                            # For fresh mode: inject each cycle. For accumulate: only cycle 0.
+                            should_inject_stop_file = (
+                                not no_stop_file_prologue and 
+                                prompt_idx == 0 and 
+                                (session_mode == "fresh" or cycle_num == 0)
+                            )
+                            if should_inject_stop_file:
+                                stop_instruction = get_stop_file_instruction(loop_detector.stop_file_name)
+                                full_prompt = f"{full_prompt}\n\n{stop_instruction}"
+                            
                             # On subsequent cycles (accumulate mode), add continuation context
                             if session_mode == "accumulate" and cycle_num > 0 and prompt_idx == 0 and conv.on_context_limit_prompt:
                                 full_prompt = f"{conv.on_context_limit_prompt}\n\n{full_prompt}"
@@ -433,8 +447,17 @@ async def _cycle_async(
                             # Check for loop after each response
                             combined_reasoning = " ".join(last_reasoning) if last_reasoning else None
                             if loop_result := loop_detector.check(combined_reasoning, response, cycle_num):
-                                console.print(f"\n[red]⚠️  {loop_result}[/red]")
-                                progress_print(f"  ⚠️  Loop detected: {loop_result.reason.value}")
+                                # Special handling for stop file (agent-initiated stop)
+                                if loop_result.reason == LoopReason.STOP_FILE:
+                                    console.print(f"\n[yellow]⚠️  Agent requested stop via {loop_detector.stop_file_name}[/yellow]")
+                                    console.print(f"[yellow]   Reason: {loop_result.details}[/yellow]")
+                                    console.print(f"[yellow]   Session: {session.id}[/yellow]")
+                                    console.print(f"[yellow]   Cycle: {cycle_num + 1}/{conv.max_cycles}[/yellow]")
+                                    console.print(f"\n[dim]Review the agent's work and decide next steps.[/dim]")
+                                    progress_print(f"  ⚠️  Agent stop: {loop_result.details}")
+                                else:
+                                    console.print(f"\n[red]⚠️  {loop_result}[/red]")
+                                    progress_print(f"  ⚠️  Loop detected: {loop_result.reason.value}")
                                 raise loop_result
                             
                             session.add_message("user", prompt)

@@ -302,3 +302,24 @@ class TestLoopDetectorStopFile:
         # Cleanup when no file
         result = detector.cleanup_stop_file()
         assert result is False
+
+
+class TestStopFileInstruction:
+    """Test stop file instruction template (Q-002)."""
+
+    def test_get_stop_file_instruction(self):
+        """get_stop_file_instruction substitutes filename correctly."""
+        from sdqctl.core.loop_detector import get_stop_file_instruction, STOP_FILE_INSTRUCTION
+        
+        result = get_stop_file_instruction("STOPAUTOMATION-abc123.json")
+        
+        assert "STOPAUTOMATION-abc123.json" in result
+        assert "${STOP_FILE}" not in result
+        assert "Automation Control" in result
+        assert "needs_review" in result
+
+    def test_stop_file_instruction_template_has_variable(self):
+        """STOP_FILE_INSTRUCTION template contains ${STOP_FILE} placeholder."""
+        from sdqctl.core.loop_detector import STOP_FILE_INSTRUCTION
+        
+        assert "${STOP_FILE}" in STOP_FILE_INSTRUCTION

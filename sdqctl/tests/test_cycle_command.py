@@ -23,6 +23,12 @@ class TestCycleCommandBasic:
         assert "--max-cycles" in result.output
         assert "--checkpoint-dir" in result.output
 
+    def test_cycle_help_shows_stop_file_option(self, cli_runner):
+        """Test cycle --help shows --no-stop-file-prologue option."""
+        result = cli_runner.invoke(cli, ["cycle", "--help"])
+        assert result.exit_code == 0
+        assert "--no-stop-file-prologue" in result.output
+
     def test_cycle_dry_run(self, cli_runner, workflow_file):
         """Test cycle --dry-run shows configuration."""
         result = cli_runner.invoke(cli, ["cycle", str(workflow_file), "--dry-run"])

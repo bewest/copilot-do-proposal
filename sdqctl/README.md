@@ -162,8 +162,9 @@ Available in PROLOGUE, EPILOGUE, HEADER, FOOTER, PROMPT, and OUTPUT paths:
 > to avoid influencing agent behavior. Use `__WORKFLOW_NAME__` for explicit opt-in.
 > See [docs/QUIRKS.md](docs/QUIRKS.md#q-001-workflow-filename-influences-agent-behavior) for details.
 >
-> **Stop File:** Use `{{STOP_FILE}}` in a PROLOGUE to tell the agent how to signal
-> it needs human review. See [docs/LOOP-STRESS-TEST.md](docs/LOOP-STRESS-TEST.md#4-stop-file-detection) for details.
+> **Stop File (Enabled by Default):** Stop file instructions are automatically injected
+> on the first prompt. The agent can create `{{STOP_FILE}}` to request human review.
+> Use `--no-stop-file-prologue` to disable. See [docs/LOOP-STRESS-TEST.md](docs/LOOP-STRESS-TEST.md#4-stop-file-detection).
 
 ### Prompt/Output Injection
 

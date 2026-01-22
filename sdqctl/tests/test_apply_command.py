@@ -24,6 +24,12 @@ class TestApplyCommandBasic:
         assert "--from-discovery" in result.output
         assert "--progress" in result.output
 
+    def test_apply_help_shows_stop_file_option(self, cli_runner):
+        """Test apply --help shows --no-stop-file-prologue option."""
+        result = cli_runner.invoke(cli, ["apply", "--help"])
+        assert result.exit_code == 0
+        assert "--no-stop-file-prologue" in result.output
+
     def test_apply_requires_workflow(self, cli_runner):
         """Test apply requires workflow argument."""
         result = cli_runner.invoke(cli, ["apply"])
