@@ -342,6 +342,57 @@ PROMPT Inline prompt.
         assert restored.conversation.model == "gpt-4"
 
 
+class TestReloadContext:
+    """Tests for CONTEXT file reloading (fresh mode support)."""
+
+    def test_reload_context_clears_and_reloads(self, temp_workspace):
+        """Test reload_context clears files and re-reads from disk."""
+        content = f"""MODEL gpt-4
+ADAPTER mock
+CWD {temp_workspace}
+CONTEXT @lib/auth.js
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        session = Session(conv)
+        
+        # Initial load should have the file
+        assert len(session.context.files) == 1
+        assert "function login()" in session.context.files[0].content
+        
+        # Modify the file on disk
+        (temp_workspace / "lib" / "auth.js").write_text("function newAuth() { return 'changed'; }")
+        
+        # Reload should pick up the change
+        session.reload_context()
+        
+        assert len(session.context.files) == 1
+        assert "function newAuth" in session.context.files[0].content
+        assert "changed" in session.context.files[0].content
+
+    def test_reload_context_preserves_conversation_tokens(self, temp_workspace):
+        """Test reload_context doesn't reset conversation token count."""
+        content = f"""MODEL gpt-4
+ADAPTER mock
+CWD {temp_workspace}
+CONTEXT @lib/auth.js
+PROMPT Test.
+"""
+        conv = ConversationFile.parse(content)
+        session = Session(conv)
+        
+        # Simulate conversation activity
+        session.add_message("user", "Hello world")
+        session.add_message("assistant", "Hi there, how can I help?")
+        conv_tokens_before = session.context.conversation_tokens
+        
+        # Reload context
+        session.reload_context()
+        
+        # Conversation tokens should be preserved
+        assert session.context.conversation_tokens == conv_tokens_before
+
+
 class TestCompaction:
     """Tests for compaction triggers and prompts."""
 

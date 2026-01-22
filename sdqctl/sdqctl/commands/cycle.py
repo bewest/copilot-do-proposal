@@ -32,8 +32,8 @@ console = Console()
 @click.command("cycle")
 @click.argument("workflow", type=click.Path(exists=True))
 @click.option("--max-cycles", "-n", type=int, default=None, help="Override max cycles")
-@click.option("--session-mode", "-s", type=click.Choice(["shared", "compact", "fresh"]), 
-              default="shared", help="Session handling: shared (accumulate), compact (summarize each cycle), fresh (new session each cycle)")
+@click.option("--session-mode", "-s", type=click.Choice(["accumulate", "compact", "fresh"]), 
+              default="accumulate", help="Session handling: accumulate (grow context), compact (summarize each cycle), fresh (new session each cycle)")
 @click.option("--adapter", "-a", default=None, help="AI adapter override")
 @click.option("--model", "-m", default=None, help="Model override")
 @click.option("--checkpoint-dir", type=click.Path(), default=None, help="Checkpoint directory")
@@ -75,8 +75,8 @@ def cycle(
         if epilogue:
             conv.epilogues = list(epilogue) + conv.epilogues
         
-        # Map session mode names (shared -> accumulate for render)
-        render_session_mode = "accumulate" if session_mode == "shared" else session_mode
+        # Map session mode names for render (accumulate is canonical)
+        render_session_mode = session_mode
         
         rendered = render_workflow(
             conv, 
@@ -273,6 +273,8 @@ async def _cycle_async(
                         adapter_session = await ai_adapter.create_session(
                             AdapterConfig(model=conv.model, streaming=True)
                         )
+                        # Reload CONTEXT files from disk (pick up any changes)
+                        session.reload_context()
                         progress_print(f"  🔄 New session for cycle {cycle_num + 1}")
 
                     # Session mode: compact = compact at start of each cycle (after first)
@@ -289,8 +291,8 @@ async def _cycle_async(
                         console.print(f"[green]Compacted: {compact_result.tokens_before} → {compact_result.tokens_after} tokens[/green]")
                         progress_print(f"  🗜  Compacted: {compact_result.tokens_before} → {compact_result.tokens_after} tokens")
 
-                    # Check for compaction (shared mode, or when context limit reached)
-                    if session_mode == "shared" and session.needs_compaction():
+                    # Check for compaction (accumulate mode, or when context limit reached)
+                    if session_mode == "accumulate" and session.needs_compaction():
                         console.print(f"\n[yellow]Context near limit, compacting...[/yellow]")
                         progress_print(f"  🗜  Compacting context...")
                         
@@ -330,8 +332,8 @@ async def _cycle_async(
                         if prompt_idx == 0 and context_content:
                             full_prompt = f"{context_content}\n\n{full_prompt}"
                         
-                        # On subsequent cycles (shared mode), add continuation context
-                        if session_mode == "shared" and cycle_num > 0 and prompt_idx == 0 and conv.on_context_limit_prompt:
+                        # On subsequent cycles (accumulate mode), add continuation context
+                        if session_mode == "accumulate" and cycle_num > 0 and prompt_idx == 0 and conv.on_context_limit_prompt:
                             full_prompt = f"{conv.on_context_limit_prompt}\n\n{full_prompt}"
 
                         if logger.isEnabledFor(10):  # DEBUG level

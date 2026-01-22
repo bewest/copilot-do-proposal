@@ -93,6 +93,19 @@ class Session:
         for pattern in conversation.context_files:
             self.context.add_pattern(pattern)
 
+    def reload_context(self) -> None:
+        """Reload CONTEXT files from disk.
+        
+        Used by fresh mode to pick up file changes between cycles.
+        Preserves ContextManager config (base_path, limit_threshold, path_filter).
+        """
+        # Clear existing files (preserves conversation token count)
+        self.context.clear_files()
+        
+        # Re-load from disk using stored patterns
+        for pattern in self.conversation.context_files:
+            self.context.add_pattern(pattern)
+
     def add_message(self, role: str, content: str, **metadata) -> Message:
         """Add a message to the conversation."""
         msg = Message(role=role, content=content, metadata=metadata)
