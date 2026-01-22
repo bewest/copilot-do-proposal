@@ -14,6 +14,11 @@ This document catalogs non-obvious behaviors discovered while developing and usi
 
 ---
 
+Also annoying: logging with -vvvv, the delta message often have duplicate material and make things hard to read.
+For the statements that say "output this stuff", it would be nice to
+potentially see reasoning/actions taken at the default level.
+
+
 ## Q-001: Workflow Filename Influences Agent Behavior
 
 **Priority:** P0 - High Impact  
