@@ -4,6 +4,19 @@ sdqctl cycle - Run multi-cycle workflow with compaction.
 Usage:
     sdqctl cycle workflow.conv --max-cycles 5
     sdqctl cycle workflow.conv --checkpoint-dir ./checkpoints
+
+Session Modes:
+    accumulate  Context grows across cycles. Compaction triggered only when
+                approaching context limit. Best for iterative refinement where
+                prior context is valuable.
+                
+    compact     Summarize conversation after each cycle. Keeps session but
+                reduces token usage. Best for long-running workflows where
+                recent context matters more than full history.
+                
+    fresh       Start new adapter session each cycle. CONTEXT files are
+                reloaded from disk, picking up any changes. Best for
+                autonomous workflows that modify files between cycles.
 """
 
 import sys
@@ -27,6 +40,14 @@ from .utils import run_async
 
 logger = get_logger(__name__)
 console = Console()
+
+
+# Session mode descriptions for help and documentation
+SESSION_MODES = {
+    "accumulate": "Context grows, compact only at limit",
+    "compact": "Summarize after each cycle",
+    "fresh": "New session each cycle, reload files",
+}
 
 
 @click.command("cycle")
@@ -147,7 +168,19 @@ async def _cycle_async(
     json_output: bool,
     dry_run: bool,
 ) -> None:
-    """Async implementation of cycle command."""
+    """Execute multi-cycle workflow with session management.
+    
+    Session modes control how context is managed across cycles:
+    
+    - accumulate: Keep full conversation history. Compaction only triggers
+      when approaching the context limit. Use for iterative refinement.
+      
+    - compact: Summarize conversation after each cycle to reduce tokens.
+      Maintains session continuity while managing context growth.
+      
+    - fresh: Create new adapter session each cycle. Reloads CONTEXT files
+      from disk, so file changes made during cycle N are visible in N+1.
+    """
     from ..core.conversation import (
         build_prompt_with_injection,
         build_output_with_injection,

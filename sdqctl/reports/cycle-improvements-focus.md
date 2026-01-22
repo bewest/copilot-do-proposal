@@ -3,7 +3,7 @@
 **Topic:** `sdqctl cycle` command session management  
 **Source:** User feedback + code analysis  
 **Created:** 2026-01-21  
-**Status:** In Progress (C1 ✅, T1 ✅, E1 ✅, Q1 pending)
+**Status:** Complete (C1 ✅, T1 ✅, E1 ✅, Q1 ✅)
 
 ---
 
@@ -155,8 +155,8 @@ for pattern in conversation.context_files:
 - `README.md`: Session modes documentation section
 
 **Acceptance Criteria:**
-- [ ] Each mode has clear documented behavior
-- [ ] README has comparison table
+- [x] Each mode has clear documented behavior
+- [x] README has comparison table
 
 ---
 
@@ -207,8 +207,8 @@ class TestCycleSessionModes:
 
 ### Current Session
 - **Date:** 2026-01-21/2026-01-22
-- **Focus:** E1 Implementation - Rename shared → accumulate
-- **Status:** ✅ Completed E1
+- **Focus:** Q1 Implementation - Document Session Mode Semantics
+- **Status:** ✅ All tasks complete!
 
 ### Completed Items
 - [x] Analyzed cycle.py implementation
@@ -222,13 +222,18 @@ class TestCycleSessionModes:
 - [x] **Bugfix: Extended mock adapter responses** (mock.py:27-31) - fixed loop detector triggering
 - [x] **E1: Renamed 'shared' → 'accumulate'** (cycle.py:35-36, 78-79, 294-295, 335-336)
 - [x] **E1: Updated tests** (test_cycle_command.py - 4 occurrences)
+- [x] **Q1: Added module docstring with session mode docs** (cycle.py:1-19)
+- [x] **Q1: Added SESSION_MODES constant** (cycle.py:44-48)
+- [x] **Q1: Enhanced _cycle_async docstring** (cycle.py:171-182)
+- [x] **Q1: Added README session modes section** (README.md:276-294)
 
 ### Remaining Work
-- [ ] Q1: Update documentation (README session modes section)
+- [x] Q1: Update documentation (README session modes section) ✅
 
 ### Git Commits (2026-01-22)
 - `e2dd4f6` feat(cycle): implement session mode improvements (C1, T1, E1)
-- `4eaa393` docs: update cycle improvements focus and progress
+- `9d3dd6c` docs: update cycle improvements focus and progress
+- `0719614` chore: disable heavy CONTEXT files in progress-tracker workflow
 
 ---
 
@@ -276,16 +281,7 @@ class TestCycleSessionModes:
 
 ## Next 3 Taskable Areas
 
-### 1. Q1: Document Session Mode Semantics (High Priority)
-Add clear documentation for session modes:
-- Docstring expansion in `_cycle_async()` explaining each mode
-- SESSION_MODES constant with formal descriptions
-- README comparison table
-
-**Files:** `cycle.py`, `README.md`  
-**Effort:** ~30 lines of documentation
-
-### 2. Loop Detector Tuning (Medium Priority - Research)
+### 1. Loop Detector Tuning (Medium Priority - Research)
 The mock adapter fix revealed loop detector may be too aggressive:
 - MIN_RESPONSE_LENGTH = 50 chars triggers on valid short responses
 - Consider: adaptive thresholds based on prompt type?
@@ -294,7 +290,7 @@ The mock adapter fix revealed loop detector may be too aggressive:
 **Files:** `loop_detector.py`  
 **Effort:** Research needed before implementation
 
-### 3. Fresh Mode Enhancements (Low Priority - Future)
+### 2. Fresh Mode Enhancements (Low Priority - Future)
 Potential improvements for fresh mode:
 - Option to preserve specific context across cycles
 - Selective file reload (only modified files)
@@ -302,6 +298,15 @@ Potential improvements for fresh mode:
 
 **Files:** `session.py`, `cycle.py`  
 **Effort:** Design discussion needed
+
+### 3. New Topic Selection
+This focus topic is complete! Consider:
+- RUN directive execution improvements
+- Adapter reliability and retry logic
+- Checkpoint/resume workflow enhancements
+
+**Files:** Various  
+**Effort:** New focus document needed
 
 ---
 

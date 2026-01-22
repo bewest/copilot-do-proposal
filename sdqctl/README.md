@@ -275,6 +275,24 @@ sdqctl cycle workflow.conv --checkpoint-dir ./checkpoints
 sdqctl cycle workflow.conv -n 3 --render-only  # Preview all cycles
 ```
 
+#### Session Modes
+
+The `--session-mode` option controls how context is managed across cycles:
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| `accumulate` | Context grows, compact only at limit | Iterative refinement |
+| `compact` | Summarize after each cycle | Long-running workflows |
+| `fresh` | New session each cycle, reload files | Autonomous file editing |
+
+```bash
+# Fresh mode: each cycle sees file changes from previous cycles
+sdqctl cycle workflow.conv -n 5 --session-mode fresh
+
+# Compact mode: summarize between cycles to manage token usage
+sdqctl cycle workflow.conv -n 10 --session-mode compact
+```
+
 ### `sdqctl render`
 
 Render workflow prompts without executing (no AI calls):
