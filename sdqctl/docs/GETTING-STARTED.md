@@ -223,6 +223,7 @@ Once comfortable with `run`, explore:
 1. **[Quine Workflows](QUINE-WORKFLOWS.md)** — Self-improving iteration patterns
 2. **[Traceability Workflows](TRACEABILITY-WORKFLOW.md)** — Requirements → code → verification
 3. **[Reverse Engineering](REVERSE-ENGINEERING.md)** — Code → documentation
+4. **[Known Quirks](QUIRKS.md)** — Surprising behaviors and workarounds
 
 See `examples/workflows/` for ready-to-use templates.
 
