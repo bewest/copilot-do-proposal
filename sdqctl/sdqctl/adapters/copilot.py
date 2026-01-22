@@ -393,10 +393,12 @@ class CopilotAdapter(AdapterBase):
                     on_reasoning(reasoning)
 
             elif event_type == "assistant.reasoning_delta":
-                # Very verbose - only at TRACE level
+                # Skip logging deltas - we get full reasoning in assistant.reasoning
+                # This avoids duplicate content at verbose levels (Q-004)
                 delta = getattr(data, "delta_content", "") or ""
-                if logger.isEnabledFor(5):  # TRACE level
-                    logger.log(5, f"Reasoning delta: {delta}")
+                # Only log deltas if explicitly requested via very high verbosity
+                # and no full reasoning has been received yet
+                pass  # Intentionally skip logging to reduce noise
 
             # Usage events
             elif event_type == "assistant.usage":

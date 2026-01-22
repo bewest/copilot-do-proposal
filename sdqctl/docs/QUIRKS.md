@@ -11,12 +11,39 @@ This document catalogs non-obvious behaviors discovered while developing and usi
 | [Q-001](#q-001-workflow-filename-influences-agent-behavior) | Workflow filename influences agent behavior | P0 | ✅ FIXED |
 | [Q-002](#q-002-sdk-abort-events-not-emitted) | SDK abort events not emitted | P1 | ✅ IMPROVED |
 | [Q-003](#q-003-template-variables-in-examples-encourage-problematic-patterns) | Template variables in examples encourage problematic patterns | P2 | ✅ RESOLVED |
+| [Q-004](#q-004-verbose-logging-shows-duplicate-content) | Verbose logging shows duplicate content | P2 | ✅ IMPROVED |
 
 ---
 
-Also annoying: logging with -vvvv, the delta message often have duplicate material and make things hard to read.
-For the statements that say "output this stuff", it would be nice to
-potentially see reasoning/actions taken at the default level.
+## Q-004: Verbose Logging Shows Duplicate Content
+
+**Priority:** P2 - Low Impact  
+**Discovered:** 2026-01-22  
+**Status:** ✅ IMPROVED - Delta logging removed
+
+### Description
+
+When using `-vvvv` (maximum verbosity), delta messages often contain duplicate material, making logs hard to read. Additionally, reasoning and actions taken are only visible at high verbosity levels, not at the default level.
+
+### Fix Applied (2026-01-22)
+
+**Removed reasoning delta logging** to eliminate duplicate content:
+- `assistant.reasoning_delta` events no longer logged (full reasoning logged via `assistant.reasoning`)
+- Reduces noise at TRACE level significantly
+
+**Logging levels remain:**
+- WARNING (default): errors/warnings only
+- INFO (-v): turns, tools, tokens, intents ← **use this for normal operation**
+- DEBUG (-vv): reasoning, args, context usage
+- TRACE (-vvv+): raw events
+
+**Recommendation:** Use `-v` for useful operational output without noise.
+
+### Remaining Consideration
+
+Showing key actions at default level (no flags) could be considered, but would require careful selection of what's "key" vs noise. Current approach: `-v` is the recommended default for interactive use.
+
+---
 
 
 ## Q-001: Workflow Filename Influences Agent Behavior
