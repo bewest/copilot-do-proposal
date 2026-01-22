@@ -63,39 +63,50 @@ def render_prompt(
     prologues: list[str],
     epilogues: list[str],
     index: int,
+    total_prompts: int,
     base_path: Optional[Path],
     variables: dict[str, str],
 ) -> RenderedPrompt:
     """Render a single prompt with its prologues and epilogues.
+    
+    Prologues are only included on the first prompt (index=1).
+    Epilogues are only included on the last prompt (index=total_prompts).
     
     Args:
         prompt: The raw prompt text
         prologues: List of prologue strings (may include @file refs)
         epilogues: List of epilogue strings (may include @file refs)
         index: 1-based prompt index
+        total_prompts: Total number of prompts in the cycle
         base_path: Base path for resolving @file references
         variables: Template variables for substitution
         
     Returns:
         RenderedPrompt with all content resolved
     """
-    # Resolve prologues
-    resolved_prologues = []
-    for p in prologues:
-        content = resolve_content_reference(p, base_path)
-        content = substitute_template_variables(content, variables)
-        resolved_prologues.append(content)
+    is_first = (index == 1)
+    is_last = (index == total_prompts)
     
-    # Resolve epilogues
+    # Resolve prologues (only for first prompt)
+    resolved_prologues = []
+    if is_first:
+        for p in prologues:
+            content = resolve_content_reference(p, base_path)
+            content = substitute_template_variables(content, variables)
+            resolved_prologues.append(content)
+    
+    # Resolve epilogues (only for last prompt)
     resolved_epilogues = []
-    for e in epilogues:
-        content = resolve_content_reference(e, base_path)
-        content = substitute_template_variables(content, variables)
-        resolved_epilogues.append(content)
+    if is_last:
+        for e in epilogues:
+            content = resolve_content_reference(e, base_path)
+            content = substitute_template_variables(content, variables)
+            resolved_epilogues.append(content)
     
     # Build full prompt
     full_prompt = build_prompt_with_injection(
-        prompt, prologues, epilogues, base_path, variables
+        prompt, prologues, epilogues, base_path, variables,
+        is_first_prompt=is_first, is_last_prompt=is_last
     )
     
     return RenderedPrompt(
@@ -141,6 +152,7 @@ def render_cycle(
     # Render all prompts
     base_path = conv.source_path.parent if conv.source_path else None
     rendered_prompts = []
+    total_prompts = len(conv.prompts)
     
     for i, prompt in enumerate(conv.prompts, 1):
         rendered = render_prompt(
@@ -148,6 +160,7 @@ def render_cycle(
             prologues=conv.prologues,
             epilogues=conv.epilogues,
             index=i,
+            total_prompts=total_prompts,
             base_path=base_path,
             variables=variables,
         )

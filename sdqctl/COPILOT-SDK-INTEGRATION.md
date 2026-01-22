@@ -403,7 +403,7 @@ The `LoopDetector` class provides client-side detection with four mechanisms:
 from sdqctl.core.loop_detector import LoopDetector, LoopReason
 
 detector = LoopDetector(
-    session_id="my-session",    # Enables stop file detection
+    nonce="mytest123",          # Optional: override random nonce
     identical_threshold=2,      # N identical responses (Q-002: lowered from 3)
     min_response_length=100,    # Chars below = suspicious (Q-002: raised from 50)
 )
@@ -417,9 +417,9 @@ if result := detector.check(reasoning, response, cycle_number):
 1. `REASONING_PATTERN` - AI mentions "in a loop", "repeated prompt", etc.
 2. `IDENTICAL_RESPONSES` - Same response N times in row
 3. `MINIMAL_RESPONSE` - Response under threshold after first cycle
-4. `STOP_FILE` - Agent creates `STOPAUTOMATION-{hash}.json` (Q-002 feature)
+4. `STOP_FILE` - Agent creates `STOPAUTOMATION-{nonce}.json` (Q-002 feature)
 
-**Agent stop signaling:** Use `{{STOP_FILE}}` template variable in prompts to tell the agent the exact filename to create when it needs to stop.
+**Agent stop signaling (enabled by default):** Stop file instructions are automatically injected on the first prompt. The agent can create `{{STOP_FILE}}` to signal it needs human review. Use `--no-stop-file-prologue` to disable or `--stop-file-nonce=VALUE` to pin the nonce.
 
 This is functional but:
 - Requires content parsing (fragile for some mechanisms)

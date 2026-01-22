@@ -28,7 +28,7 @@ sdqctl apply audit.conv --components "lib/plugins/*.js" \
 sdqctl cycle migration.conv -n 5 --session-mode fresh
 ```
 
-The `--prologue` and `--epilogue` options (and their ConversationFile equivalents) enable **trivial iteration over facets or topics** while ensuring the same conversation structure and tool use in a repeatable way. Template variables like `{{COMPONENT_NAME}}`, `{{CYCLE_NUMBER}}`, and `{{DATE}}` make each iteration context-aware.
+The `--prologue` and `--epilogue` options (and their ConversationFile equivalents) frame each conversation cycle: prologues are prepended to the first prompt, epilogues are appended to the last. This enables **trivial iteration over facets or topics** while ensuring the same conversation structure and tool use in a repeatable way. Template variables like `{{COMPONENT_NAME}}`, `{{CYCLE_NUMBER}}`, and `{{DATE}}` make each iteration context-aware.
 
 **Session modes** give explicit control over context lifecycle:
 - `accumulate` — Context grows; compact only at limit (iterative refinement)
@@ -113,8 +113,8 @@ OUTPUT-FILE security-report.md
 | `CONTEXT` | Include file/pattern |
 | `CONTEXT-LIMIT` | Context window threshold |
 | `ON-CONTEXT-LIMIT` | Action when limit reached (compact, stop) |
-| `PROLOGUE` | Prepend to each prompt (inline or @file) |
-| `EPILOGUE` | Append to each prompt (inline or @file) |
+| `PROLOGUE` | Prepend to first prompt of cycle (inline or @file) |
+| `EPILOGUE` | Append to last prompt of cycle (inline or @file) |
 | `PROMPT` | Prompt to send (runs LLM conversation cycle) |
 | `RUN` | Execute shell command |
 | `RUN-ON-ERROR` | Behavior on command failure (stop, continue) |
@@ -155,8 +155,7 @@ Available in PROLOGUE, EPILOGUE, HEADER, FOOTER, PROMPT, and OUTPUT paths:
 | `{{GIT_BRANCH}}` | Current git branch | main |
 | `{{GIT_COMMIT}}` | Short commit SHA | abc1234 |
 | `{{CWD}}` | Current working directory | /home/user/project |
-| `{{SESSION_ID}}` | Unique session identifier | 20260122-213045-abc123 |
-| `{{STOP_FILE}}` | Stop signal filename (for agent) | STOPAUTOMATION-bd7065.json |
+| `{{STOP_FILE}}` | Stop signal filename (for agent) | STOPAUTOMATION-a1b2c3.json |
 
 > **Note:** `WORKFLOW_NAME` and `WORKFLOW_PATH` are excluded from prompts by default
 > to avoid influencing agent behavior. Use `__WORKFLOW_NAME__` for explicit opt-in.
@@ -164,7 +163,8 @@ Available in PROLOGUE, EPILOGUE, HEADER, FOOTER, PROMPT, and OUTPUT paths:
 >
 > **Stop File (Enabled by Default):** Stop file instructions are automatically injected
 > on the first prompt. The agent can create `{{STOP_FILE}}` to request human review.
-> Use `--no-stop-file-prologue` to disable. See [docs/LOOP-STRESS-TEST.md](docs/LOOP-STRESS-TEST.md#4-stop-file-detection).
+> Use `--no-stop-file-prologue` to disable, or `--stop-file-nonce=VALUE` to override
+> the random nonce. See [docs/LOOP-STRESS-TEST.md](docs/LOOP-STRESS-TEST.md#4-stop-file-detection).
 
 ### Prompt/Output Injection
 

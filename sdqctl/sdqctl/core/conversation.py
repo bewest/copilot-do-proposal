@@ -759,7 +759,7 @@ def substitute_template_variables(text: str, variables: dict[str, str]) -> str:
 def get_standard_variables(
     workflow_path: Optional[Path] = None,
     include_workflow_vars: bool = False,
-    session_id: Optional[str] = None,
+    stop_file_nonce: Optional[str] = None,
 ) -> dict[str, str]:
     """Get standard template variables available in all contexts.
     
@@ -773,8 +773,8 @@ def get_standard_variables(
         workflow_path: Path to the workflow file
         include_workflow_vars: If True, include WORKFLOW_NAME and WORKFLOW_PATH
             (use only for output paths, not agent-visible prompts)
-        session_id: Session ID for stop file naming. When provided, adds
-            STOP_FILE and SESSION_ID variables for agent stop signaling.
+        stop_file_nonce: Nonce for stop file naming. When provided, adds
+            STOP_FILE variable for agent stop signaling (Q-002).
     
     Returns:
         Dict with template variables. Always includes __WORKFLOW_NAME__ and
@@ -821,12 +821,9 @@ def get_standard_variables(
     except (subprocess.TimeoutExpired, FileNotFoundError):
         pass
     
-    # Add stop file variables if session_id provided (Q-002 agent stop signaling)
-    if session_id:
-        import hashlib
-        session_hash = hashlib.sha256(session_id.encode()).hexdigest()[:12]
-        variables["SESSION_ID"] = session_id
-        variables["STOP_FILE"] = f"STOPAUTOMATION-{session_hash}.json"
+    # Add stop file variable if nonce provided (Q-002 agent stop signaling)
+    if stop_file_nonce:
+        variables["STOP_FILE"] = f"STOPAUTOMATION-{stop_file_nonce}.json"
     
     return variables
 
@@ -947,8 +944,13 @@ def apply_iteration_context(conv: ConversationFile, component_path: str,
 
 def build_prompt_with_injection(prompt: str, prologues: list[str], epilogues: list[str],
                                  base_path: Optional[Path] = None,
-                                 variables: Optional[dict[str, str]] = None) -> str:
+                                 variables: Optional[dict[str, str]] = None,
+                                 is_first_prompt: bool = False,
+                                 is_last_prompt: bool = False) -> str:
     """Build a complete prompt with prologue/epilogue injection.
+    
+    Prologues are only injected on the first prompt of a conversation/cycle.
+    Epilogues are only injected on the last prompt of a conversation/cycle.
     
     Args:
         prompt: The main prompt text
@@ -956,27 +958,31 @@ def build_prompt_with_injection(prompt: str, prologues: list[str], epilogues: li
         epilogues: List of epilogue content (inline or @file references)
         base_path: Base path for resolving @file references
         variables: Template variables for substitution
+        is_first_prompt: If True, prepend prologues to this prompt
+        is_last_prompt: If True, append epilogues to this prompt
         
     Returns:
-        Complete prompt with prologues prepended and epilogues appended
+        Complete prompt with prologues prepended (if first) and epilogues appended (if last)
     """
     variables = variables or {}
     parts = []
     
-    # Resolve and add prologues
-    for prologue in prologues:
-        content = resolve_content_reference(prologue, base_path)
-        content = substitute_template_variables(content, variables)
-        parts.append(content)
+    # Resolve and add prologues only on first prompt
+    if is_first_prompt:
+        for prologue in prologues:
+            content = resolve_content_reference(prologue, base_path)
+            content = substitute_template_variables(content, variables)
+            parts.append(content)
     
     # Add main prompt
     parts.append(substitute_template_variables(prompt, variables))
     
-    # Resolve and add epilogues
-    for epilogue in epilogues:
-        content = resolve_content_reference(epilogue, base_path)
-        content = substitute_template_variables(content, variables)
-        parts.append(content)
+    # Resolve and add epilogues only on last prompt
+    if is_last_prompt:
+        for epilogue in epilogues:
+            content = resolve_content_reference(epilogue, base_path)
+            content = substitute_template_variables(content, variables)
+            parts.append(content)
     
     return "\n\n".join(parts)
 

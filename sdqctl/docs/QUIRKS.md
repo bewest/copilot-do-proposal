@@ -293,17 +293,20 @@ detector.cleanup_stop_file()
 
 **Template variables for agent communication:**
 
-The `${STOP_FILE}` and `${SESSION_ID}` template variables are now available in prompts. Use in a PROLOGUE to tell the agent the exact filename:
+The `${STOP_FILE}` template variable is available in prompts. By default, stop file instructions are automatically injected on the first prompt:
 
-```conv
-PROLOGUE <<<
-If you detect you are in a loop or cannot make progress, create:
-    ${STOP_FILE}
-with {"reason": "your explanation"}.
->>>
+```
+## Automation Control
+
+If you detect you are in a repetitive loop, cannot make further progress,
+or need human review, create this file to stop automation:
+
+    STOPAUTOMATION-a1b2c3d4e5f6.json
+
+Include JSON explaining why: {"reason": "...", "needs_review": true}
 ```
 
-This resolves to the actual filename like `STOPAUTOMATION-bd7065173b6b.json`.
+Use `--no-stop-file-prologue` to disable this automatic injection, or `--stop-file-nonce=VALUE` to override the random nonce for testing.
 
 ### See Also
 

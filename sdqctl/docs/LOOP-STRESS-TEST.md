@@ -196,7 +196,7 @@ After the Q-002 fix, these are the default thresholds:
 |---------|---------------|-------|
 | `identical_threshold` | 2 | Triggers on 2 identical responses (was 3) |
 | `min_response_length` | 100 | Responses <100 chars trigger (was 50) |
-| `session_id` | None | Required for secure stop file naming |
+| `nonce` | Random 12-char hex | For stop file naming (auto-generated) |
 | `stop_file_dir` | CWD | Directory to check for stop file |
 
 ### Template Variables for Stop File
@@ -205,14 +205,28 @@ These variables are available in prompts and prologues:
 
 | Variable | Example Value | Notes |
 |----------|---------------|-------|
-| `${STOP_FILE}` | `STOPAUTOMATION-bd7065173b6b.json` | Full filename agent should create |
-| `${SESSION_ID}` | `20260122-213045-abc123` | Session ID (useful for logging) |
+| `${STOP_FILE}` | `STOPAUTOMATION-a1b2c3d4e5f6.json` | Full filename agent should create |
+
+### CLI Options
+
+All commands support stop file configuration:
+
+```bash
+# Default: stop file instruction injected with random nonce
+sdqctl cycle workflow.conv
+
+# Disable stop file instruction
+sdqctl cycle workflow.conv --no-stop-file-prologue
+
+# Pin nonce for testing/reproducibility
+sdqctl cycle workflow.conv --stop-file-nonce=testrun123
+```
 
 ### Recommendations
 
 1. **For sdqctl cycle command**: Keep using `LoopDetector` as the primary loop detection mechanism
 2. **For stricter detection**: Configure `LoopDetector(identical_threshold=1, min_response_length=150)`
-3. **For agent-initiated stops**: Include `${STOP_FILE}` in a PROLOGUE to tell the agent the filename
+3. **For agent-initiated stops**: The `${STOP_FILE}` instruction is injected automatically on first prompt
 4. **For research**: The `--event-log` output provides rich data for analyzing AI behavior
 
 ## Files

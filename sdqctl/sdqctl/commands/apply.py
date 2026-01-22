@@ -50,6 +50,7 @@ console = Console()
 @click.option("--output-dir", "-o", default=None, help="Output directory for results")
 @click.option("--dry-run", is_flag=True, help="Show what would happen")
 @click.option("--no-stop-file-prologue", is_flag=True, help="Disable automatic stop file instructions")
+@click.option("--stop-file-nonce", default=None, help="Override stop file nonce (random if not set)")
 def apply(
     workflow: str,
     components: Optional[str],
@@ -65,6 +66,7 @@ def apply(
     output_dir: Optional[str],
     dry_run: bool,
     no_stop_file_prologue: bool,
+    stop_file_nonce: Optional[str],
 ) -> None:
     """Apply a workflow to multiple components.
     
@@ -93,7 +95,7 @@ def apply(
     run_async(_apply_async(
         workflow, components, discovery_file, progress_file,
         parallel, adapter, model, prologue, epilogue, header, footer,
-        output_dir, dry_run, no_stop_file_prologue
+        output_dir, dry_run, no_stop_file_prologue, stop_file_nonce
     ))
 
 
@@ -112,6 +114,7 @@ async def _apply_async(
     output_dir: Optional[str],
     dry_run: bool,
     no_stop_file_prologue: bool = False,
+    stop_file_nonce: Optional[str] = None,
 ) -> None:
     """Async implementation of apply command."""
     from ..core.conversation import (
@@ -119,9 +122,13 @@ async def _apply_async(
         build_output_with_injection,
         get_standard_variables,
     )
+    from ..core.loop_detector import generate_nonce
     
     import time as time_module
     apply_start = time_module.time()
+    
+    # Generate nonce for stop file (once per apply command invocation)
+    nonce = stop_file_nonce if stop_file_nonce else generate_nonce()
     
     # Load workflow
     conv = ConversationFile.from_file(Path(workflow_path))
@@ -247,7 +254,7 @@ async def _apply_async(
                 for i, comp in enumerate(component_list, 1):
                     task = _process_component_with_semaphore(
                         semaphore, conv, comp, i, len(component_list),
-                        ai_adapter, progress_data, no_stop_file_prologue
+                        ai_adapter, progress_data, no_stop_file_prologue, nonce
                     )
                     tasks.append(task)
                 await asyncio.gather(*tasks)
@@ -266,7 +273,7 @@ async def _apply_async(
                         progress.update(task, description=f"[{i}/{len(component_list)}] {comp['path']}")
                         await _process_single_component(
                             conv, comp, i, len(component_list),
-                            ai_adapter, progress_data, no_stop_file_prologue
+                            ai_adapter, progress_data, no_stop_file_prologue, nonce
                         )
                         progress.advance(task)
     
@@ -291,11 +298,12 @@ async def _process_component_with_semaphore(
     ai_adapter,
     progress_data: "ProgressTracker",
     no_stop_file_prologue: bool = False,
+    nonce: Optional[str] = None,
 ) -> None:
     """Process a single component with semaphore for parallel limiting."""
     async with semaphore:
         await _process_single_component(
-            conv, component, index, total, ai_adapter, progress_data, no_stop_file_prologue
+            conv, component, index, total, ai_adapter, progress_data, no_stop_file_prologue, nonce
         )
 
 
@@ -307,6 +315,7 @@ async def _process_single_component(
     ai_adapter,
     progress_data: "ProgressTracker",
     no_stop_file_prologue: bool = False,
+    nonce: Optional[str] = None,
 ) -> None:
     """Process a single component through the workflow."""
     from ..core.conversation import (
@@ -328,8 +337,8 @@ async def _process_single_component(
             conv, component_path, index, total, component_type
         )
         
-        # Get template variables for this instance
-        template_vars = get_standard_variables(instance_conv.source_path)
+        # Get template variables for this instance (includes STOP_FILE if nonce provided)
+        template_vars = get_standard_variables(instance_conv.source_path, stop_file_nonce=nonce)
         
         # Create session
         session = Session(instance_conv)
@@ -346,19 +355,21 @@ async def _process_single_component(
             logger.debug(f"  [{index}/{total}] Prompt {i+1}/{len(instance_conv.prompts)}")
             
             # Build prompt with prologue/epilogue injection
+            is_first = (i == 0)
+            is_last = (i == len(instance_conv.prompts) - 1)
             full_prompt = build_prompt_with_injection(
                 prompt, instance_conv.prologues, instance_conv.epilogues,
                 instance_conv.source_path.parent if instance_conv.source_path else None,
-                template_vars
+                template_vars,
+                is_first_prompt=is_first,
+                is_last_prompt=is_last
             )
             if i == 0 and context_content:
                 full_prompt = f"{context_content}\n\n{full_prompt}"
             
             # Add stop file instruction on first prompt of each component (Q-002)
-            if i == 0 and not no_stop_file_prologue:
-                import hashlib
-                session_hash = hashlib.sha256(session.id.encode()).hexdigest()[:12]
-                stop_file_name = f"STOPAUTOMATION-{session_hash}.json"
+            if i == 0 and not no_stop_file_prologue and nonce:
+                stop_file_name = f"STOPAUTOMATION-{nonce}.json"
                 stop_instruction = get_stop_file_instruction(stop_file_name)
                 full_prompt = f"{full_prompt}\n\n{stop_instruction}"
             

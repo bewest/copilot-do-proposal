@@ -168,6 +168,7 @@ console = Console()
 @click.option("--dry-run", is_flag=True, help="Show what would happen")
 @click.option("--render-only", is_flag=True, help="Render prompts without executing (no AI calls)")
 @click.option("--no-stop-file-prologue", is_flag=True, help="Disable automatic stop file instructions")
+@click.option("--stop-file-nonce", default=None, help="Override stop file nonce (random if not set)")
 def run(
     target: str,
     adapter: Optional[str],
@@ -187,6 +188,7 @@ def run(
     dry_run: bool,
     render_only: bool,
     no_stop_file_prologue: bool,
+    stop_file_nonce: Optional[str],
 ) -> None:
     """Execute a single prompt or ConversationFile.
     
@@ -255,7 +257,7 @@ def run(
         target, adapter, model, context, 
         allow_files, deny_files, allow_dir, deny_dir,
         prologue, epilogue, header, footer,
-        output, event_log, json_output, dry_run, no_stop_file_prologue
+        output, event_log, json_output, dry_run, no_stop_file_prologue, stop_file_nonce
     ))
 
 
@@ -277,6 +279,7 @@ async def _run_async(
     json_output: bool,
     dry_run: bool,
     no_stop_file_prologue: bool = False,
+    stop_file_nonce: Optional[str] = None,
 ) -> None:
     """Async implementation of run command."""
     from ..core.conversation import (
@@ -284,6 +287,7 @@ async def _run_async(
         build_output_with_injection,
         get_standard_variables,
     )
+    from ..core.loop_detector import generate_nonce
     
     import time
     start_time = time.time()
@@ -354,8 +358,12 @@ async def _run_async(
     if cli_footers:
         conv.footers = list(cli_footers) + conv.footers
     
+    # Generate nonce for stop file (once per command invocation)
+    nonce = stop_file_nonce if stop_file_nonce else generate_nonce()
+    
     # Get template variables for prompts (excludes WORKFLOW_NAME to avoid Q-001)
-    template_vars = get_standard_variables(conv.source_path)
+    # Includes STOP_FILE for agent stop signaling (Q-002)
+    template_vars = get_standard_variables(conv.source_path, stop_file_nonce=nonce)
     # Get template variables for output paths (includes WORKFLOW_NAME)
     output_vars = get_standard_variables(conv.source_path, include_workflow_vars=True)
 
@@ -459,10 +467,14 @@ async def _run_async(
 
                     # Build prompt with prologue/epilogue injection
                     base_path = conv.source_path.parent if conv.source_path else Path.cwd()
+                    is_first = (prompt_count == 1)
+                    is_last = (prompt_count == total_prompts)
                     injected_prompt = build_prompt_with_injection(
                         prompt, conv.prologues, conv.epilogues,
                         base_path=base_path,
-                        variables=template_vars
+                        variables=template_vars,
+                        is_first_prompt=is_first,
+                        is_last_prompt=is_last
                     )
                     
                     # Add context to first prompt
@@ -472,10 +484,7 @@ async def _run_async(
                     
                     # Add stop file instruction on first prompt (Q-002)
                     if first_prompt and not no_stop_file_prologue:
-                        # Generate stop file name from session ID
-                        import hashlib
-                        session_hash = hashlib.sha256(session.id.encode()).hexdigest()[:12]
-                        stop_file_name = f"STOPAUTOMATION-{session_hash}.json"
+                        stop_file_name = f"STOPAUTOMATION-{nonce}.json"
                         stop_instruction = get_stop_file_instruction(stop_file_name)
                         full_prompt = f"{full_prompt}\n\n{stop_instruction}"
                     

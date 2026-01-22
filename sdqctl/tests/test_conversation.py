@@ -408,29 +408,26 @@ class TestTemplateVariables:
         assert output_vars["WORKFLOW_NAME"] == "test"
         assert "test.conv" in output_vars["WORKFLOW_PATH"]
 
-    def test_get_standard_variables_with_session_id(self):
-        """Test SESSION_ID and STOP_FILE variables (Q-002).
+    def test_get_standard_variables_with_stop_file_nonce(self):
+        """Test STOP_FILE variable with nonce (Q-002).
         
-        When session_id is provided, STOP_FILE includes hashed session ID
-        for secure agent stop signaling.
+        When stop_file_nonce is provided, STOP_FILE includes the nonce
+        for agent stop signaling.
         """
-        # Without session_id: no stop file variables
+        # Without nonce: no stop file variable
         variables = get_standard_variables()
-        assert "SESSION_ID" not in variables
         assert "STOP_FILE" not in variables
         
-        # With session_id: stop file variables included
-        variables = get_standard_variables(session_id="test-session-123")
-        assert variables["SESSION_ID"] == "test-session-123"
-        assert variables["STOP_FILE"].startswith("STOPAUTOMATION-")
-        assert variables["STOP_FILE"].endswith(".json")
+        # With nonce: stop file variable included
+        variables = get_standard_variables(stop_file_nonce="abc123def456")
+        assert variables["STOP_FILE"] == "STOPAUTOMATION-abc123def456.json"
         
-        # Same session ID produces same stop file name (deterministic)
-        variables2 = get_standard_variables(session_id="test-session-123")
+        # Same nonce produces same stop file name
+        variables2 = get_standard_variables(stop_file_nonce="abc123def456")
         assert variables["STOP_FILE"] == variables2["STOP_FILE"]
         
-        # Different session ID produces different stop file name
-        variables3 = get_standard_variables(session_id="different-session")
+        # Different nonce produces different stop file name
+        variables3 = get_standard_variables(stop_file_nonce="different123")
         assert variables["STOP_FILE"] != variables3["STOP_FILE"]
 
 

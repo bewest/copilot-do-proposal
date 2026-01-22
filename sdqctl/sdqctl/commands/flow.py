@@ -171,10 +171,14 @@ async def _flow_async(
 
                 for i, prompt in enumerate(conv.prompts):
                     # Build prompt with prologue/epilogue injection
+                    is_first = (i == 0)
+                    is_last = (i == len(conv.prompts) - 1)
                     full_prompt = build_prompt_with_injection(
                         prompt, conv.prologues, conv.epilogues,
                         conv.source_path.parent if conv.source_path else None,
-                        template_vars
+                        template_vars,
+                        is_first_prompt=is_first,
+                        is_last_prompt=is_last
                     )
                     if i == 0 and context_content:
                         full_prompt = f"{context_content}\n\n{full_prompt}"

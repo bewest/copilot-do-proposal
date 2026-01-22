@@ -142,8 +142,8 @@ OUTPUT-FILE report.md          # Save output
 | `PROMPT` | Send a message to the AI |
 | `RUN` | Execute a shell command |
 | `CONTEXT` | Include file(s) in context |
-| `PROLOGUE` | Prepend to every prompt |
-| `EPILOGUE` | Append to every prompt |
+| `PROLOGUE` | Prepend to first prompt of cycle |
+| `EPILOGUE` | Append to last prompt of cycle |
 | `PAUSE` | Checkpoint for human review |
 
 ### Template Variables

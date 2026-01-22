@@ -33,7 +33,7 @@ from ..adapters.base import AdapterConfig
 from ..core.conversation import ConversationFile
 from ..core.exceptions import ExitCode, LoopDetected, LoopReason, MissingContextFiles
 from ..core.logging import get_logger
-from ..core.loop_detector import LoopDetector, get_stop_file_instruction
+from ..core.loop_detector import LoopDetector, generate_nonce, get_stop_file_instruction
 from ..core.progress import progress as progress_print
 from ..core.session import Session
 from .utils import run_async
@@ -68,6 +68,7 @@ SESSION_MODES = {
 @click.option("--dry-run", is_flag=True, help="Show what would happen")
 @click.option("--render-only", is_flag=True, help="Render prompts without executing (no AI calls)")
 @click.option("--no-stop-file-prologue", is_flag=True, help="Disable automatic stop file instructions")
+@click.option("--stop-file-nonce", default=None, help="Override stop file nonce (random if not set)")
 def cycle(
     workflow: str,
     max_cycles: Optional[int],
@@ -85,6 +86,7 @@ def cycle(
     dry_run: bool,
     render_only: bool,
     no_stop_file_prologue: bool,
+    stop_file_nonce: Optional[str],
 ) -> None:
     """Run multi-cycle workflow with compaction."""
     # Handle --render-only by delegating to render logic
@@ -153,7 +155,7 @@ def cycle(
     run_async(_cycle_async(
         workflow, max_cycles, session_mode, adapter, model, checkpoint_dir,
         prologue, epilogue, header, footer,
-        output, event_log, json_output, dry_run, no_stop_file_prologue
+        output, event_log, json_output, dry_run, no_stop_file_prologue, stop_file_nonce
     ))
 
 
@@ -173,6 +175,7 @@ async def _cycle_async(
     json_output: bool,
     dry_run: bool,
     no_stop_file_prologue: bool = False,
+    stop_file_nonce: Optional[str] = None,
 ) -> None:
     """Execute multi-cycle workflow with session management.
     
@@ -241,13 +244,16 @@ async def _cycle_async(
     if cli_footers:
         conv.footers = list(cli_footers) + conv.footers
     
-    # Create session first (needed for session_id in template vars)
+    # Create session for checkpointing
     session_dir = Path(checkpoint_dir) if checkpoint_dir else None
     session = Session(conv, session_dir=session_dir)
     
+    # Generate nonce for stop file (once per command invocation)
+    nonce = stop_file_nonce if stop_file_nonce else generate_nonce()
+    
     # Get template variables for prompts (excludes WORKFLOW_NAME to avoid Q-001)
-    # Includes SESSION_ID and STOP_FILE for agent stop signaling (Q-002)
-    template_vars = get_standard_variables(conv.source_path, session_id=session.id)
+    # Includes STOP_FILE for agent stop signaling (Q-002)
+    template_vars = get_standard_variables(conv.source_path, stop_file_nonce=nonce)
     # Get template variables for output paths (includes WORKFLOW_NAME)
     output_vars = get_standard_variables(conv.source_path, include_workflow_vars=True)
 
@@ -278,8 +284,8 @@ async def _cycle_async(
         console.print("[yellow]Using mock adapter instead[/yellow]")
         ai_adapter = get_adapter("mock")
 
-    # Initialize loop detector with session ID for stop file detection (Q-002)
-    loop_detector = LoopDetector(session_id=session.id)
+    # Initialize loop detector with nonce for stop file detection (Q-002)
+    loop_detector = LoopDetector(nonce=nonce)
     last_reasoning: list[str] = []  # Collect reasoning from callbacks
 
     try:
@@ -392,6 +398,7 @@ async def _cycle_async(
                     steps_to_process = conv.steps if conv.steps else [
                         {"type": "prompt", "content": p} for p in conv.prompts
                     ]
+                    total_prompts = len(conv.prompts)
                     
                     prompt_idx = 0
                     for step in steps_to_process:
@@ -403,10 +410,14 @@ async def _cycle_async(
                             session.state.prompt_index = prompt_idx
 
                             # Build prompt with prologue/epilogue injection
+                            is_first = (prompt_idx == 0)
+                            is_last = (prompt_idx == total_prompts - 1)
                             full_prompt = build_prompt_with_injection(
                                 prompt, conv.prologues, conv.epilogues, 
                                 conv.source_path.parent if conv.source_path else None,
-                                cycle_vars
+                                cycle_vars,
+                                is_first_prompt=is_first,
+                                is_last_prompt=is_last
                             )
                             
                             # Add context to first prompt (always for fresh, only cycle 0 for others)

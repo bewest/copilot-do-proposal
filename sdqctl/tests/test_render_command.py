@@ -26,6 +26,7 @@ class TestRenderPrompt:
             prologues=[],
             epilogues=[],
             index=1,
+            total_prompts=1,
             base_path=None,
             variables={},
         )
@@ -37,12 +38,13 @@ class TestRenderPrompt:
         assert result.epilogues == []
     
     def test_renders_with_prologues(self):
-        """Prompts with prologues should include them."""
+        """Prompts with prologues should include them on first prompt."""
         result = render_prompt(
             prompt="Main prompt",
             prologues=["Before:"],
             epilogues=[],
             index=1,
+            total_prompts=1,
             base_path=None,
             variables={},
         )
@@ -52,12 +54,13 @@ class TestRenderPrompt:
         assert result.prologues == ["Before:"]
     
     def test_renders_with_epilogues(self):
-        """Prompts with epilogues should include them."""
+        """Prompts with epilogues should include them on last prompt."""
         result = render_prompt(
             prompt="Main prompt",
             prologues=[],
             epilogues=["After."],
             index=1,
+            total_prompts=1,
             base_path=None,
             variables={},
         )
@@ -73,12 +76,69 @@ class TestRenderPrompt:
             prologues=["Today: {{DATE}}"],
             epilogues=[],
             index=1,
+            total_prompts=1,
             base_path=None,
             variables={"DATE": "2026-01-22"},
         )
         
         assert "2026-01-22" in result.resolved
         assert result.prologues == ["Today: 2026-01-22"]
+    
+    def test_prologues_only_on_first_prompt(self):
+        """Prologues should only be included on the first prompt."""
+        # First prompt (index=1) should have prologues
+        result_first = render_prompt(
+            prompt="First prompt",
+            prologues=["Prologue content"],
+            epilogues=[],
+            index=1,
+            total_prompts=3,
+            base_path=None,
+            variables={},
+        )
+        assert "Prologue content" in result_first.resolved
+        assert result_first.prologues == ["Prologue content"]
+        
+        # Second prompt (index=2) should NOT have prologues
+        result_second = render_prompt(
+            prompt="Second prompt",
+            prologues=["Prologue content"],
+            epilogues=[],
+            index=2,
+            total_prompts=3,
+            base_path=None,
+            variables={},
+        )
+        assert "Prologue content" not in result_second.resolved
+        assert result_second.prologues == []
+    
+    def test_epilogues_only_on_last_prompt(self):
+        """Epilogues should only be included on the last prompt."""
+        # First prompt (not last) should NOT have epilogues
+        result_first = render_prompt(
+            prompt="First prompt",
+            prologues=[],
+            epilogues=["Epilogue content"],
+            index=1,
+            total_prompts=3,
+            base_path=None,
+            variables={},
+        )
+        assert "Epilogue content" not in result_first.resolved
+        assert result_first.epilogues == []
+        
+        # Last prompt (index=3, total=3) should have epilogues
+        result_last = render_prompt(
+            prompt="Last prompt",
+            prologues=[],
+            epilogues=["Epilogue content"],
+            index=3,
+            total_prompts=3,
+            base_path=None,
+            variables={},
+        )
+        assert "Epilogue content" in result_last.resolved
+        assert result_last.epilogues == ["Epilogue content"]
 
 
 class TestRenderCycle:

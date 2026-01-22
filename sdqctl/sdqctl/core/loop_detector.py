@@ -15,6 +15,7 @@ import hashlib
 import json
 import logging
 import re
+import secrets
 from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -56,6 +57,33 @@ Include JSON explaining why: {"reason": "...", "needs_review": true}
 """
 
 
+def generate_nonce(length: int = 12) -> str:
+    """Generate a random nonce for stop file naming.
+    
+    Args:
+        length: Number of hex characters (default 12)
+        
+    Returns:
+        Random hex string (e.g., 'a1b2c3d4e5f6')
+    """
+    # token_hex(n) returns 2n hex chars, so divide by 2
+    return secrets.token_hex(length // 2)
+
+
+def get_stop_file_name(nonce: Optional[str] = None) -> str:
+    """Get the stop file name for a given nonce.
+    
+    Args:
+        nonce: Optional nonce value. If not provided, generates a random one.
+        
+    Returns:
+        Stop file name (e.g., 'STOPAUTOMATION-a1b2c3d4e5f6.json')
+    """
+    if nonce is None:
+        nonce = generate_nonce()
+    return f"STOPAUTOMATION-{nonce}.json"
+
+
 def get_stop_file_instruction(stop_file_name: str) -> str:
     """Get the stop file instruction with the filename substituted.
     
@@ -76,10 +104,10 @@ class LoopDetector:
     1. Reasoning patterns - AI explicitly mentions being in a loop
     2. Identical responses - Same response N times in a row
     3. Minimal responses - Very short responses after first cycle
-    4. Stop file - Agent creates STOPAUTOMATION-{session_hash}.json
+    4. Stop file - Agent creates STOPAUTOMATION-{nonce}.json
     
     Usage:
-        detector = LoopDetector(session_id="my-session")
+        detector = LoopDetector(nonce="a1b2c3d4e5f6")
         for cycle in range(max_cycles):
             response = await ai.send(prompt)
             reasoning = get_reasoning()  # From adapter
@@ -90,7 +118,7 @@ class LoopDetector:
     # Configuration
     identical_threshold: int = IDENTICAL_RESPONSE_THRESHOLD
     min_response_length: int = MIN_RESPONSE_LENGTH
-    session_id: Optional[str] = None  # For stop file hash
+    nonce: Optional[str] = None  # For stop file naming
     stop_file_dir: Optional[Path] = None  # Directory to check for stop file
     
     # State
@@ -102,17 +130,14 @@ class LoopDetector:
         """Initialize derived values."""
         if self.stop_file_dir is None:
             self.stop_file_dir = Path.cwd()
+        # Generate nonce if not provided
+        if self.nonce is None:
+            self.nonce = generate_nonce()
     
     @property
     def stop_file_name(self) -> str:
-        """Get the stop file name for this session.
-        
-        Uses a hash of session_id for security (agent must know the ID).
-        """
-        if self.session_id:
-            session_hash = hashlib.sha256(self.session_id.encode()).hexdigest()[:12]
-            return f"STOPAUTOMATION-{session_hash}.json"
-        return "STOPAUTOMATION.json"
+        """Get the stop file name for this session."""
+        return f"STOPAUTOMATION-{self.nonce}.json"
     
     @property
     def stop_file_path(self) -> Path:

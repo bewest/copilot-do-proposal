@@ -3,8 +3,44 @@ Tests for loop detection in AI workflow cycles.
 """
 
 import pytest
-from sdqctl.core.loop_detector import LoopDetector, LOOP_REASONING_PATTERNS
+from sdqctl.core.loop_detector import (
+    LoopDetector, 
+    LOOP_REASONING_PATTERNS,
+    generate_nonce,
+    get_stop_file_name,
+)
 from sdqctl.core.exceptions import LoopDetected, LoopReason
+
+
+class TestGenerateNonce:
+    """Test nonce generation utilities."""
+
+    def test_generate_nonce_default_length(self):
+        """Generate nonce with default 12 char length."""
+        nonce = generate_nonce()
+        assert len(nonce) == 12
+        assert nonce.isalnum()  # hex chars are alphanumeric
+
+    def test_generate_nonce_custom_length(self):
+        """Generate nonce with custom length."""
+        nonce = generate_nonce(length=6)
+        assert len(nonce) == 6
+
+    def test_generate_nonce_uniqueness(self):
+        """Each nonce should be unique."""
+        nonces = [generate_nonce() for _ in range(100)]
+        assert len(set(nonces)) == 100
+
+    def test_get_stop_file_name_with_nonce(self):
+        """Stop file name with explicit nonce."""
+        name = get_stop_file_name("abc123")
+        assert name == "STOPAUTOMATION-abc123.json"
+
+    def test_get_stop_file_name_without_nonce(self):
+        """Stop file name generates random nonce."""
+        name = get_stop_file_name()
+        assert name.startswith("STOPAUTOMATION-")
+        assert name.endswith(".json")
 
 
 class TestLoopDetectorReasoningPatterns:
@@ -252,23 +288,26 @@ class TestLoopReasoningPatterns:
 class TestLoopDetectorStopFile:
     """Test stop file detection (Q-002)."""
 
-    def test_stop_file_name_with_session_id(self):
-        """Stop file name includes session hash."""
-        detector = LoopDetector(session_id="test-session-123")
-        assert "STOPAUTOMATION-" in detector.stop_file_name
-        assert ".json" in detector.stop_file_name
-        # Hash should be deterministic
-        detector2 = LoopDetector(session_id="test-session-123")
+    def test_stop_file_name_with_nonce(self):
+        """Stop file name includes nonce."""
+        detector = LoopDetector(nonce="abc123def456")
+        assert detector.stop_file_name == "STOPAUTOMATION-abc123def456.json"
+        # Same nonce gives same name
+        detector2 = LoopDetector(nonce="abc123def456")
         assert detector.stop_file_name == detector2.stop_file_name
 
-    def test_stop_file_name_without_session_id(self):
-        """Stop file name without session ID is generic."""
+    def test_stop_file_name_without_nonce(self):
+        """Stop file name generates random nonce if none provided."""
         detector = LoopDetector()
-        assert detector.stop_file_name == "STOPAUTOMATION.json"
+        assert detector.stop_file_name.startswith("STOPAUTOMATION-")
+        assert detector.stop_file_name.endswith(".json")
+        # Should have a 12-char nonce
+        nonce_part = detector.stop_file_name.replace("STOPAUTOMATION-", "").replace(".json", "")
+        assert len(nonce_part) == 12
 
     def test_stop_file_detection(self, tmp_path):
         """Detects stop file when present."""
-        detector = LoopDetector(session_id="test", stop_file_dir=tmp_path)
+        detector = LoopDetector(nonce="testnonc1234", stop_file_dir=tmp_path)
         
         # No stop file - no detection
         response = "Normal response with sufficient length to pass all other detection thresholds. Extra padding for 100 chars."
@@ -287,7 +326,7 @@ class TestLoopDetectorStopFile:
 
     def test_cleanup_stop_file(self, tmp_path):
         """Cleanup removes stop file."""
-        detector = LoopDetector(session_id="test", stop_file_dir=tmp_path)
+        detector = LoopDetector(nonce="testnonc1234", stop_file_dir=tmp_path)
         
         # Create stop file
         stop_file = tmp_path / detector.stop_file_name
