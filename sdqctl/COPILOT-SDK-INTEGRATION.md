@@ -338,6 +338,100 @@ sdqctl run audit.conv -vvv --event-log debug.jsonl
 
 ---
 
+## Gap: SDK Abort Event Not Observed
+
+### Current State (2026-01-22)
+
+The SDK documents an `ABORT = "abort"` event type, and our adapter handles it:
+
+```python
+# From copilot.py lines 530-541
+elif event_type == "abort":
+    reason = getattr(data, "reason", None)
+    logger.warning(f"🛑 Agent abort signal: {reason}")
+    stats.abort_reason = reason
+    done.set()
+```
+
+**However, stress testing revealed this event is never emitted by the SDK.** See `docs/LOOP-STRESS-TEST.md`.
+
+### Test Evidence
+
+| Test Scenario | Cycles | SDK Abort Event? | How Loop Was Detected |
+|---------------|--------|------------------|----------------------|
+| Loop elicit prompt | 1 | ❌ No | AI reasoning contained "in a loop" |
+| Repeated identical prompt | 15 | ❌ No | Minimal response length (31 chars) |
+| Minimal response prompt | 2 | ❌ No | Response < 50 chars threshold |
+
+Event types captured: `assistant.*`, `session.*`, `tool.*`, `user.message` — but **no `abort`**.
+
+### Expected vs Actual
+
+| Expectation | Reality |
+|-------------|---------|
+| SDK detects agentic loops internally | Unknown - no signal emitted |
+| SDK emits `abort` event with reason | Never observed in testing |
+| Client can rely on structured signal | Must analyze content heuristically |
+
+### Desired Behavior
+
+We would like the SDK to emit an `abort` event when:
+
+1. **Repetition detected** - Same prompt/response pattern N times
+2. **Reasoning indicates loop** - AI's internal reasoning mentions being stuck
+3. **Token budget exhausted** - Session approaching limits with no progress
+4. **Tool call loops** - Same tool called repeatedly with same args
+
+**Expected event schema:**
+```json
+{
+  "type": "abort",
+  "data": {
+    "reason": "loop_detected" | "token_limit" | "repetition" | "user_requested",
+    "details": "Detected 3 identical responses in sequence",
+    "turn": 5,
+    "confidence": 0.95
+  }
+}
+```
+
+### Current Workaround
+
+The `LoopDetector` class provides client-side detection:
+
+```python
+from sdqctl.core.loop_detector import LoopDetector, LoopReason
+
+detector = LoopDetector(
+    identical_threshold=3,      # N identical responses
+    min_response_length=50,     # Chars below = suspicious
+    reasoning_patterns=[r'\bin a loop\b', r'repeated prompt']
+)
+
+# Check after each turn
+if detector.check(response, reasoning):
+    raise LoopDetected(detector.reason)
+```
+
+This is functional but:
+- Requires content parsing (fragile)
+- May miss cases the SDK sees internally
+- Adds latency vs native signal
+
+### Feature Request
+
+**Request:** Emit `abort` event when the SDK/agent detects it should stop.
+
+**Rationale:**
+1. The SDK likely has internal signals we can't observe
+2. Structured events are more reliable than content parsing
+3. Enables cleaner workflow orchestration (sdqctl, CI/CD)
+4. Aligns with existing event-driven architecture
+
+**Priority:** Medium-High — critical for robust agentic workflows
+
+---
+
 ## Notes
 
 - SDK is in **technical preview** - API may change
