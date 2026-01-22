@@ -162,6 +162,7 @@ console = Console()
 @click.option("--header", multiple=True, help="Prepend to output (inline text or @file)")
 @click.option("--footer", multiple=True, help="Append to output (inline text or @file)")
 @click.option("--output", "-o", default=None, help="Output file")
+@click.option("--event-log", default=None, help="Export SDK events to JSONL file")
 @click.option("--json", "json_output", is_flag=True, help="JSON output")
 @click.option("--dry-run", is_flag=True, help="Show what would happen")
 @click.option("--render-only", is_flag=True, help="Render prompts without executing (no AI calls)")
@@ -179,6 +180,7 @@ def run(
     header: tuple[str, ...],
     footer: tuple[str, ...],
     output: Optional[str],
+    event_log: Optional[str],
     json_output: bool,
     dry_run: bool,
     render_only: bool,
@@ -250,7 +252,7 @@ def run(
         target, adapter, model, context, 
         allow_files, deny_files, allow_dir, deny_dir,
         prologue, epilogue, header, footer,
-        output, json_output, dry_run
+        output, event_log, json_output, dry_run
     ))
 
 
@@ -268,6 +270,7 @@ async def _run_async(
     cli_headers: tuple[str, ...],
     cli_footers: tuple[str, ...],
     output_file: Optional[str],
+    event_log_path: Optional[str],
     json_output: bool,
     dry_run: bool,
 ) -> None:
@@ -400,11 +403,19 @@ async def _run_async(
     try:
         await ai_adapter.start()
 
+        # Determine effective event log path (CLI overrides workflow)
+        effective_event_log = event_log_path or conv.event_log
+        if effective_event_log:
+            effective_event_log = substitute_template_variables(effective_event_log, template_vars)
+
         # Create adapter session
         adapter_session = await ai_adapter.create_session(
             AdapterConfig(
                 model=conv.model,
                 streaming=True,
+                debug_categories=conv.debug_categories,
+                debug_intents=conv.debug_intents,
+                event_log=effective_event_log,
             )
         )
         
@@ -769,6 +780,13 @@ async def _run_async(
             progress(f"Done in {total_elapsed:.1f}s")
         
         finally:
+            # Export events before destroying session (if configured via CLI or workflow)
+            if effective_event_log and hasattr(ai_adapter, 'export_events'):
+                event_count = ai_adapter.export_events(adapter_session, effective_event_log)
+                if event_count > 0:
+                    logger.info(f"Exported {event_count} events to {effective_event_log}")
+                    progress(f"  📋 Exported {event_count} events to {effective_event_log}")
+            
             # Always destroy session (handles both success and error paths)
             await ai_adapter.destroy_session(adapter_session)
 

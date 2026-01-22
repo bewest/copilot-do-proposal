@@ -10,6 +10,8 @@ import pytest
 from sdqctl.adapters.base import AdapterConfig
 from sdqctl.adapters.copilot import (
     CopilotAdapter,
+    EventCollector,
+    EventRecord,
     SessionStats,
     TurnStats,
     _ensure_copilot_sdk,
@@ -627,3 +629,171 @@ class TestEnsureCopilotSdk:
                 
                 with pytest.raises(ImportError, match="GitHub Copilot SDK not installed"):
                     _ensure_copilot_sdk()
+
+
+class TestEventCollector:
+    """Test EventCollector for JSONL export."""
+    
+    def test_add_event(self):
+        """Test adding events to collector."""
+        collector = EventCollector("test-session")
+        
+        collector.add("session.start", {"branch": "main"}, turn=0)
+        collector.add("assistant.intent", {"intent": "Exploring"}, turn=1)
+        
+        assert len(collector.events) == 2
+        assert collector.events[0].event_type == "session.start"
+        assert collector.events[0].session_id == "test-session"
+        assert collector.events[1].event_type == "assistant.intent"
+        assert collector.events[1].turn == 1
+    
+    def test_add_ephemeral_event(self):
+        """Test ephemeral events are marked correctly."""
+        collector = EventCollector("test-session")
+        
+        collector.add("assistant.message_delta", {"delta": "Hello"}, turn=1, ephemeral=True)
+        
+        assert collector.events[0].ephemeral is True
+    
+    def test_export_jsonl(self, tmp_path):
+        """Test exporting events to JSONL file."""
+        import json
+        
+        collector = EventCollector("test-session")
+        collector.add("session.start", {"model": "gpt-4"}, turn=0)
+        collector.add("assistant.intent", {"intent": "Testing"}, turn=1)
+        collector.add("tool.execution_start", {"name": "grep"}, turn=1)
+        
+        output_file = tmp_path / "events.jsonl"
+        count = collector.export_jsonl(str(output_file))
+        
+        assert count == 3
+        assert output_file.exists()
+        
+        # Verify JSONL format
+        lines = output_file.read_text().strip().split('\n')
+        assert len(lines) == 3
+        
+        # Parse and validate structure
+        event1 = json.loads(lines[0])
+        assert event1["event_type"] == "session.start"
+        assert event1["session_id"] == "test-session"
+        assert event1["turn"] == 0
+        assert "timestamp" in event1
+        assert "data" in event1
+        
+        event2 = json.loads(lines[1])
+        assert event2["event_type"] == "assistant.intent"
+    
+    def test_clear(self):
+        """Test clearing accumulated events."""
+        collector = EventCollector("test-session")
+        collector.add("event.one", {}, turn=0)
+        collector.add("event.two", {}, turn=1)
+        
+        collector.clear()
+        
+        assert len(collector.events) == 0
+    
+    def test_data_serialization(self):
+        """Test various data types are serialized correctly."""
+        collector = EventCollector("test-session")
+        
+        # Test with None
+        collector.add("event.none", None, turn=0)
+        assert collector.events[0].data == {}
+        
+        # Test with dict
+        collector.add("event.dict", {"key": "value", "num": 42}, turn=0)
+        assert collector.events[1].data == {"key": "value", "num": "42"}
+        
+        # Test with object-like data
+        mock_obj = MagicMock()
+        mock_obj.name = "test"
+        mock_obj.value = 123
+        collector.add("event.obj", mock_obj, turn=0)
+        assert "name" in collector.events[2].data
+
+
+class TestCopilotAdapterEventExport:
+    """Test event export from CopilotAdapter."""
+    
+    @pytest.mark.asyncio
+    async def test_events_collected_during_send(self, mock_copilot_client, mock_copilot_session):
+        """Test that events are recorded during send()."""
+        mock_copilot_client.create_session.return_value = mock_copilot_session
+        
+        adapter = CopilotAdapter()
+        adapter.client = mock_copilot_client
+        
+        session = await adapter.create_session(AdapterConfig())
+        
+        async def simulate_events(*args, **kwargs):
+            handler = mock_copilot_session._event_handler
+            
+            # Simulate various events
+            event = MagicMock()
+            event.type = MockEventType("session.start")
+            event.data = MagicMock(selected_model="gpt-4")
+            handler(event)
+            
+            event = MagicMock()
+            event.type = MockEventType("assistant.turn_start")
+            handler(event)
+            
+            event = MagicMock()
+            event.type = MockEventType("assistant.intent")
+            event.data = MagicMock(intent="Testing export")
+            handler(event)
+            
+            event = MagicMock()
+            event.type = MockEventType("session.idle")
+            handler(event)
+        
+        mock_copilot_session.send = simulate_events
+        await adapter.send(session, "Test")
+        
+        # Check events were collected
+        stats = adapter.session_stats[session.id]
+        assert stats.event_collector is not None
+        assert len(stats.event_collector.events) >= 3
+    
+    @pytest.mark.asyncio
+    async def test_export_events_method(self, mock_copilot_client, mock_copilot_session, tmp_path):
+        """Test export_events() method on adapter."""
+        mock_copilot_client.create_session.return_value = mock_copilot_session
+        
+        adapter = CopilotAdapter()
+        adapter.client = mock_copilot_client
+        
+        session = await adapter.create_session(AdapterConfig())
+        
+        async def simulate_events(*args, **kwargs):
+            handler = mock_copilot_session._event_handler
+            
+            for event_type in ["session.start", "assistant.turn_start", "assistant.intent", "session.idle"]:
+                event = MagicMock()
+                event.type = MockEventType(event_type)
+                event.data = MagicMock()
+                handler(event)
+        
+        mock_copilot_session.send = simulate_events
+        await adapter.send(session, "Test")
+        
+        # Export events
+        output_file = tmp_path / "events.jsonl"
+        count = adapter.export_events(session, str(output_file))
+        
+        assert count >= 4
+        assert output_file.exists()
+    
+    @pytest.mark.asyncio
+    async def test_export_events_unknown_session(self):
+        """Test export_events() returns 0 for unknown session."""
+        adapter = CopilotAdapter()
+        
+        from sdqctl.adapters.base import AdapterSession
+        fake_session = AdapterSession(id="unknown", adapter=adapter, config=AdapterConfig())
+        
+        count = adapter.export_events(fake_session, "/tmp/events.jsonl")
+        assert count == 0

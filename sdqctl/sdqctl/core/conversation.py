@@ -90,6 +90,11 @@ class DirectiveType(Enum):
     # Flow control
     PAUSE = "PAUSE"
 
+    # Debug directives
+    DEBUG = "DEBUG"  # Comma-separated debug categories (session,tool,intent,event)
+    DEBUG_INTENTS = "DEBUG-INTENTS"  # true/false - enable intent tracking output
+    EVENT_LOG = "EVENT-LOG"  # Path for event log (supports {{DATETIME}} template)
+
 
 @dataclass
 class Directive:
@@ -268,6 +273,11 @@ class ConversationFile:
 
     # Flow control
     pause_points: list[tuple[int, str]] = field(default_factory=list)  # (after_prompt_index, message)
+
+    # Debug configuration
+    debug_categories: list[str] = field(default_factory=list)  # session, tool, intent, event, all
+    debug_intents: bool = False  # Enable verbose intent tracking
+    event_log: Optional[str] = None  # Path for event export (supports template vars)
 
     # Source
     source_path: Optional[Path] = None
@@ -702,6 +712,18 @@ def _apply_directive(conv: ConversationFile, directive: Directive) -> None:
             # PAUSE after the last prompt added so far
             pause_index = len(conv.prompts) - 1 if conv.prompts else 0
             conv.pause_points.append((pause_index, directive.value))
+        
+        # Debug directives
+        case DirectiveType.DEBUG:
+            # Comma-separated debug categories
+            categories = [c.strip().lower() for c in directive.value.split(",")]
+            conv.debug_categories.extend(categories)
+        case DirectiveType.DEBUG_INTENTS:
+            # Boolean flag for intent tracking
+            conv.debug_intents = directive.value.strip().lower() in ("true", "1", "yes", "on")
+        case DirectiveType.EVENT_LOG:
+            # Path for event log (supports template variables)
+            conv.event_log = directive.value.strip()
 
 
 def substitute_template_variables(text: str, variables: dict[str, str]) -> str:

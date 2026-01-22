@@ -38,6 +38,65 @@ def _ensure_copilot_sdk():
 
 
 @dataclass
+class EventRecord:
+    """Record of a single SDK event for export."""
+    event_type: str
+    timestamp: str  # ISO format
+    data: dict
+    session_id: str
+    turn: int
+    ephemeral: bool = False
+
+
+class EventCollector:
+    """Accumulates SDK events during a session for export."""
+    
+    def __init__(self, session_id: str):
+        self.session_id = session_id
+        self.events: list[EventRecord] = []
+    
+    def add(self, event_type: str, data: Any, turn: int, ephemeral: bool = False) -> None:
+        """Record an event."""
+        # Convert data to dict for serialization
+        if data is None:
+            data_dict = {}
+        elif hasattr(data, '__dict__'):
+            data_dict = {k: str(v) for k, v in vars(data).items() if not k.startswith('_')}
+        elif isinstance(data, dict):
+            data_dict = {k: str(v) for k, v in data.items()}
+        else:
+            data_dict = {"value": str(data)}
+        
+        record = EventRecord(
+            event_type=event_type,
+            timestamp=datetime.now().isoformat(),
+            data=data_dict,
+            session_id=self.session_id,
+            turn=turn,
+            ephemeral=ephemeral,
+        )
+        self.events.append(record)
+    
+    def export_jsonl(self, path: str) -> int:
+        """Export events to JSONL file. Returns count of events written."""
+        from dataclasses import asdict
+        from pathlib import Path
+        
+        output_path = Path(path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        with open(output_path, 'w') as f:
+            for event in self.events:
+                f.write(json.dumps(asdict(event)) + '\n')
+        
+        return len(self.events)
+    
+    def clear(self) -> None:
+        """Clear accumulated events."""
+        self.events.clear()
+
+
+@dataclass
 class TurnStats:
     """Statistics for a single turn."""
     input_tokens: int = 0
@@ -62,6 +121,8 @@ class SessionStats:
     intent_history: list = field(default_factory=list)
     # Active tools (for timing)
     active_tools: dict = field(default_factory=dict)
+    # Event collector for export
+    event_collector: Optional[EventCollector] = None
 
 
 class CopilotAdapter(AdapterBase):
@@ -147,7 +208,9 @@ class CopilotAdapter(AdapterBase):
         )
 
         self.sessions[session_id] = copilot_session
-        self.session_stats[session_id] = SessionStats(model=config.model)
+        stats = SessionStats(model=config.model)
+        stats.event_collector = EventCollector(session_id)
+        self.session_stats[session_id] = stats
         return session
 
     async def destroy_session(self, session: AdapterSession) -> None:
@@ -207,6 +270,16 @@ class CopilotAdapter(AdapterBase):
 
             event_type = event.type.value if hasattr(event.type, "value") else str(event.type)
             data = event.data if hasattr(event, "data") else None
+
+            # Record event for export (if collector is enabled)
+            if stats.event_collector:
+                # Mark streaming/delta events as ephemeral (can be skipped in compact exports)
+                ephemeral = event_type in (
+                    "assistant.message_delta", 
+                    "assistant.reasoning_delta",
+                    "tool.execution_partial_result",
+                )
+                stats.event_collector.add(event_type, data, stats.turns, ephemeral=ephemeral)
 
             # Session events
             if event_type == "session.start":
@@ -394,6 +467,21 @@ class CopilotAdapter(AdapterBase):
     def get_session_stats(self, session: AdapterSession) -> Optional[SessionStats]:
         """Get accumulated stats for a session."""
         return self.session_stats.get(session.id)
+
+    def export_events(self, session: AdapterSession, path: str) -> int:
+        """Export all recorded events for a session to JSONL file.
+        
+        Args:
+            session: The adapter session
+            path: Output file path (will be created/overwritten)
+            
+        Returns:
+            Number of events exported
+        """
+        stats = self.session_stats.get(session.id)
+        if stats and stats.event_collector:
+            return stats.event_collector.export_jsonl(path)
+        return 0
 
     async def get_context_usage(self, session: AdapterSession) -> tuple[int, int]:
         """Get context window usage."""

@@ -188,6 +188,30 @@ PROMPT Check results.
         assert pause_index == 0  # After first prompt
         assert "Review findings" in message
 
+    def test_parse_debug_directives(self):
+        """Test parsing DEBUG, DEBUG-INTENTS, and EVENT-LOG directives."""
+        content = """MODEL gpt-4
+ADAPTER copilot
+DEBUG session, tool, intent
+DEBUG-INTENTS true
+EVENT-LOG ./logs/events-{{DATETIME}}.jsonl
+PROMPT Test workflow.
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert conv.debug_categories == ["session", "tool", "intent"]
+        assert conv.debug_intents is True
+        assert conv.event_log == "./logs/events-{{DATETIME}}.jsonl"
+
+    def test_parse_debug_intents_false(self):
+        """Test DEBUG-INTENTS false parsing."""
+        content = """MODEL gpt-4
+DEBUG-INTENTS false
+PROMPT Test.
+"""
+        conv = ConversationFile.parse(content)
+        assert conv.debug_intents is False
+
     def test_multiline_prompt(self, multiline_conv_content):
         """Test multiline prompt parsing with indentation continuation."""
         conv = ConversationFile.parse(multiline_conv_content)

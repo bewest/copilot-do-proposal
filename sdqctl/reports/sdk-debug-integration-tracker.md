@@ -13,9 +13,9 @@
 |--------|-------|--------|------------|
 | 1 | Intent Tracking & Exposure | ✅ Complete | 5/5 |
 | 2 | Enhanced Tool Logging | ✅ Complete | 4/4 |
-| 3 | Event Export (JSONL) | ⏳ In Progress | 0/5 |
-| 4 | TRACE Level (-vvv) | ⏳ Pending | 0/4 |
-| 5 | Debug ConversationFile Directives | ⏳ Pending | 0/5 |
+| 3 | Event Export (JSONL) | ✅ Complete | 5/5 |
+| 4 | TRACE Level (-vvv) | ✅ Complete | 4/4 |
+| 5 | Debug ConversationFile Directives | ✅ Complete | 5/5 |
 
 ---
 
@@ -54,59 +54,53 @@ Improve visibility into tool execution with timing and status tracking.
 
 ---
 
-## Sprint 3: Event Export (JSONL) ⏳
+## Sprint 3: Event Export (JSONL) ✅ COMPLETE
 
 Export all SDK events to JSONL file for offline analysis.
 
-**Current state:** Events are logged but not persisted in structured format.
+- [x] Create `EventRecord` dataclass with event_type, timestamp, data, session_id, turn
+- [x] Create `EventCollector` class to accumulate events during session
+- [x] Add `--event-log PATH` option to `run` and `cycle` commands
+- [x] Write events to JSONL on session complete or error
+- [x] Add test for event export format validation
 
-- [ ] Create `EventRecord` dataclass with event_type, timestamp, data, session_id, turn
-- [ ] Create `EventCollector` class to accumulate events during session
-- [ ] Add `--event-log PATH` option to `run` and `cycle` commands
-- [ ] Write events to JSONL on session complete or error
-- [ ] Add test for event export format validation
-
-**Files to modify:**
-- `sdqctl/adapters/copilot.py` (EventRecord, EventCollector)
+**Files modified:**
+- `sdqctl/adapters/copilot.py` (EventRecord, EventCollector, export_events)
 - `sdqctl/commands/run.py` (--event-log option)
 - `sdqctl/commands/cycle.py` (--event-log option)
+- `tests/test_copilot_adapter.py` (TestEventCollector, TestCopilotAdapterEventExport)
 
 ---
 
-## Sprint 4: TRACE Level (-vvv) ⏳
+## Sprint 4: TRACE Level (-vvv) ✅ COMPLETE
 
 Add TRACE level logging for maximum visibility during debugging.
 
-**Current state:** -vv gives DEBUG, but no way to see all SDK events.
+- [x] Define `TRACE = 5` level in `core/logging.py` with `logging.addLevelName()`
+- [x] Update `setup_logging()` to set TRACE for `-vvv`
+- [x] Route all SDK events (including UNKNOWN) to TRACE level
+- [x] Document TRACE level in README.md
 
-- [ ] Define `TRACE = 5` level in `core/logging.py` with `logging.addLevelName()`
-- [ ] Update `setup_logging()` to set TRACE for `-vvv`
-- [ ] Route all SDK events (including UNKNOWN) to TRACE level
-- [ ] Document TRACE level in README.md
-
-**Files to modify:**
-- `sdqctl/core/logging.py` (TRACE level, setup_logging)
-- `sdqctl/adapters/copilot.py` (use TRACE for verbose events)
-- `README.md` (documentation)
+**Note:** Already implemented in previous session. TRACE level (5) exists in core/logging.py.
 
 ---
 
-## Sprint 5: Debug ConversationFile Directives ⏳
+## Sprint 5: Debug ConversationFile Directives ✅ COMPLETE
 
 Add ConversationFile directives for debug configuration.
 
-**Current state:** Debug options only available via CLI flags.
+- [x] Add `DEBUG` directive to DirectiveType enum (comma-separated categories)
+- [x] Add `DEBUG-INTENTS` directive (true/false)
+- [x] Add `EVENT-LOG` directive (path with {{DATETIME}} template vars)
+- [x] Parse debug config in `ConversationFile.from_file()`
+- [x] Pass debug config through to adapter
 
-- [ ] Add `DEBUG` directive to DirectiveType enum (comma-separated categories)
-- [ ] Add `DEBUG-INTENTS` directive (true/false)
-- [ ] Add `EVENT-LOG` directive (path with {{DATETIME}} template vars)
-- [ ] Parse debug config in `ConversationFile.from_file()`
-- [ ] Pass debug config through to adapter
-
-**Files to modify:**
-- `sdqctl/core/conversation.py` (DirectiveType, parsing)
+**Files modified:**
+- `sdqctl/core/conversation.py` (DirectiveType enum, ConversationFile fields, parsing)
 - `sdqctl/adapters/base.py` (AdapterConfig debug fields)
-- `sdqctl/adapters/copilot.py` (use debug config)
+- `sdqctl/commands/run.py` (pass debug config to adapter)
+- `sdqctl/commands/cycle.py` (pass debug config to adapter)
+- `tests/test_conversation.py` (test_parse_debug_directives, test_parse_debug_intents_false)
 
 ---
 
@@ -114,9 +108,7 @@ Add ConversationFile directives for debug configuration.
 
 | Priority | Sprint | Item | Rationale |
 |----------|--------|------|-----------|
-| 1 | 3 | Create EventRecord dataclass | Foundation for event capture |
-| 2 | 3 | Add EventCollector class | Accumulates events for export |
-| 3 | 3 | Add --event-log CLI option | User-facing feature |
+| - | - | All sprints complete | Phase 1 Debug/Logging features done |
 
 ---
 
@@ -127,6 +119,28 @@ Add ConversationFile directives for debug configuration.
 ---
 
 ## Session History
+
+### Session 3: Sprint 5 Complete (2026-01-22)
+**Completed:** 
+- Sprint 5: Debug ConversationFile Directives (5 items)
+**Files modified:**
+- `sdqctl/core/conversation.py` - DEBUG, DEBUG-INTENTS, EVENT-LOG directives
+- `sdqctl/adapters/base.py` - AdapterConfig debug fields
+- `sdqctl/commands/run.py` - pass debug config to adapter
+- `sdqctl/commands/cycle.py` - pass debug config to adapter
+- `tests/test_conversation.py` - 2 new tests for debug directives
+**Tests:** 488 total tests passing
+**Status:** Phase 1 (Debug/Logging Features) COMPLETE
+
+### Session 2: Sprint 3 Complete (2026-01-22)
+**Completed:** 
+- Sprint 3: Event Export (JSONL) (5 items)
+**Files modified:**
+- `sdqctl/adapters/copilot.py` - EventRecord, EventCollector, export_events
+- `sdqctl/commands/run.py` - --event-log option
+- `sdqctl/commands/cycle.py` - --event-log option
+- `tests/test_copilot_adapter.py` - TestEventCollector, TestCopilotAdapterEventExport (8 new tests)
+**Tests:** 486 total tests passing
 
 ### Session 1: Sprints 1-2 Complete (2026-01-22)
 **Completed:** 

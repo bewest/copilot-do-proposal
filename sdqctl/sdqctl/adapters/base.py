@@ -17,6 +17,11 @@ class AdapterConfig:
     streaming: bool = True
     tools: list[dict] = field(default_factory=list)
     extra: dict = field(default_factory=dict)
+    
+    # Debug configuration (from ConversationFile DEBUG directives)
+    debug_categories: list[str] = field(default_factory=list)  # session, tool, intent, event, all
+    debug_intents: bool = False  # Verbose intent tracking
+    event_log: Optional[str] = None  # Path for event export
 
 
 @dataclass
