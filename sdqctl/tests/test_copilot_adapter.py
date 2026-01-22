@@ -919,7 +919,8 @@ class TestHookEventHandling:
                 event = MagicMock()
                 event.type = MockEventType("hook.start")
                 event.data = MagicMock()
-                event.data.name = "pre-commit"
+                event.data.hook_type = "pre-commit"  # SDK uses hook_type
+                event.data.name = None
                 event.data.hook = None
                 handler(event)
                 
@@ -927,7 +928,8 @@ class TestHookEventHandling:
                 event = MagicMock()
                 event.type = MockEventType("hook.end")
                 event.data = MagicMock()
-                event.data.name = "pre-commit"
+                event.data.hook_type = "pre-commit"  # SDK uses hook_type
+                event.data.name = None
                 event.data.hook = None
                 event.data.success = True
                 handler(event)

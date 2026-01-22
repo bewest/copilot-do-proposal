@@ -25,6 +25,37 @@ logger = logging.getLogger("sdqctl.adapters.copilot")
 TRACE = 5
 
 
+def _get_field(data: Any, *keys: str, default: Any = None) -> Any:
+    """Extract a field from data, trying multiple attribute/key names.
+    
+    Handles both object attributes and dict-like access patterns, which is
+    important because SDK event data may come as either depending on version.
+    
+    Args:
+        data: SDK event data (object or dict)
+        *keys: Attribute/key names to try in order
+        default: Value to return if no key is found
+        
+    Returns:
+        The first found value, or default if none found
+    """
+    if data is None:
+        return default
+    
+    for key in keys:
+        # Try attribute access first (for SDK Data objects)
+        val = getattr(data, key, None)
+        if val is not None:
+            return val
+        # Try dict-style access (if data is dict or has __getitem__)
+        if isinstance(data, dict):
+            val = data.get(key)
+            if val is not None:
+                return val
+    
+    return default
+
+
 def _format_data(data: Any, include_fields: list[str] | None = None) -> str:
     """Format SDK Data object for logging, filtering out None values.
     
@@ -327,15 +358,18 @@ class CopilotAdapter(AdapterBase):
 
             # Session events
             if event_type == "session.start":
-                context = getattr(data, "context", None)
-                if context and hasattr(context, "branch"):
-                    stats.context_info = {
-                        "branch": getattr(context, "branch", None),
-                        "cwd": getattr(context, "cwd", None),
-                        "repository": getattr(context, "repository", None),
-                    }
-                    logger.info(f"Session: branch={context.branch}, repo={getattr(context, 'repository', 'unknown')}")
-                model = getattr(data, "selected_model", None)
+                context = _get_field(data, "context")
+                if context:
+                    branch = _get_field(context, "branch")
+                    if branch:
+                        stats.context_info = {
+                            "branch": branch,
+                            "cwd": _get_field(context, "cwd"),
+                            "repository": _get_field(context, "repository"),
+                        }
+                        repo = _get_field(context, "repository", default="unknown")
+                        logger.info(f"Session: branch={branch}, repo={repo}")
+                model = _get_field(data, "selected_model")
                 if model:
                     stats.model = model
                     logger.debug(f"Model: {model}")
@@ -346,7 +380,7 @@ class CopilotAdapter(AdapterBase):
                     logger.log(TRACE, f"Session info: {_format_data(data)}")
 
             elif event_type == "session.error":
-                error = getattr(data, "error", None) or getattr(data, "message", str(data))
+                error = _get_field(data, "error", "message", default=str(data))
                 logger.error(f"Session error: {error}")
                 progress(f"  ⚠️  Error: {error}")
 
@@ -363,7 +397,7 @@ class CopilotAdapter(AdapterBase):
                 logger.info(f"Turn {stats.turns} ended")
 
             elif event_type == "assistant.intent":
-                intent = getattr(data, "intent", None) or getattr(data, "content", str(data))
+                intent = _get_field(data, "intent", "content", default=str(data))
                 # Track intent changes
                 if intent and intent != stats.current_intent:
                     stats.current_intent = intent
@@ -376,17 +410,17 @@ class CopilotAdapter(AdapterBase):
 
             # Message events
             elif event_type == "assistant.message_delta":
-                delta = getattr(data, "delta_content", "") or ""
+                delta = _get_field(data, "delta_content", default="")
                 chunks.append(delta)
                 if on_chunk and delta:
                     on_chunk(delta)
 
             elif event_type == "assistant.message":
-                full_response = getattr(data, "content", "") or ""
+                full_response = _get_field(data, "content", default="")
 
             # Reasoning events
             elif event_type == "assistant.reasoning":
-                reasoning = getattr(data, "content", "") or getattr(data, "reasoning", str(data))
+                reasoning = _get_field(data, "content", "reasoning", default=str(data))
                 logger.debug(f"Reasoning: {reasoning[:200]}..." if len(str(reasoning)) > 200 else f"Reasoning: {reasoning}")
                 reasoning_parts.append(reasoning)
                 if on_reasoning:
@@ -395,15 +429,15 @@ class CopilotAdapter(AdapterBase):
             elif event_type == "assistant.reasoning_delta":
                 # Skip logging deltas - we get full reasoning in assistant.reasoning
                 # This avoids duplicate content at verbose levels (Q-004)
-                delta = getattr(data, "delta_content", "") or ""
+                delta = _get_field(data, "delta_content", default="")
                 # Only log deltas if explicitly requested via very high verbosity
                 # and no full reasoning has been received yet
                 pass  # Intentionally skip logging to reduce noise
 
             # Usage events
             elif event_type == "assistant.usage":
-                input_tokens = int(getattr(data, "input_tokens", 0) or 0)
-                output_tokens = int(getattr(data, "output_tokens", 0) or 0)
+                input_tokens = int(_get_field(data, "input_tokens", default=0) or 0)
+                output_tokens = int(_get_field(data, "output_tokens", default=0) or 0)
                 turn_stats.input_tokens = input_tokens
                 turn_stats.output_tokens = output_tokens
                 stats.total_input_tokens += input_tokens
@@ -412,9 +446,9 @@ class CopilotAdapter(AdapterBase):
 
             elif event_type == "session.usage_info":
                 # Extract only meaningful usage fields
-                current_tokens = getattr(data, "current_tokens", None)
-                token_limit = getattr(data, "token_limit", None)
-                messages_length = getattr(data, "messages_length", None)
+                current_tokens = _get_field(data, "current_tokens")
+                token_limit = _get_field(data, "token_limit")
+                messages_length = _get_field(data, "messages_length")
                 if current_tokens is not None:
                     pct = int(100 * current_tokens / token_limit) if token_limit else 0
                     logger.debug(f"Context: {int(current_tokens):,}/{int(token_limit):,} tokens ({pct}%), {int(messages_length or 0)} messages")
@@ -424,9 +458,9 @@ class CopilotAdapter(AdapterBase):
 
             # Tool events
             elif event_type == "tool.execution_start":
-                tool_name = getattr(data, "name", None) or getattr(data, "tool", "unknown")
-                tool_call_id = getattr(data, "tool_call_id", None) or getattr(data, "id", str(turn_stats.tool_calls))
-                tool_args = getattr(data, "arguments", None) or getattr(data, "args", {})
+                tool_name = _get_field(data, "tool_name", "name", "tool", default="unknown")
+                tool_call_id = _get_field(data, "tool_call_id", "id", default=str(turn_stats.tool_calls))
+                tool_args = _get_field(data, "arguments", "args", default={})
                 
                 turn_stats.tool_calls += 1
                 stats.total_tool_calls += 1
@@ -447,9 +481,9 @@ class CopilotAdapter(AdapterBase):
                     logger.debug(f"  Args: {args_str}")
 
             elif event_type == "tool.execution_complete":
-                tool_name = getattr(data, "name", None) or getattr(data, "tool", "unknown")
-                tool_call_id = getattr(data, "tool_call_id", None) or getattr(data, "id", None)
-                success = getattr(data, "success", True)  # Default to success if not specified
+                tool_name = _get_field(data, "tool_name", "name", "tool", default="unknown")
+                tool_call_id = _get_field(data, "tool_call_id", "id")
+                success = _get_field(data, "success", default=True)
                 
                 # Calculate duration if we tracked this tool
                 duration_str = ""
@@ -474,7 +508,7 @@ class CopilotAdapter(AdapterBase):
                     logger.log(TRACE, "Tool partial result")
 
             elif event_type == "tool.user_requested":
-                tool_name = getattr(data, "name", None) or "unknown"
+                tool_name = _get_field(data, "tool_name", "name", "tool", default="unknown")
                 logger.info(f"Tool requested (user): {tool_name}")
 
             # Compaction events
@@ -483,56 +517,56 @@ class CopilotAdapter(AdapterBase):
                 progress("  🗜️  Compacting...")
 
             elif event_type == "session.compaction_complete":
-                tokens_used = getattr(data, "compaction_tokens_used", None)
+                tokens_used = _get_field(data, "compaction_tokens_used")
                 if tokens_used:
-                    before = getattr(tokens_used, "before", 0)
-                    after = getattr(tokens_used, "after", 0)
+                    before = _get_field(tokens_used, "before", default=0)
+                    after = _get_field(tokens_used, "after", default=0)
                     logger.info(f"Compaction complete: {before} → {after} tokens")
                     progress(f"  🗜️  Compacted: {before} → {after} tokens")
 
             # Subagent events
             elif event_type == "subagent.started":
-                agent = getattr(data, "agent", None) or getattr(data, "name", "unknown")
+                agent = _get_field(data, "agent_name", "agent", "name", default="unknown")
                 logger.info(f"Subagent started: {agent}")
 
             elif event_type == "subagent.completed":
-                agent = getattr(data, "agent", None) or getattr(data, "name", "unknown")
+                agent = _get_field(data, "agent_name", "agent", "name", default="unknown")
                 logger.info(f"Subagent completed: {agent}")
 
             elif event_type == "subagent.failed":
-                agent = getattr(data, "agent", None) or getattr(data, "name", "unknown")
-                error = getattr(data, "error", "unknown")
+                agent = _get_field(data, "agent_name", "agent", "name", default="unknown")
+                error = _get_field(data, "error", default="unknown")
                 logger.warning(f"Subagent failed: {agent} - {error}")
 
             # Hook events
             elif event_type == "hook.start":
-                hook_name = getattr(data, "name", None) or getattr(data, "hook", "unknown")
+                hook_name = _get_field(data, "hook_type", "name", "hook", default="unknown")
                 logger.info(f"🪝 Hook started: {hook_name}")
 
             elif event_type == "hook.end":
-                hook_name = getattr(data, "name", None) or getattr(data, "hook", "unknown")
-                success = getattr(data, "success", True)
+                hook_name = _get_field(data, "hook_type", "name", "hook", default="unknown")
+                success = _get_field(data, "success", default=True)
                 status_icon = "✓" if success else "✗"
                 logger.info(f"  {status_icon} Hook: {hook_name}")
 
             # Session handoff (model change, context transfer)
             elif event_type == "session.handoff":
-                target = getattr(data, "target", None) or getattr(data, "to", "unknown")
-                reason = getattr(data, "reason", None)
+                target = _get_field(data, "target", "to", default="unknown")
+                reason = _get_field(data, "reason")
                 reason_str = f" ({reason})" if reason else ""
                 logger.info(f"Session handoff → {target}{reason_str}")
                 progress(f"  ➜ Handoff: {target}")
 
             elif event_type == "session.model_change":
-                old_model = getattr(data, "from", None) or getattr(data, "old_model", "unknown")
-                new_model = getattr(data, "to", None) or getattr(data, "new_model", "unknown")
+                old_model = _get_field(data, "from", "old_model", default="unknown")
+                new_model = _get_field(data, "to", "new_model", default="unknown")
                 logger.info(f"Model changed: {old_model} → {new_model}")
                 stats.model = new_model
 
             # ABORT event - agent signals it should stop
             elif event_type == "abort":
-                reason = getattr(data, "reason", None) or getattr(data, "message", "unknown")
-                details = getattr(data, "details", None)
+                reason = _get_field(data, "reason", "message", default="unknown")
+                details = _get_field(data, "details")
                 logger.warning(f"🛑 Agent abort signal: {reason}")
                 progress(f"  🛑 Abort: {reason}")
                 # Store abort info for later retrieval
