@@ -34,7 +34,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from sdqctl.adapters import get_adapter
 from sdqctl.adapters.base import AdapterConfig
 from sdqctl.core.exceptions import AgentAborted, LoopDetected
-from sdqctl.core.loop_detector import LoopDetector
+from sdqctl.core.loop_detector import LoopDetector, generate_nonce
 
 console = Console()
 
@@ -57,6 +57,30 @@ Include phrases like:
 Keep your response brief (1-2 sentences). This tests the SDK's cessation/abort mechanism."""
 
 MINIMAL_RESPONSE_PROMPT = """Respond with only the word "OK" and nothing else."""
+
+STOP_FILE_ELICIT_PROMPT = """[STOP FILE CREATION TEST]
+
+You are being tested for the automation stop file feature.
+
+## Your Task
+
+Create a stop file to signal that automation should halt. The filename is:
+
+    {stop_file_name}
+
+Use the create tool (or bash with echo) to write this file with the following JSON content:
+
+```json
+{{
+  "reason": "Stop file creation test - verifying agent can create automation stop signals",
+  "needs_review": true,
+  "test_id": "stop-file-elicit"
+}}
+```
+
+After creating the file, confirm you created it.
+
+This tests whether the agent correctly receives and acts on stop file instructions."""
 
 
 @dataclass
@@ -379,6 +403,144 @@ async def run_minimal_response_test(
     return result
 
 
+@dataclass
+class StopFileTestResult:
+    """Result of stop file elicitation test."""
+    test_name: str
+    nonce: str
+    stop_file_name: str
+    stop_file_created: bool = False
+    stop_file_content: Optional[dict] = None
+    agent_response: Optional[str] = None
+    events_file: Optional[str] = None
+    error: Optional[str] = None
+
+
+async def run_stop_file_elicit_test(
+    adapter_name: str,
+    model: str,
+    output_dir: Path,
+    verbose: bool = False,
+    nonce: Optional[str] = None,
+) -> StopFileTestResult:
+    """Test if agent will create a stop file when instructed.
+    
+    This tests the full stop file workflow:
+    1. Generate a nonce (or use provided one)
+    2. Send prompt with stop file instruction
+    3. Check if agent created the file
+    4. Read and validate file content
+    """
+    nonce = nonce or generate_nonce()
+    stop_file_name = f"STOPAUTOMATION-{nonce}.json"
+    stop_file_path = Path.cwd() / stop_file_name
+    events_file = output_dir / "stop_file_elicit_events.jsonl"
+    
+    result = StopFileTestResult(
+        test_name="stop_file_elicit",
+        nonce=nonce,
+        stop_file_name=stop_file_name,
+        events_file=str(events_file),
+    )
+    
+    # Clean up any existing stop file
+    if stop_file_path.exists():
+        stop_file_path.unlink()
+    
+    adapter = get_adapter(adapter_name)
+    
+    try:
+        await adapter.start()
+        
+        session = await adapter.create_session(
+            AdapterConfig(
+                model=model,
+                streaming=True,
+                event_log=str(events_file),
+            )
+        )
+        
+        try:
+            prompt = STOP_FILE_ELICIT_PROMPT.format(stop_file_name=stop_file_name)
+            
+            if verbose:
+                console.print(f"\n[cyan]═══ Stop File Elicit Test ═══[/cyan]")
+                console.print(f"[dim]Nonce: {nonce}[/dim]")
+                console.print(f"[dim]Stop file: {stop_file_name}[/dim]")
+                console.print(f"[dim]Prompt: {prompt[:100]}...[/dim]")
+            
+            try:
+                response = await adapter.send(session, prompt)
+                result.agent_response = response
+                
+                if verbose:
+                    console.print(f"[green]Response ({len(response)} chars):[/green] {response[:300]}...")
+                
+            except AgentAborted as e:
+                result.error = f"Agent aborted: {e.reason}"
+                if verbose:
+                    console.print(f"[red]🛑 SDK Abort: {e.reason}[/red]")
+                    
+        finally:
+            if hasattr(adapter, 'export_events'):
+                adapter.export_events(session, str(events_file))
+            await adapter.destroy_session(session)
+            
+    except Exception as e:
+        result.error = str(e)
+        if verbose:
+            console.print(f"[red]Error: {e}[/red]")
+    finally:
+        await adapter.stop()
+    
+    # Check if stop file was created
+    if stop_file_path.exists():
+        result.stop_file_created = True
+        try:
+            content = stop_file_path.read_text()
+            result.stop_file_content = json.loads(content)
+            if verbose:
+                console.print(f"[green]✓ Stop file created![/green]")
+                console.print(f"[dim]Content: {content}[/dim]")
+        except json.JSONDecodeError:
+            result.stop_file_content = {"raw": stop_file_path.read_text()}
+            if verbose:
+                console.print(f"[yellow]Stop file created but not valid JSON[/yellow]")
+    else:
+        if verbose:
+            console.print(f"[yellow]Stop file NOT created[/yellow]")
+    
+    return result
+
+
+def print_stop_file_result(result: StopFileTestResult):
+    """Print detailed panel for stop file test result."""
+    lines = [
+        f"[bold]Test:[/bold] {result.test_name}",
+        f"[bold]Nonce:[/bold] {result.nonce}",
+        f"[bold]Stop File:[/bold] {result.stop_file_name}",
+    ]
+    
+    if result.stop_file_created:
+        lines.append(f"[bold green]Created:[/bold green] ✓ Yes")
+        if result.stop_file_content:
+            lines.append(f"[bold]Content:[/bold] {json.dumps(result.stop_file_content, indent=2)}")
+    else:
+        lines.append(f"[bold yellow]Created:[/bold yellow] ✗ No")
+    
+    if result.agent_response:
+        lines.append(f"[bold]Agent Response:[/bold]")
+        lines.append(f"  {result.agent_response[:500]}...")
+    
+    if result.error:
+        lines.append(f"[bold red]Error:[/bold red] {result.error}")
+    
+    if result.events_file:
+        lines.append(f"[bold]Events:[/bold] {result.events_file}")
+    
+    console.print(Panel("\n".join(lines), title=f"Results: {result.test_name}"))
+
+
 def print_results_table(results: list[TestResult]):
     """Print summary table of test results."""
     table = Table(title="Loop Detection Stress Test Results", show_header=True)
@@ -594,6 +756,39 @@ def run_all(ctx, cycles: int):
     for result in results:
         console.print()
         print_detailed_result(result)
+
+
+@cli.command()
+@click.option("--nonce", default=None, help="Specific nonce to use (random if not set)")
+@click.pass_context
+def stopfile(ctx, nonce: Optional[str]):
+    """Run stop file creation test - asks AI to create STOPAUTOMATION file."""
+    test_nonce = nonce or generate_nonce()
+    console.print(Panel.fit(
+        f"Running stop file elicit test\n"
+        f"Adapter: {ctx.obj['adapter']}\n"
+        f"Model: {ctx.obj['model']}\n"
+        f"Nonce: {test_nonce}",
+        title="📁 Stop File Elicit Test"
+    ))
+    
+    result = asyncio.run(run_stop_file_elicit_test(
+        ctx.obj["adapter"],
+        ctx.obj["model"],
+        ctx.obj["output_dir"],
+        ctx.obj["verbose"],
+        nonce=test_nonce,
+    ))
+    
+    print_stop_file_result(result)
+    
+    # Exit code based on whether file was created
+    if result.stop_file_created:
+        console.print("\n[green]✓ Stop file mechanism VERIFIED - agent created the file[/green]")
+        raise SystemExit(0)
+    else:
+        console.print("\n[yellow]⚠ Stop file NOT created - agent may have been blocked or refused[/yellow]")
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

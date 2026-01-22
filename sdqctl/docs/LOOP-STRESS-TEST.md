@@ -9,7 +9,7 @@ This tool tests four detection mechanisms in the `LoopDetector` class:
 1. **REASONING_PATTERN** - Detects when the AI's reasoning contains loop-aware phrases like "in a loop", "repeated prompt", etc.
 2. **IDENTICAL_RESPONSES** - Detects when 2 consecutive responses are identical (lowered from 3 in Q-002 fix)
 3. **MINIMAL_RESPONSE** - Detects when responses become suspiciously short (<100 chars) after the first cycle
-4. **STOP_FILE** - Detects when the agent creates a `STOPAUTOMATION-{session_hash}.json` file to signal stop
+4. **STOP_FILE** - Detects when the agent creates a `STOPAUTOMATION-{nonce}.json` file to signal stop (✅ verified working)
 
 ## Quick Start
 
@@ -69,13 +69,49 @@ Sends a prompt asking for very short response after setup:
 The agent can create a stop file to explicitly request automation stop:
 
 ```bash
-# Agent creates: STOPAUTOMATION-{session_hash}.json
-# with contents like: {"reason": "Task complete, no further work needed"}
+# Test stop file creation explicitly
+python -m tests.integration.test_loop_stress -v stopfile --nonce testelicit01
 ```
 
 **Expected Results:**
-- `STOP_FILE` triggers when the file is detected during any cycle
-- Session hash is derived from session ID for security (agent must know the ID)
+- Agent creates `STOPAUTOMATION-{nonce}.json` with JSON content
+- `STOP_FILE` detection triggers when the file is detected during any cycle
+
+**Verified Behavior (2026-01-22):**
+
+The stop file mechanism has been **verified working** with the Copilot SDK:
+- Agent successfully receives the stop file instruction
+- Agent creates the file with valid JSON content
+- Detection correctly identifies the file and halts automation
+
+Example verified test output:
+```
+✓ Stop file created!
+Content: {
+  "reason": "Stop file creation test - verifying agent can create automation stop signals",
+  "needs_review": true,
+  "test_id": "stop-file-elicit"
+}
+```
+
+**Stop File Persistence:**
+
+The stop file is **intentionally left in place** for human inspection. Subsequent runs will detect the existing file and refuse to continue until reviewed:
+
+```
+╭─────────────────── 🛑 Review Required ───────────────────╮
+│ ⚠️  Stop file exists from previous run                   │
+│                                                          │
+│ File: STOPAUTOMATION-testelicit01.json                   │
+│ Reason: ...                                              │
+│                                                          │
+│ A previous automation run requested human review.        │
+│ Please review the agent's work before continuing.        │
+│                                                          │
+│ To continue: Remove the stop file and run again          │
+│     rm STOPAUTOMATION-testelicit01.json                  │
+╰──────────────────────────────────────────────────────────╯
+```
 
 **Default Behavior (Enabled by Default):**
 

@@ -1,0 +1,33 @@
+# Stop File Elicitation Test
+# 
+# This workflow tests whether an agent will create a stop file when instructed.
+# Run with: sdqctl run tests/integration/workflows/stop-file-elicit.conv
+#
+# Expected behavior: Agent should create STOPAUTOMATION-{nonce}.json
+
+MODEL claude-sonnet-4-20250514
+ADAPTER copilot
+
+---
+
+[STOP FILE CREATION TEST]
+
+You are being tested for the stop file automation control feature.
+
+## Your Task
+
+Create the stop file specified in the Automation Control section of this prompt.
+Use the `create` tool to write the file with valid JSON content.
+
+The file should contain:
+```json
+{
+  "reason": "Stop file creation test - verifying agent can create automation stop signals",
+  "needs_review": true,
+  "test_id": "stop-file-elicit-${DATE}"
+}
+```
+
+After creating the file, confirm you created it and show the filename you used.
+
+This tests whether the agent correctly receives and acts on the ${STOP_FILE} instruction.

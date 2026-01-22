@@ -308,6 +308,24 @@ Include JSON explaining why: {"reason": "...", "needs_review": true}
 
 Use `--no-stop-file-prologue` to disable this automatic injection, or `--stop-file-nonce=VALUE` to override the random nonce for testing.
 
+**Stop File Persistence (Verified 2026-01-22):**
+
+The stop file mechanism has been **verified working**. When an agent creates a stop file:
+1. The file remains after automation stops for human inspection
+2. Subsequent runs detect the existing file and refuse to continue
+3. User must review and remove the file to continue
+
+```bash
+# After agent creates stop file, next run shows:
+╭─────────────────── 🛑 Review Required ───────────────────╮
+│ ⚠️  Stop file exists from previous run                   │
+│ File: STOPAUTOMATION-abc123def456.json                   │
+│ Reason: ...                                              │
+│ To continue: Remove the stop file and run again          │
+│     rm STOPAUTOMATION-abc123def456.json                  │
+╰──────────────────────────────────────────────────────────╯
+```
+
 ### See Also
 
 - `docs/LOOP-STRESS-TEST.md` - Full stress test methodology and results

@@ -235,6 +235,30 @@ async def _apply_async(
     progress_data = ProgressTracker(progress_file, component_list)
     progress_data.write_initial()
     
+    # Check if stop file already exists (previous run may have requested stop)
+    stop_file_path = Path.cwd() / f"STOPAUTOMATION-{nonce}.json"
+    if stop_file_path.exists():
+        try:
+            content = stop_file_path.read_text()
+            import json as json_mod
+            stop_data = json_mod.loads(content)
+            reason = stop_data.get("reason", "Unknown reason")
+        except (json_mod.JSONDecodeError, IOError):
+            reason = "Could not read stop file content"
+        
+        console.print(Panel(
+            f"[bold yellow]⚠️  Stop file exists from previous run[/bold yellow]\n\n"
+            f"[bold]File:[/bold] {stop_file_path.name}\n"
+            f"[bold]Reason:[/bold] {reason}\n\n"
+            f"A previous automation run requested human review.\n"
+            f"Please review the agent's work before continuing.\n\n"
+            f"[dim]To continue: Remove the stop file and run again[/dim]\n"
+            f"[dim]    rm {stop_file_path.name}[/dim]",
+            title="🛑 Review Required",
+            border_style="yellow",
+        ))
+        return
+    
     # Get adapter
     try:
         ai_adapter = get_adapter(conv.adapter)

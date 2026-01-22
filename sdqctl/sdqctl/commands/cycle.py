@@ -286,6 +286,30 @@ async def _cycle_async(
 
     # Initialize loop detector with nonce for stop file detection (Q-002)
     loop_detector = LoopDetector(nonce=nonce)
+    
+    # Check if stop file already exists (previous run may have requested stop)
+    if loop_detector.stop_file_path.exists():
+        try:
+            content = loop_detector.stop_file_path.read_text()
+            import json
+            stop_data = json.loads(content)
+            reason = stop_data.get("reason", "Unknown reason")
+        except (json.JSONDecodeError, IOError):
+            reason = "Could not read stop file content"
+        
+        console.print(Panel(
+            f"[bold yellow]⚠️  Stop file exists from previous run[/bold yellow]\n\n"
+            f"[bold]File:[/bold] {loop_detector.stop_file_name}\n"
+            f"[bold]Reason:[/bold] {reason}\n\n"
+            f"A previous automation run requested human review.\n"
+            f"Please review the agent's work before continuing.\n\n"
+            f"[dim]To continue: Remove the stop file and run again[/dim]\n"
+            f"[dim]    rm {loop_detector.stop_file_name}[/dim]",
+            title="🛑 Review Required",
+            border_style="yellow",
+        ))
+        return
+    
     last_reasoning: list[str] = []  # Collect reasoning from callbacks
 
     try:
