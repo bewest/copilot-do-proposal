@@ -446,10 +446,13 @@ ruff check sdqctl/
 
 ### Recently Completed
 
-- ✅ **SDK ABORT Event Handling** - Graceful stop when agent signals abort
 - ✅ **Hook Event Logging** - Track hook.start/hook.end events
 - ✅ **Model Change Tracking** - Log session.model_change events
 - ✅ **Session Handoff Logging** - Track session.handoff events
+
+### Waiting on SDK
+
+- 🔜 **SDK ABORT Event Handling** - Code ready to handle abort signals, but SDK does not currently emit them ([details](./COPILOT-SDK-INTEGRATION.md#gap-sdk-abort-event-not-observed))
 
 ### Planned Features
 
