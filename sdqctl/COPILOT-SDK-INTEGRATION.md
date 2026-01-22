@@ -87,11 +87,17 @@ kind: Literal["shell", "write", "mcp", "read", "url"]
 | `session.start` | ✅ Logged | Context info extraction |
 | `session.error` | ✅ Logged | Error reporting |
 | `session.idle` | ✅ Handled | Completion signal |
-| `assistant.intent` | ⚠️ Logged only | **Not stored/exposed** |
+| `session.truncation` | ✅ Logged | Context size warnings |
+| `session.handoff` | ✅ Logged | Session transfer tracking |
+| `session.model_change` | ✅ Tracked | Model updates in stats |
+| `assistant.intent` | ✅ Tracked | Intent history stored |
 | `assistant.message` | ✅ Captured | Response extraction |
 | `assistant.message_delta` | ✅ Streaming | Real-time output |
 | `assistant.usage` | ✅ Tracked | Token counting |
-| `tool.execution_start/complete` | ✅ Logged | Tool tracking |
+| `tool.execution_start/complete` | ✅ Logged | Tool tracking with timing |
+| `hook.start/hook.end` | ✅ Logged | Hook execution tracking |
+| `subagent.started/completed/failed` | ✅ Logged | Subagent tracking |
+| `abort` | ✅ **Raises AgentAborted** | Graceful workflow stop |
 | **Permission handler** | ❌ Not implemented | - |
 
 ---

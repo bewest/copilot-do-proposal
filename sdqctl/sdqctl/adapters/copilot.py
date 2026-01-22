@@ -164,6 +164,9 @@ class SessionStats:
     active_tools: dict = field(default_factory=dict)
     # Event collector for export
     event_collector: Optional[EventCollector] = None
+    # Abort tracking
+    abort_reason: Optional[str] = None
+    abort_details: Optional[str] = None
 
 
 class CopilotAdapter(AdapterBase):
@@ -499,6 +502,43 @@ class CopilotAdapter(AdapterBase):
                 error = getattr(data, "error", "unknown")
                 logger.warning(f"Subagent failed: {agent} - {error}")
 
+            # Hook events
+            elif event_type == "hook.start":
+                hook_name = getattr(data, "name", None) or getattr(data, "hook", "unknown")
+                logger.info(f"🪝 Hook started: {hook_name}")
+
+            elif event_type == "hook.end":
+                hook_name = getattr(data, "name", None) or getattr(data, "hook", "unknown")
+                success = getattr(data, "success", True)
+                status_icon = "✓" if success else "✗"
+                logger.info(f"  {status_icon} Hook: {hook_name}")
+
+            # Session handoff (model change, context transfer)
+            elif event_type == "session.handoff":
+                target = getattr(data, "target", None) or getattr(data, "to", "unknown")
+                reason = getattr(data, "reason", None)
+                reason_str = f" ({reason})" if reason else ""
+                logger.info(f"Session handoff → {target}{reason_str}")
+                progress(f"  ➜ Handoff: {target}")
+
+            elif event_type == "session.model_change":
+                old_model = getattr(data, "from", None) or getattr(data, "old_model", "unknown")
+                new_model = getattr(data, "to", None) or getattr(data, "new_model", "unknown")
+                logger.info(f"Model changed: {old_model} → {new_model}")
+                stats.model = new_model
+
+            # ABORT event - agent signals it should stop
+            elif event_type == "abort":
+                reason = getattr(data, "reason", None) or getattr(data, "message", "unknown")
+                details = getattr(data, "details", None)
+                logger.warning(f"🛑 Agent abort signal: {reason}")
+                progress(f"  🛑 Abort: {reason}")
+                # Store abort info for later retrieval
+                stats.abort_reason = reason
+                stats.abort_details = details
+                # Signal completion so we don't hang
+                done.set()
+
             # Completion
             elif event_type == "session.idle":
                 done.set()
@@ -516,12 +556,41 @@ class CopilotAdapter(AdapterBase):
         # Wait for completion
         await done.wait()
 
+        # Check if session was aborted - raise exception for caller to handle
+        if stats.abort_reason:
+            from ..core.exceptions import AgentAborted
+            raise AgentAborted(
+                reason=stats.abort_reason,
+                details=stats.abort_details,
+                turn_number=stats.turns,
+            )
+
         # Return full response or assembled chunks
         return full_response or "".join(chunks)
 
     def get_session_stats(self, session: AdapterSession) -> Optional[SessionStats]:
         """Get accumulated stats for a session."""
         return self.session_stats.get(session.id)
+
+    def was_aborted(self, session: AdapterSession) -> bool:
+        """Check if the session received an abort signal.
+        
+        Use this after catching AgentAborted to determine if graceful
+        stop was requested by the agent.
+        """
+        stats = self.session_stats.get(session.id)
+        return stats is not None and stats.abort_reason is not None
+
+    def get_abort_info(self, session: AdapterSession) -> Optional[tuple[str, Optional[str]]]:
+        """Get abort reason and details if session was aborted.
+        
+        Returns:
+            Tuple of (reason, details) or None if not aborted
+        """
+        stats = self.session_stats.get(session.id)
+        if stats and stats.abort_reason:
+            return (stats.abort_reason, stats.abort_details)
+        return None
 
     def export_events(self, session: AdapterSession, path: str) -> int:
         """Export all recorded events for a session to JSONL file.

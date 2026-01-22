@@ -797,3 +797,183 @@ class TestCopilotAdapterEventExport:
         
         count = adapter.export_events(fake_session, "/tmp/events.jsonl")
         assert count == 0
+
+
+class TestAbortEventHandling:
+    """Test abort event handling from SDK."""
+    
+    @pytest.mark.asyncio
+    async def test_abort_event_raises_exception(self, mock_copilot_client, mock_copilot_session):
+        """Test that abort event raises AgentAborted exception."""
+        from sdqctl.core.exceptions import AgentAborted
+        
+        mock_copilot_client.create_session.return_value = mock_copilot_session
+        
+        adapter = CopilotAdapter()
+        adapter.client = mock_copilot_client
+        
+        session = await adapter.create_session(AdapterConfig())
+        
+        async def simulate_abort(*args, **kwargs):
+            handler = mock_copilot_session._event_handler
+            
+            # Start turn
+            event = MagicMock()
+            event.type = MockEventType("assistant.turn_start")
+            event.data = MagicMock()
+            handler(event)
+            
+            # Abort event
+            event = MagicMock()
+            event.type = MockEventType("abort")
+            event.data = MagicMock()
+            event.data.reason = "repeated_request"
+            event.data.details = "The same prompt has been sent multiple times"
+            handler(event)
+        
+        mock_copilot_session.send = simulate_abort
+        
+        with pytest.raises(AgentAborted) as exc_info:
+            await adapter.send(session, "Test prompt")
+        
+        assert exc_info.value.reason == "repeated_request"
+        assert "multiple times" in exc_info.value.details
+        assert exc_info.value.turn_number == 1
+    
+    @pytest.mark.asyncio
+    async def test_abort_event_sets_stats(self, mock_copilot_client, mock_copilot_session):
+        """Test that abort event sets abort info in stats."""
+        from sdqctl.core.exceptions import AgentAborted
+        
+        mock_copilot_client.create_session.return_value = mock_copilot_session
+        
+        adapter = CopilotAdapter()
+        adapter.client = mock_copilot_client
+        
+        session = await adapter.create_session(AdapterConfig())
+        
+        async def simulate_abort(*args, **kwargs):
+            handler = mock_copilot_session._event_handler
+            event = MagicMock()
+            event.type = MockEventType("abort")
+            event.data = MagicMock()
+            event.data.reason = "loop_detected"
+            event.data.details = None
+            handler(event)
+        
+        mock_copilot_session.send = simulate_abort
+        
+        with pytest.raises(AgentAborted):
+            await adapter.send(session, "Test")
+        
+        # Verify stats were set
+        assert adapter.was_aborted(session) is True
+        abort_info = adapter.get_abort_info(session)
+        assert abort_info is not None
+        assert abort_info[0] == "loop_detected"
+    
+    def test_was_aborted_false_for_normal_session(self, mock_copilot_client):
+        """Test was_aborted returns False for normal session."""
+        adapter = CopilotAdapter()
+        adapter.client = mock_copilot_client
+        
+        from sdqctl.adapters.base import AdapterSession
+        session = AdapterSession(id="test", adapter=adapter, config=AdapterConfig())
+        adapter.session_stats["test"] = SessionStats()
+        
+        assert adapter.was_aborted(session) is False
+        assert adapter.get_abort_info(session) is None
+    
+    def test_was_aborted_false_for_unknown_session(self):
+        """Test was_aborted returns False for unknown session."""
+        adapter = CopilotAdapter()
+        
+        from sdqctl.adapters.base import AdapterSession
+        session = AdapterSession(id="unknown", adapter=adapter, config=AdapterConfig())
+        
+        assert adapter.was_aborted(session) is False
+        assert adapter.get_abort_info(session) is None
+
+
+class TestHookEventHandling:
+    """Test hook event logging."""
+    
+    @pytest.mark.asyncio
+    async def test_hook_events_logged(self, mock_copilot_client, mock_copilot_session, caplog):
+        """Test that hook events are logged."""
+        import logging
+        
+        # Set logging level for the specific logger
+        with caplog.at_level(logging.INFO, logger="sdqctl.adapters.copilot"):
+            mock_copilot_client.create_session.return_value = mock_copilot_session
+            
+            adapter = CopilotAdapter()
+            adapter.client = mock_copilot_client
+            
+            session = await adapter.create_session(AdapterConfig())
+            
+            async def simulate_hooks(*args, **kwargs):
+                handler = mock_copilot_session._event_handler
+                
+                # Hook start
+                event = MagicMock()
+                event.type = MockEventType("hook.start")
+                event.data = MagicMock()
+                event.data.name = "pre-commit"
+                event.data.hook = None
+                handler(event)
+                
+                # Hook end
+                event = MagicMock()
+                event.type = MockEventType("hook.end")
+                event.data = MagicMock()
+                event.data.name = "pre-commit"
+                event.data.hook = None
+                event.data.success = True
+                handler(event)
+                
+                # Idle to complete
+                event = MagicMock()
+                event.type = MockEventType("session.idle")
+                handler(event)
+            
+            mock_copilot_session.send = simulate_hooks
+            await adapter.send(session, "Test")
+            
+            assert "Hook started: pre-commit" in caplog.text
+            assert "Hook: pre-commit" in caplog.text
+
+
+class TestModelChangeEvent:
+    """Test model change event handling."""
+    
+    @pytest.mark.asyncio
+    async def test_model_change_updates_stats(self, mock_copilot_client, mock_copilot_session):
+        """Test that model change event updates session stats."""
+        mock_copilot_client.create_session.return_value = mock_copilot_session
+        
+        adapter = CopilotAdapter()
+        adapter.client = mock_copilot_client
+        
+        session = await adapter.create_session(AdapterConfig(model="claude-sonnet-4"))
+        
+        async def simulate_model_change(*args, **kwargs):
+            handler = mock_copilot_session._event_handler
+            
+            # Model change event
+            event = MagicMock()
+            event.type = MockEventType("session.model_change")
+            event.data = MagicMock()
+            event.data.to = "claude-opus-4"
+            handler(event)
+            
+            # Idle to complete
+            event = MagicMock()
+            event.type = MockEventType("session.idle")
+            handler(event)
+        
+        mock_copilot_session.send = simulate_model_change
+        await adapter.send(session, "Test")
+        
+        stats = adapter.get_session_stats(session)
+        assert stats.model == "claude-opus-4"

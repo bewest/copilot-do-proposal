@@ -16,6 +16,7 @@ class ExitCode:
     GENERAL_ERROR = 1
     MISSING_FILES = 2
     LOOP_DETECTED = 3
+    AGENT_ABORTED = 4
 
 
 class LoopReason(Enum):
@@ -66,3 +67,29 @@ class MissingContextFiles(Exception):
     @property
     def exit_code(self) -> int:
         return ExitCode.MISSING_FILES
+
+
+@dataclass
+class AgentAborted(Exception):
+    """Raised when the agent signals it should stop (via SDK abort event).
+    
+    This occurs when the agent determines continuing would be unproductive,
+    such as repeated requests or circular workflows.
+    
+    Attributes:
+        reason: Reason for abort (from SDK event)
+        details: Additional context
+        turn_number: Which turn triggered the abort
+    """
+    reason: str = "unknown"
+    details: Optional[str] = None
+    turn_number: Optional[int] = None
+    
+    def __str__(self) -> str:
+        turn_info = f" (turn {self.turn_number})" if self.turn_number else ""
+        detail_info = f": {self.details}" if self.details else ""
+        return f"Agent aborted{turn_info} - {self.reason}{detail_info}"
+    
+    @property
+    def exit_code(self) -> int:
+        return ExitCode.AGENT_ABORTED

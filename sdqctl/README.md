@@ -409,6 +409,63 @@ pytest
 ruff check sdqctl/
 ```
 
+## Roadmap
+
+### Recently Completed
+
+- ✅ **SDK ABORT Event Handling** - Graceful stop when agent signals abort
+- ✅ **Hook Event Logging** - Track hook.start/hook.end events
+- ✅ **Model Change Tracking** - Log session.model_change events
+- ✅ **Session Handoff Logging** - Track session.handoff events
+
+### Planned Features
+
+#### P1: Conditional RUN Branching
+
+The `RUN` directive currently lacks conditional branching on failure. Proposed:
+
+```dockerfile
+# Current: fails workflow on error
+RUN npm test
+
+# Proposed: branch on failure
+RUN npm test
+  ON-FAILURE PROMPT "Tests failed. Analyze errors and fix."
+  ON-SUCCESS PROMPT "Tests passed. Continue to documentation."
+```
+
+#### P1: Tight Validation Tool Integration
+
+Integrate sdqctl with verification tools (like `verify_refs.py`) as first-class gates:
+
+```dockerfile
+# Proposed: require tool success before continuing
+REQUIRE-TOOL verify_refs --check refs.yaml
+GATE @reports/verification.json exists
+
+# Dynamic context from tool output
+CONTEXT-FROM-TOOL verify_refs --output-format json
+```
+
+#### P2: Permission Handler
+
+Implement SDK permission handler for safe unattended automation:
+
+```dockerfile
+ALLOW-SHELL echo,ls,cat,grep
+DENY-SHELL rm,sudo,chmod
+PERMISSION-MODE strict
+```
+
+#### P3: Hook/Skill Integration
+
+Explore integration with Copilot hooks and skills for:
+- Pre/post prompt hooks for validation
+- Domain-specific skills injection
+- Custom tool registration
+
+See [COPILOT-SDK-INTEGRATION.md](./COPILOT-SDK-INTEGRATION.md) for full SDK integration plans.
+
 ## License
 
 MIT
