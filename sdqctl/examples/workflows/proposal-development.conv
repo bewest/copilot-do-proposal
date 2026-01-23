@@ -153,15 +153,5 @@ FOOTER ```
 OUTPUT-FORMAT markdown
 OUTPUT-FILE reports/proposal-session-{{DATE}}.md
 
-# === Checkpointing ===
-CHECKPOINT-AFTER 1
-CHECKPOINT-NAME proposal-select
-
-CHECKPOINT-AFTER 2
-CHECKPOINT-NAME proposal-work
-
-CHECKPOINT-AFTER 3
-CHECKPOINT-NAME proposal-commit
-
 PROMPT Save all appropriate changes to git.
 COMPACT
