@@ -168,6 +168,12 @@ UCAs that span multiple projects (e.g., Nightscout ↔ Loop sync issues)
 
 ## Completed
 
+### Session 2026-01-23 (continued)
+
+- [x] **STPA workflow templates** - 3 workflows + README (commit 1f9fc31)
+- [x] **Verify CLI commands** - `sdqctl verify refs`, `sdqctl verify all` (commit 816a7db)
+- [x] **Verifier core library** - base.py, refs.py, 10 tests
+
 ### Session 2026-01-23
 
 - [x] **Feature Interaction Matrix** - Resolved all blocking design decisions (COMPACT+VERIFY, RUN-BRANCH+CHECKPOINT)
