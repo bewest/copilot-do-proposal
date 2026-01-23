@@ -63,7 +63,7 @@ All 7 proposed tooling commands are **fully implemented**:
 | [RUN-BRANCHING](RUN-BRANCHING.md) | Ready | Phase 1 ✅, Phase 2 ❌ | RUN-RETRY done, ON-FAILURE pending |
 | [VERIFICATION-DIRECTIVES](VERIFICATION-DIRECTIVES.md) | Ready | Phase 1-4 ✅ | All phases complete |
 | [PIPELINE-ARCHITECTURE](PIPELINE-ARCHITECTURE.md) | Ready | ✅ Complete | --from-json + schema_version implemented |
-| [STPA-INTEGRATION](STPA-INTEGRATION.md) | Draft | Partial | Templates done, VERIFY extensions pending |
+| [STPA-INTEGRATION](STPA-INTEGRATION.md) | Draft | ✅ Core complete | Templates + traceability verifier done |
 | [CLI-ERGONOMICS](CLI-ERGONOMICS.md) | Analysis Complete | N/A | Help implemented, no gaps remaining |
 | [MODEL-REQUIREMENTS](MODEL-REQUIREMENTS.md) | Draft | ❌ Open Questions | Abstract model selection by capability |
 
