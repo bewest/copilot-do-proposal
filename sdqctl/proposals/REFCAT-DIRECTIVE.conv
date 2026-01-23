@@ -165,7 +165,14 @@ OUTPUT-FILE proposals/REFCAT-DESIGN.md
 # Git checkpoint: save design before implementation
 ELIDE
 
-RUN git add proposals/REFCAT-DESIGN.md && git commit -m "docs: REFCAT design specification" 2>&1 || echo "Nothing to commit"
+RUN git --no-pager diff --stat proposals/
+
+PROMPT |
+  If REFCAT-DESIGN.md was created, commit it now:
+  ```bash
+  git add proposals/REFCAT-DESIGN.md
+  git commit -m "docs: REFCAT design specification - <brief summary of key decisions>"
+  ```
 
 # ============================================================================
 # PHASE 3: Implementation
@@ -226,17 +233,22 @@ PROMPT After implementing, show the key functions and their signatures.
 # Git checkpoint: save implementation before tests
 ELIDE
 
-RUN git add sdqctl/core/refcat.py sdqctl/commands/refcat.py sdqctl/core/conversation.py 2>/dev/null; git --no-pager diff --cached --stat
+RUN git --no-pager diff --stat sdqctl/
 
 ELIDE
 
-RUN git commit -m "feat(wip): REFCAT core implementation
+RUN git --no-pager status --short
 
-- sdqctl/core/refcat.py: RefSpec parsing and content extraction
-- sdqctl/commands/refcat.py: CLI command
-- conversation.py: REFCAT directive support (if modified)
-
-Work in progress - tests pending" 2>&1 || echo "Nothing to commit"
+PROMPT |
+  Review the changes above. If core implementation files exist:
+  1. Stage the new/modified files
+  2. Commit as work-in-progress with a descriptive message
+  
+  Example:
+  ```bash
+  git add sdqctl/core/refcat.py sdqctl/commands/refcat.py
+  git commit -m "feat(wip): REFCAT core - <what you implemented>"
+  ```
 
 # ============================================================================
 # PHASE 4: Testing and Documentation
@@ -278,23 +290,21 @@ RUN git --no-pager diff --stat
 
 ELIDE
 
-RUN git add -A && git --no-pager diff --cached --stat
+RUN git --no-pager status --short
 
 PROMPT |
-  Review the staged changes. If tests pass and docs are updated, finalize the commit:
+  Review the changes above. If tests pass and docs are updated:
   
+  1. Stage all relevant files
+  2. Write a descriptive commit message summarizing:
+     - What REFCAT does
+     - Key features implemented
+     - Files created/modified
+  3. Commit and show the result
+  
+  Then verify no regressions:
   ```bash
-  git commit -m "feat: Add REFCAT directive and command for content extraction
-  
-  - Parse ref specs: @path#L10-L50, alias:path, pattern-based
-  - Extract line ranges with context labeling
-  - Format output includes file path, line numbers, CWD reference
-  - CLI command: sdqctl refcat <ref> [--json]
-  - Directive: REFCAT for ConversationFile context injection
-  - Tests: tests/test_refcat.py
-  - Docs: README.md, docs/DIRECTIVES.md updated
-  
-  Closes: ecosystem ref format integration gap"
+  python -m pytest tests/ -v --tb=short 2>&1 | tail -20
   ```
   
   Then verify no regressions:

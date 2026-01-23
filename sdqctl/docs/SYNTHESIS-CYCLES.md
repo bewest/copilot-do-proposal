@@ -15,6 +15,55 @@ A **synthesis cycle** uses sdqctl to improve a codebase iteratively, where each 
 | **Scope** | "Fix all 15 issues" | "Select ONE item" | Focus prevents partial work |
 | **Exit** | MAX-CYCLES 100 | MAX-CYCLES 3-5 | Bounded iteration |
 | **Turns** | Separate RUN + PROMPT | Use `ELIDE` to merge | Fewer agent turns, less token waste |
+| **Git commits** | `RUN git commit -m "..."` | PROMPT "commit with descriptive message" | Agent writes meaningful messages |
+
+---
+
+## Best Practice: Git Operations
+
+**Use PROMPT for commits, RUN for verification.**
+
+The agent writes better commit messages when it describes its actual work, rather than using hardcoded messages in RUN directives.
+
+### ❌ Avoid: Hardcoded commit messages
+
+```dockerfile
+RUN git add -A && git commit -m "feat: implement feature"
+```
+
+Problems:
+- Message doesn't reflect actual changes
+- Commits even if work is incomplete
+- No agent judgment on what to stage
+
+### ✅ Prefer: Agent-driven commits
+
+```dockerfile
+# Show what changed (RUN - deterministic)
+RUN git --no-pager diff --stat
+
+# Let agent review and commit (PROMPT - flexible)
+PROMPT |
+  Review the changes above. If implementation is complete:
+  1. Stage relevant files with git add
+  2. Commit with a descriptive message summarizing what you built
+  3. Show the commit with git log -1 --oneline
+```
+
+Benefits:
+- Agent writes meaningful commit messages
+- Agent decides what's ready to commit
+- Agent can skip commit if work is incomplete
+- Matches how human developers work
+
+### Exception: WIP Checkpoints
+
+For preserving intermediate state (not final commits), `RUN git commit` is acceptable:
+
+```dockerfile
+# Save work-in-progress before risky operation
+RUN git add -A && git commit -m "wip: checkpoint before refactor" || true
+```
 
 ---
 
