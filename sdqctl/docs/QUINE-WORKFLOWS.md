@@ -416,6 +416,7 @@ PROMPT Review the focus document at reports/auth-improvements.md.
 
 ## Next Steps
 
+- **[Context Management](CONTEXT-MANAGEMENT.md)** — Optimal context window strategies
 - **[Traceability Workflows](TRACEABILITY-WORKFLOW.md)** — Requirements → specs → tests → code
 - **[Reverse Engineering](REVERSE-ENGINEERING.md)** — Code → documentation
 - **[Getting Started](GETTING-STARTED.md)** — Basics of sdqctl
