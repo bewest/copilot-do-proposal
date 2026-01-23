@@ -35,6 +35,9 @@ EPILOGUE Cite specific line numbers and file paths in your analysis.
 EPILOGUE Format findings as actionable items with priority (P0=critical, P1=high, P2=medium).
 
 # === Source Code Context ===
+# NOTE: These CONTEXT directives inject ~4000 lines upfront.
+# See docs/CONTEXT-MANAGEMENT.md for the tradeoffs.
+# Alternative: Comment out and let agent read on demand.
 # Core implementation files
 CONTEXT @sdqctl/core/conversation.py
 CONTEXT @sdqctl/commands/run.py
