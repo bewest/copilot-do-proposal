@@ -143,12 +143,17 @@ RUN mkdir -p proposals 2>/dev/null || true
 OUTPUT-FORMAT markdown
 OUTPUT-FILE proposals/REFCAT-DESIGN.md
 
+# Git checkpoint: save design before implementation
+ELIDE
+
+RUN git add proposals/REFCAT-DESIGN.md && git commit -m "docs: REFCAT design specification" 2>&1 || echo "Nothing to commit"
+
 # ============================================================================
 # PHASE 3: Implementation
 # ============================================================================
 
 COMPACT
-COMPACT-SUMMARY Phase 2 complete. Design written to REFCAT-DESIGN.md.
+COMPACT-SUMMARY Phase 2 complete. Design written to REFCAT-DESIGN.md and committed.
 
 PROMPT |
   ## Phase 3: Implementation
@@ -200,12 +205,27 @@ ELIDE
 
 PROMPT After implementing, show the key functions and their signatures.
 
+# Git checkpoint: save implementation before tests
+ELIDE
+
+RUN git add sdqctl/core/refcat.py sdqctl/commands/refcat.py sdqctl/core/conversation.py 2>/dev/null; git --no-pager diff --cached --stat
+
+ELIDE
+
+RUN git commit -m "feat(wip): REFCAT core implementation
+
+- sdqctl/core/refcat.py: RefSpec parsing and content extraction
+- sdqctl/commands/refcat.py: CLI command
+- conversation.py: REFCAT directive support (if modified)
+
+Work in progress - tests pending" 2>&1 || echo "Nothing to commit"
+
 # ============================================================================
 # PHASE 4: Testing and Documentation
 # ============================================================================
 
 COMPACT
-COMPACT-SUMMARY Phase 3 complete. Core implementation done.
+COMPACT-SUMMARY Phase 3 complete. Core implementation committed as WIP.
 
 PROMPT |
   ## Phase 4: Testing and Documentation
@@ -232,7 +252,7 @@ PROMPT |
   - `sdqctl refcat` command
   - Examples with line ranges and patterns
   
-  ### 4.4 Commit Changes
+  ### 4.4 Final Commit
 
 ELIDE
 
@@ -240,12 +260,12 @@ RUN git --no-pager diff --stat
 
 ELIDE
 
+RUN git add -A && git --no-pager diff --cached --stat
+
 PROMPT |
-  Review the changes. If they look correct, stage and commit:
+  Review the staged changes. If tests pass and docs are updated, finalize the commit:
   
   ```bash
-  git add sdqctl/core/refcat.py sdqctl/commands/refcat.py tests/test_refcat.py
-  git add sdqctl/core/conversation.py  # if modified
   git commit -m "feat: Add REFCAT directive and command for content extraction
   
   - Parse ref specs: @path#L10-L50, alias:path, pattern-based
@@ -253,8 +273,15 @@ PROMPT |
   - Format output includes file path, line numbers, CWD reference
   - CLI command: sdqctl refcat <ref> [--json]
   - Directive: REFCAT for ConversationFile context injection
+  - Tests: tests/test_refcat.py
+  - Docs: README.md, docs/DIRECTIVES.md updated
   
   Closes: ecosystem ref format integration gap"
+  ```
+  
+  Then verify no regressions:
+  ```bash
+  python -m pytest tests/ -v --tb=short 2>&1 | tail -20
   ```
 
 EPILOGUE |
