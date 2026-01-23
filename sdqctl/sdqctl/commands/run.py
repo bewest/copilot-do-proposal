@@ -344,8 +344,17 @@ def run(
     """
     # Handle --render-only by delegating to render command logic
     if render_only:
+        import warnings
         import json as json_module
         from ..core.renderer import render_workflow, format_rendered_json, format_rendered_markdown
+        
+        # Deprecation warning
+        warnings.warn(
+            "--render-only is deprecated, use 'sdqctl render run' instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        console.print("[yellow]⚠ --render-only is deprecated. Use: sdqctl render run workflow.conv[/yellow]")
         
         target_path = Path(target)
         if target_path.exists() and target_path.suffix in (".conv", ".copilot"):

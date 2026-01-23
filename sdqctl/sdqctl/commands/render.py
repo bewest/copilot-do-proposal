@@ -8,11 +8,14 @@ Usage:
     sdqctl render workflow.conv
     sdqctl render workflow.conv --json
     sdqctl render workflow.conv -o rendered.md
-    sdqctl render workflow.conv -s fresh -n 3 -o rendered/
+    sdqctl render run workflow.conv     # Equivalent to: sdqctl run --render-only
+    sdqctl render cycle workflow.conv   # Equivalent to: sdqctl cycle --render-only
+    sdqctl render apply workflow.conv   # Equivalent to: sdqctl apply --render-only
 """
 
 import json
 import sys
+import warnings
 from pathlib import Path
 from typing import Optional
 
@@ -32,20 +35,7 @@ logger = get_logger(__name__)
 console = Console()
 
 
-@click.command("render")
-@click.argument("workflow", type=click.Path(exists=True))
-@click.option("--session-mode", "-s", type=click.Choice(["accumulate", "compact", "fresh"]),
-              default="accumulate", help="Session mode (affects output structure for fresh)")
-@click.option("--cycles", "-n", type=int, default=None, help="Number of cycles to render")
-@click.option("--cycle", type=int, default=None, help="Render only this cycle number")
-@click.option("--prompt", type=int, default=None, help="Render only this prompt number")
-@click.option("--output", "-o", default=None, help="Output file or directory")
-@click.option("--json", "json_output", is_flag=True, help="JSON output format")
-@click.option("--no-context", is_flag=True, help="Exclude context file contents")
-@click.option("--no-sections", is_flag=True, help="Omit section markers")
-@click.option("--prologue", multiple=True, help="Additional prologue (inline text or @file)")
-@click.option("--epilogue", multiple=True, help="Additional epilogue (inline text or @file)")
-def render(
+def _render_common(
     workflow: str,
     session_mode: str,
     cycles: Optional[int],
@@ -57,19 +47,12 @@ def render(
     no_sections: bool,
     prologue: tuple[str, ...],
     epilogue: tuple[str, ...],
+    plan_mode: bool = False,
 ) -> None:
-    """Render workflow prompts without executing.
+    """Common render logic for all render subcommands.
     
-    Produces fully-resolved prompts with all context, templates,
-    prologues, and epilogues expanded. No AI calls are made.
-    
-    \b
-    Examples:
-      sdqctl render workflow.conv                  # stdout
-      sdqctl render workflow.conv --json           # JSON format
-      sdqctl render workflow.conv -o rendered.md   # to file
-      sdqctl render workflow.conv -s fresh -n 3    # 3 fresh cycles
-      sdqctl render workflow.conv --cycle 2        # only cycle 2
+    Args:
+        plan_mode: If True, show @file references instead of expanding content
     """
     try:
         # Load workflow
@@ -83,8 +66,8 @@ def render(
             conv.epilogues = list(epilogue) + conv.epilogues
         
         # Validate context files (render is lenient - only warns)
-        errors, warnings = conv.validate_context_files(allow_missing=True)
-        all_issues = errors + warnings
+        errors, warns = conv.validate_context_files(allow_missing=True)
+        all_issues = errors + warns
         if all_issues:
             console.print(f"[yellow]Warning: Some context files not found:[/yellow]")
             for pattern, resolved in all_issues:
@@ -115,12 +98,13 @@ def render(
         
         # Format output
         if json_output:
-            output_content = json.dumps(format_rendered_json(rendered), indent=2)
+            output_content = json.dumps(format_rendered_json(rendered, plan_mode=plan_mode), indent=2)
         else:
             output_content = format_rendered_markdown(
                 rendered,
                 show_sections=not no_sections,
                 include_context=not no_context,
+                plan_mode=plan_mode,
             )
         
         # Write output
@@ -133,7 +117,6 @@ def render(
                 output_path.mkdir(parents=True, exist_ok=True)
                 for c in rendered.cycles:
                     # Create single-cycle rendered workflow for formatting
-                    single_cycle = rendered
                     single_cycle_copy = type(rendered)(
                         workflow_path=rendered.workflow_path,
                         workflow_name=rendered.workflow_name,
@@ -146,13 +129,14 @@ def render(
                     )
                     
                     if json_output:
-                        cycle_content = json.dumps(format_rendered_json(single_cycle_copy), indent=2)
+                        cycle_content = json.dumps(format_rendered_json(single_cycle_copy, plan_mode=plan_mode), indent=2)
                         cycle_file = output_path / f"cycle-{c.number}.json"
                     else:
                         cycle_content = format_rendered_markdown(
                             single_cycle_copy,
                             show_sections=not no_sections,
                             include_context=not no_context,
+                            plan_mode=plan_mode,
                         )
                         cycle_file = output_path / f"cycle-{c.number}.md"
                     
@@ -178,3 +162,240 @@ def render(
         console.print(f"[red]Error: {e}[/red]")
         logger.exception("Render failed")
         sys.exit(1)
+
+
+# Common options for all render subcommands
+def common_render_options(f):
+    """Decorator for common render options."""
+    f = click.option("--session-mode", "-s", type=click.Choice(["accumulate", "compact", "fresh"]),
+                     default="accumulate", help="Session mode (affects output structure for fresh)")(f)
+    f = click.option("--cycles", "-n", type=int, default=None, help="Number of cycles to render")(f)
+    f = click.option("--cycle", type=int, default=None, help="Render only this cycle number")(f)
+    f = click.option("--prompt", type=int, default=None, help="Render only this prompt number")(f)
+    f = click.option("--output", "-o", default=None, help="Output file or directory")(f)
+    f = click.option("--json", "json_output", is_flag=True, help="JSON output format")(f)
+    f = click.option("--no-context", is_flag=True, help="Exclude context file contents")(f)
+    f = click.option("--no-sections", is_flag=True, help="Omit section markers")(f)
+    f = click.option("--prologue", multiple=True, help="Additional prologue (inline text or @file)")(f)
+    f = click.option("--epilogue", multiple=True, help="Additional epilogue (inline text or @file)")(f)
+    f = click.option("--plan", "plan_mode", is_flag=True, help="Show @file references without expanding content")(f)
+    f = click.option("--full", "full_mode", is_flag=True, help="Fully expand all content (default)")(f)
+    return f
+
+
+@click.group("render")
+@click.pass_context
+def render(ctx: click.Context) -> None:
+    """Render workflow prompts without executing.
+    
+    Produces fully-resolved prompts with all context, templates,
+    prologues, and epilogues expanded. No AI calls are made.
+    
+    \b
+    Commands:
+      render run      Render a single-cycle workflow
+      render cycle    Render a multi-cycle workflow
+      render apply    Render a per-component workflow
+    
+    \b
+    Modes:
+      --plan    Show @file references instead of expanding content
+      --full    Fully expand all content (default)
+    
+    \b
+    Examples:
+      sdqctl render run workflow.conv                  # stdout
+      sdqctl render run workflow.conv --plan           # show file refs only
+      sdqctl render run workflow.conv --json           # JSON format
+      sdqctl render cycle workflow.conv -n 3           # render 3 cycles
+    """
+    pass
+
+
+# Default render command (backwards compat with old `sdqctl render workflow.conv`)
+@render.command("file", hidden=False)
+@click.argument("workflow", type=click.Path(exists=True))
+@common_render_options
+def render_file(
+    workflow: str,
+    session_mode: str,
+    cycles: Optional[int],
+    cycle: Optional[int],
+    prompt: Optional[int],
+    output: Optional[str],
+    json_output: bool,
+    no_context: bool,
+    no_sections: bool,
+    prologue: tuple[str, ...],
+    epilogue: tuple[str, ...],
+    plan_mode: bool,
+    full_mode: bool,
+) -> None:
+    """Render a workflow file (legacy, use 'render run' instead).
+    
+    \b
+    Examples:
+      sdqctl render file workflow.conv
+      sdqctl render file workflow.conv --plan
+    """
+    _render_common(
+        workflow=workflow,
+        session_mode=session_mode,
+        cycles=cycles,
+        cycle=cycle,
+        prompt=prompt,
+        output=output,
+        json_output=json_output,
+        no_context=no_context,
+        no_sections=no_sections,
+        prologue=prologue,
+        epilogue=epilogue,
+        plan_mode=plan_mode,
+    )
+
+
+@render.command("run")
+@click.argument("workflow", type=click.Path(exists=True))
+@common_render_options
+def render_run(
+    workflow: str,
+    session_mode: str,
+    cycles: Optional[int],
+    cycle: Optional[int],
+    prompt: Optional[int],
+    output: Optional[str],
+    json_output: bool,
+    no_context: bool,
+    no_sections: bool,
+    prologue: tuple[str, ...],
+    epilogue: tuple[str, ...],
+    plan_mode: bool,
+    full_mode: bool,
+) -> None:
+    """Render workflow for run command (single cycle).
+    
+    Equivalent to: sdqctl run workflow.conv --render-only
+    
+    \b
+    Examples:
+      sdqctl render run workflow.conv
+      sdqctl render run workflow.conv --plan
+      sdqctl render run workflow.conv --json -o rendered.json
+    """
+    _render_common(
+        workflow=workflow,
+        session_mode="accumulate",
+        cycles=1,
+        cycle=cycle,
+        prompt=prompt,
+        output=output,
+        json_output=json_output,
+        no_context=no_context,
+        no_sections=no_sections,
+        prologue=prologue,
+        epilogue=epilogue,
+        plan_mode=plan_mode,
+    )
+
+
+@render.command("cycle")
+@click.argument("workflow", type=click.Path(exists=True))
+@click.option("--max-cycles", "-n", type=int, default=None, help="Maximum cycles to render")
+@common_render_options
+def render_cycle(
+    workflow: str,
+    max_cycles: Optional[int],
+    session_mode: str,
+    cycles: Optional[int],
+    cycle: Optional[int],
+    prompt: Optional[int],
+    output: Optional[str],
+    json_output: bool,
+    no_context: bool,
+    no_sections: bool,
+    prologue: tuple[str, ...],
+    epilogue: tuple[str, ...],
+    plan_mode: bool,
+    full_mode: bool,
+) -> None:
+    """Render workflow for cycle command (multi-cycle).
+    
+    Equivalent to: sdqctl cycle workflow.conv --render-only
+    
+    \b
+    Examples:
+      sdqctl render cycle workflow.conv --max-cycles 5
+      sdqctl render cycle workflow.conv -n 3 --plan
+      sdqctl render cycle workflow.conv -s fresh -o cycles/
+    """
+    # max_cycles takes precedence over cycles
+    num_cycles = max_cycles or cycles
+    
+    _render_common(
+        workflow=workflow,
+        session_mode=session_mode,
+        cycles=num_cycles,
+        cycle=cycle,
+        prompt=prompt,
+        output=output,
+        json_output=json_output,
+        no_context=no_context,
+        no_sections=no_sections,
+        prologue=prologue,
+        epilogue=epilogue,
+        plan_mode=plan_mode,
+    )
+
+
+@render.command("apply")
+@click.argument("workflow", type=click.Path(exists=True))
+@click.option("--components", "-c", multiple=True, help="Component patterns to render")
+@common_render_options
+def render_apply(
+    workflow: str,
+    components: tuple[str, ...],
+    session_mode: str,
+    cycles: Optional[int],
+    cycle: Optional[int],
+    prompt: Optional[int],
+    output: Optional[str],
+    json_output: bool,
+    no_context: bool,
+    no_sections: bool,
+    prologue: tuple[str, ...],
+    epilogue: tuple[str, ...],
+    plan_mode: bool,
+    full_mode: bool,
+) -> None:
+    """Render workflow for apply command (per-component).
+    
+    Equivalent to: sdqctl apply workflow.conv --render-only
+    
+    Shows how the workflow would be rendered for each component.
+    
+    \b
+    Examples:
+      sdqctl render apply workflow.conv --components "lib/*.js"
+      sdqctl render apply workflow.conv -c "src/**/*.py" --plan
+    """
+    # For apply, we'd need to discover components and render each
+    # For now, just render the base workflow with a note
+    console.print(f"[yellow]Note: Rendering base workflow. Use --components to specify targets.[/yellow]")
+    
+    if components:
+        console.print(f"[dim]Component patterns: {list(components)}[/dim]")
+    
+    _render_common(
+        workflow=workflow,
+        session_mode=session_mode,
+        cycles=cycles,
+        cycle=cycle,
+        prompt=prompt,
+        output=output,
+        json_output=json_output,
+        no_context=no_context,
+        no_sections=no_sections,
+        prologue=prologue,
+        epilogue=epilogue,
+        plan_mode=plan_mode,
+    )

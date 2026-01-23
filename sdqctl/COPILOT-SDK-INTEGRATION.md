@@ -682,3 +682,49 @@ ELIDE
 PROMPT Fix all issues.
 # All four elements become one prompt
 ```
+
+---
+
+## Implemented: Render Subcommand Restructuring
+
+The render command has been restructured from a single command to a command group with subcommands.
+
+### Old Way (Deprecated)
+```bash
+sdqctl run workflow.conv --render-only
+sdqctl cycle workflow.conv --render-only
+```
+
+### New Way
+```bash
+sdqctl render run workflow.conv
+sdqctl render cycle workflow.conv
+sdqctl render apply workflow.conv
+```
+
+### New Features
+
+**Plan Mode** - Show file references without expanding content:
+```bash
+sdqctl render run workflow.conv --plan
+```
+
+Output shows `@file` references and token estimates instead of full content:
+```markdown
+### Context Files
+- `@lib/auth.js` (1,234 tokens est.)
+- `@tests/auth.test.js` (567 tokens est.)
+
+### Prompt 1
+**Prompt (raw):**
+Analyze the authentication module.
+```
+
+**Full Mode** (default) - Expands all content as before.
+
+### Benefits
+
+1. **Cleaner API** - `render run`, `render cycle`, `render apply` match the execution commands
+2. **Plan mode** - Quick overview without expensive file expansion
+3. **Better discoverability** - `sdqctl render --help` shows all options
+4. **Backwards compatible** - `--render-only` still works (with deprecation warning)

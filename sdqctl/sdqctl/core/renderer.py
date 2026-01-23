@@ -249,6 +249,7 @@ def format_rendered_markdown(
     rendered: RenderedWorkflow,
     show_sections: bool = True,
     include_context: bool = True,
+    plan_mode: bool = False,
 ) -> str:
     """Format rendered workflow as markdown.
     
@@ -256,6 +257,7 @@ def format_rendered_markdown(
         rendered: The rendered workflow
         show_sections: Whether to add section headers
         include_context: Whether to include context file contents
+        plan_mode: If True, show @file references instead of expanding content
         
     Returns:
         Markdown-formatted string
@@ -267,6 +269,10 @@ def format_rendered_markdown(
     # Header
     lines.append(f"# Rendered Workflow: {rendered.workflow_name}")
     lines.append("")
+    if plan_mode:
+        lines.append("**Mode:** Plan (references only)")
+    else:
+        lines.append("**Mode:** Full (expanded content)")
     lines.append(f"**Session Mode:** {rendered.session_mode}")
     lines.append(f"**Adapter:** {rendered.adapter}")
     lines.append(f"**Model:** {rendered.model}")
@@ -293,22 +299,34 @@ def format_rendered_markdown(
         if include_context and cycle.context_files:
             lines.append("### Context Files")
             lines.append("")
-            for ctx_file in cycle.context_files:
-                rel_path = ctx_file.path.name
-                try:
-                    rel_path = str(ctx_file.path.relative_to(Path.cwd()))
-                except ValueError:
-                    rel_path = str(ctx_file.path)
-                
-                # Detect language for syntax highlighting
-                ext = ctx_file.path.suffix.lstrip(".")
-                lang = _extension_to_language(ext)
-                
-                lines.append(f"#### {rel_path}")
-                lines.append(f"```{lang}")
-                lines.append(ctx_file.content.rstrip())
-                lines.append("```")
+            
+            if plan_mode:
+                # Plan mode: show @file references only
+                for ctx_file in cycle.context_files:
+                    try:
+                        rel_path = str(ctx_file.path.relative_to(Path.cwd()))
+                    except ValueError:
+                        rel_path = str(ctx_file.path)
+                    lines.append(f"- `@{rel_path}` ({ctx_file.tokens_estimate} tokens est.)")
                 lines.append("")
+            else:
+                # Full mode: expand content
+                for ctx_file in cycle.context_files:
+                    rel_path = ctx_file.path.name
+                    try:
+                        rel_path = str(ctx_file.path.relative_to(Path.cwd()))
+                    except ValueError:
+                        rel_path = str(ctx_file.path)
+                    
+                    # Detect language for syntax highlighting
+                    ext = ctx_file.path.suffix.lstrip(".")
+                    lang = _extension_to_language(ext)
+                    
+                    lines.append(f"#### {rel_path}")
+                    lines.append(f"```{lang}")
+                    lines.append(ctx_file.content.rstrip())
+                    lines.append("```")
+                    lines.append("")
         
         # Prompts
         for prompt in cycle.prompts:
@@ -317,74 +335,137 @@ def format_rendered_markdown(
             
             if show_sections and prompt.prologues:
                 lines.append("**Prologues:**")
-                for i, p in enumerate(prompt.prologues, 1):
-                    # Truncate long prologues in summary
-                    preview = p[:200] + "..." if len(p) > 200 else p
-                    preview = preview.replace("\n", " ")
-                    lines.append(f"- [{i}] {preview}")
+                if plan_mode:
+                    # Show @file references
+                    for i, p in enumerate(prompt.prologues, 1):
+                        if p.startswith("@"):
+                            lines.append(f"- [{i}] `{p}`")
+                        else:
+                            preview = p[:80] + "..." if len(p) > 80 else p
+                            lines.append(f"- [{i}] {preview}")
+                else:
+                    for i, p in enumerate(prompt.prologues, 1):
+                        # Truncate long prologues in summary
+                        preview = p[:200] + "..." if len(p) > 200 else p
+                        preview = preview.replace("\n", " ")
+                        lines.append(f"- [{i}] {preview}")
                 lines.append("")
             
-            lines.append("**Resolved Prompt:**")
-            lines.append("")
-            lines.append("```")
-            lines.append(prompt.resolved)
-            lines.append("```")
+            if plan_mode:
+                lines.append("**Prompt (raw):**")
+                lines.append("")
+                lines.append("```")
+                lines.append(prompt.raw)
+                lines.append("```")
+            else:
+                lines.append("**Resolved Prompt:**")
+                lines.append("")
+                lines.append("```")
+                lines.append(prompt.resolved)
+                lines.append("```")
             lines.append("")
             
             if show_sections and prompt.epilogues:
                 lines.append("**Epilogues:**")
-                for i, e in enumerate(prompt.epilogues, 1):
-                    preview = e[:200] + "..." if len(e) > 200 else e
-                    preview = preview.replace("\n", " ")
-                    lines.append(f"- [{i}] {preview}")
+                if plan_mode:
+                    for i, e in enumerate(prompt.epilogues, 1):
+                        if e.startswith("@"):
+                            lines.append(f"- [{i}] `{e}`")
+                        else:
+                            preview = e[:80] + "..." if len(e) > 80 else e
+                            lines.append(f"- [{i}] {preview}")
+                else:
+                    for i, e in enumerate(prompt.epilogues, 1):
+                        preview = e[:200] + "..." if len(e) > 200 else e
+                        preview = preview.replace("\n", " ")
+                        lines.append(f"- [{i}] {preview}")
                 lines.append("")
     
     return "\n".join(lines)
 
 
-def format_rendered_json(rendered: RenderedWorkflow) -> dict:
+def format_rendered_json(rendered: RenderedWorkflow, plan_mode: bool = False) -> dict:
     """Format rendered workflow as JSON-serializable dict.
     
     Args:
         rendered: The rendered workflow
+        plan_mode: If True, omit expanded content and show references only
         
     Returns:
         Dict suitable for json.dumps()
     """
-    return {
-        "workflow": str(rendered.workflow_path) if rendered.workflow_path else None,
-        "workflow_name": rendered.workflow_name,
-        "session_mode": rendered.session_mode,
-        "adapter": rendered.adapter,
-        "model": rendered.model,
-        "max_cycles": rendered.max_cycles,
-        "template_variables": rendered.base_variables,
-        "cycles": [
-            {
-                "number": cycle.number,
-                "variables": cycle.variables,
-                "context_files": [
-                    {
-                        "path": str(cf.path),
-                        "content": cf.content,
-                        "tokens_estimate": cf.tokens_estimate,
-                    }
-                    for cf in cycle.context_files
-                ],
-                "prompts": [
-                    {
-                        "index": p.index,
-                        "raw": p.raw,
-                        "prologues": p.prologues,
-                        "epilogues": p.epilogues,
-                        "resolved": p.resolved,
-                    }
-                    for p in cycle.prompts
-                ],
-            }
-            for cycle in rendered.cycles
-        ],
-    }
+    if plan_mode:
+        # Plan mode: show references, omit expanded content
+        return {
+            "workflow": str(rendered.workflow_path) if rendered.workflow_path else None,
+            "workflow_name": rendered.workflow_name,
+            "mode": "plan",
+            "session_mode": rendered.session_mode,
+            "adapter": rendered.adapter,
+            "model": rendered.model,
+            "max_cycles": rendered.max_cycles,
+            "template_variables": rendered.base_variables,
+            "cycles": [
+                {
+                    "number": cycle.number,
+                    "variables": cycle.variables,
+                    "context_files": [
+                        {
+                            "path": str(cf.path),
+                            "tokens_estimate": cf.tokens_estimate,
+                        }
+                        for cf in cycle.context_files
+                    ],
+                    "prompts": [
+                        {
+                            "index": p.index,
+                            "raw": p.raw,
+                            "prologues_count": len(p.prologues),
+                            "epilogues_count": len(p.epilogues),
+                        }
+                        for p in cycle.prompts
+                    ],
+                }
+                for cycle in rendered.cycles
+            ],
+        }
+    else:
+        # Full mode: include all expanded content
+        return {
+            "workflow": str(rendered.workflow_path) if rendered.workflow_path else None,
+            "workflow_name": rendered.workflow_name,
+            "mode": "full",
+            "session_mode": rendered.session_mode,
+            "adapter": rendered.adapter,
+            "model": rendered.model,
+            "max_cycles": rendered.max_cycles,
+            "template_variables": rendered.base_variables,
+            "cycles": [
+                {
+                    "number": cycle.number,
+                    "variables": cycle.variables,
+                    "context_files": [
+                        {
+                            "path": str(cf.path),
+                            "content": cf.content,
+                            "tokens_estimate": cf.tokens_estimate,
+                        }
+                        for cf in cycle.context_files
+                    ],
+                    "prompts": [
+                        {
+                            "index": p.index,
+                            "raw": p.raw,
+                            "prologues": p.prologues,
+                            "epilogues": p.epilogues,
+                            "resolved": p.resolved,
+                        }
+                        for p in cycle.prompts
+                    ],
+                }
+                for cycle in rendered.cycles
+            ],
+        }
 
 
 def _extension_to_language(ext: str) -> str:

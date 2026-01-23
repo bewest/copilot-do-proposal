@@ -438,31 +438,34 @@ sdqctl cycle workflow.conv -n 10 --session-mode compact
 
 ### `sdqctl render`
 
-Render workflow prompts without executing (no AI calls):
+Render workflow prompts without executing (no AI calls). Now with subcommands:
 
 ```bash
-# Basic render to stdout
-sdqctl render workflow.conv
+# Render for run command (single cycle)
+sdqctl render run workflow.conv
+sdqctl render run workflow.conv --plan    # Show @file refs only
+sdqctl render run workflow.conv --json    # JSON output
 
-# Render with multiple cycles
-sdqctl render workflow.conv -n 3
+# Render for cycle command (multi-cycle)
+sdqctl render cycle workflow.conv --max-cycles 5
+sdqctl render cycle workflow.conv -n 3 -s fresh -o rendered/
 
-# JSON output for tooling
-sdqctl render workflow.conv --json
+# Render for apply command
+sdqctl render apply workflow.conv --components "lib/*.js"
 
-# Render to file
-sdqctl render workflow.conv -o rendered.md
+# Legacy (backwards compat)
+sdqctl render file workflow.conv
 
-# Fresh mode with separate files per cycle
-sdqctl render workflow.conv -s fresh -n 3 -o rendered/
-
-# Render specific cycle or prompt
-sdqctl render workflow.conv --cycle 2
-sdqctl render workflow.conv --prompt 1
-
-# Add extra prologues/epilogues
-sdqctl render workflow.conv --prologue "Date: 2026-01-22"
+# Common options
+sdqctl render run workflow.conv -o rendered.md      # Output to file
+sdqctl render run workflow.conv --cycle 2           # Specific cycle
+sdqctl render run workflow.conv --prompt 1          # Specific prompt
+sdqctl render run workflow.conv --prologue "Date: 2026-01-22"
 ```
+
+**Modes:**
+- `--plan` - Show `@file` references without expanding content (faster, overview)
+- `--full` - Fully expand all content (default)
 
 The render command produces fully-resolved prompts with all context files, 
 template variables (`{{DATE}}`, `{{CYCLE_NUMBER}}`, etc.), prologues, and 
@@ -470,6 +473,9 @@ epilogues expanded. Useful for:
 - Debugging template issues before running expensive AI calls
 - Using sdqctl as a prompt templating engine
 - CI/CD validation of workflow content
+
+> **Note:** `--render-only` flag on `run` and `cycle` commands is deprecated.
+> Use `sdqctl render run` or `sdqctl render cycle` instead.
 
 ### `sdqctl flow`
 

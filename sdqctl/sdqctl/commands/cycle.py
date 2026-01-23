@@ -98,7 +98,16 @@ def cycle(
     # Handle --render-only by delegating to render logic
     if render_only:
         import json
+        import warnings
         from ..core.renderer import render_workflow, format_rendered_json, format_rendered_markdown
+        
+        # Deprecation warning
+        warnings.warn(
+            "--render-only is deprecated, use 'sdqctl render cycle' instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        console.print("[yellow]⚠ --render-only is deprecated. Use: sdqctl render cycle workflow.conv[/yellow]")
         
         conv = ConversationFile.from_file(Path(workflow))
         
