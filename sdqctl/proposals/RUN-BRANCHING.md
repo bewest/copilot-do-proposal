@@ -263,6 +263,99 @@ Run with `sdqctl cycle --max-cycles 10`. The workflow adapts based on the progre
 
 5. **Interaction with CHECKPOINT**: Should ON-FAILURE auto-checkpoint?
 
+6. **Interaction with ELIDE**: How do branching constructs interact with ELIDE-merged prompts?
+
+---
+
+## Interaction with ELIDE Directive
+
+The `ELIDE` directive (implemented) merges adjacent steps into a single prompt to reduce agent turns. This creates an important design tension with branching constructs.
+
+### ELIDE Semantics Recap
+
+```dockerfile
+PROMPT Run tests and analyze results.
+ELIDE
+RUN pytest -v
+ELIDE
+PROMPT Fix any failures.
+# All merged into ONE agent turn with test output embedded
+```
+
+### Compatibility Analysis
+
+| Construct | Inside ELIDE Chain? | Rationale |
+|-----------|---------------------|-----------|
+| `RUN` | ✅ Yes | Output embedded in merged prompt |
+| `RUN-ON-ERROR stop` | ⚠️ Partial | Stops workflow, but prompt already merged |
+| `RUN-ON-ERROR continue` | ✅ Yes | Failure output included, agent sees it |
+| `ON-FAILURE` block | ❌ No | Requires separate agent turn |
+| `ON-SUCCESS` block | ❌ No | Requires separate agent turn |
+| `RUN-RETRY` | ❌ No | Requires multiple agent turns |
+
+### Design Principle
+
+**ELIDE and branching serve different purposes:**
+
+| Pattern | Purpose | Agent Turns | Use When |
+|---------|---------|-------------|----------|
+| ELIDE | Efficiency | Single turn | Analysis, review, read-only |
+| ON-FAILURE | Adaptation | Multiple turns | Error recovery, retries |
+| RUN-RETRY | Self-healing | N turns | Test-fix-retry loops |
+
+**Recommendation**: ELIDE chains should NOT contain branching constructs. If a RUN inside an ELIDE chain fails:
+1. The failure output is included in the merged prompt
+2. The agent sees the failure and can respond appropriately
+3. No separate ON-FAILURE block executes
+
+### Example: Correct Usage
+
+**ELIDE for analysis (no branching needed):**
+```dockerfile
+PROMPT Review the test output below.
+ELIDE
+RUN pytest -v --tb=short
+ELIDE
+PROMPT Summarize which tests failed and why.
+# Single turn: agent sees prompt + test output + follow-up
+```
+
+**Branching for recovery (no ELIDE):**
+```dockerfile
+RUN pytest -v
+ON-FAILURE
+  PROMPT Analyze the test failures and fix them.
+  RUN pytest -v
+ON-SUCCESS
+  PROMPT All tests passed. Proceed to deployment.
+```
+
+### Open Question
+
+**Q6: Should ELIDE auto-break when it encounters a branching construct?**
+
+Option A: Parse error — ELIDE before ON-FAILURE is invalid syntax
+Option B: Implicit chain break — ELIDE ends, branching starts new sequence
+Option C: Warning — Allow but warn that branching won't execute as expected
+
+**Recommendation**: Option A (parse error) for clarity.
+
+---
+
+## Interaction with External Pipelines
+
+See also: [PIPELINE-ARCHITECTURE.md](./PIPELINE-ARCHITECTURE.md)
+
+The pipeline pattern (`sdqctl render --json | transform | sdqctl cycle --from-json -`) provides an alternative to RUN branching for workflow composition:
+
+| Approach | Timing | Complexity | Use Case |
+|----------|--------|------------|----------|
+| RUN branching | Runtime | Medium | Error recovery, retries |
+| External pipeline | Pre-execution | High | Workflow selection, customization |
+| Quine pattern | Cross-session | Low | Incremental progress |
+
+**Guideline**: Use RUN branching for *runtime* decisions; use pipelines for *pre-execution* workflow customization.
+
 ---
 
 ## Implementation Notes (if approved)

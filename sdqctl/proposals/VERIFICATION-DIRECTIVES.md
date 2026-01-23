@@ -485,6 +485,57 @@ def _execute_verify(directive: Directive, config: VerifyConfig) -> str:
 
 **Recommendation:** Option A by default, Option C for override
 
+### 4. Interaction with ELIDE
+
+When VERIFY is used with ELIDE, the verification results should be included in the merged prompt:
+
+```dockerfile
+PROMPT Review the verification results below.
+ELIDE
+VERIFY refs
+ELIDE
+PROMPT Fix any broken references found.
+# Single agent turn with VERIFY output embedded
+```
+
+**Behavior**: VERIFY output is captured and embedded like RUN output.
+
+### 5. Interaction with Compaction
+
+During long quine workflows with compaction:
+- VERIFY results from previous cycles may be summarized
+- `COMPACT-PRESERVE verification` can preserve VERIFY output
+- Consider adding `VERIFY-PRESERVE` for automatic preservation
+
+---
+
+## Relationship to Other Proposals
+
+### RUN-BRANCHING.md
+
+VERIFY directives share error handling patterns with RUN:
+
+| RUN Directive | VERIFY Equivalent | Behavior |
+|---------------|-------------------|----------|
+| `RUN-ON-ERROR stop` | `VERIFY-ON-ERROR fail` | Stop on failure |
+| `RUN-ON-ERROR continue` | `VERIFY-ON-ERROR continue` | Log and proceed |
+| `RUN-OUTPUT always` | `VERIFY-OUTPUT always` | Always inject results |
+| `RUN-RETRY N` | (Not applicable) | VERIFY is deterministic |
+
+**Note**: VERIFY does not support retry since verification is deterministic—re-running produces the same result.
+
+### PIPELINE-ARCHITECTURE.md
+
+See [PIPELINE-ARCHITECTURE.md](./PIPELINE-ARCHITECTURE.md) for how VERIFY integrates with external transformation pipelines:
+
+```bash
+# Verify, export, transform, execute
+sdqctl verify refs --json > verify-results.json
+sdqctl render cycle workflow.conv --json \
+  | jq --slurpfile v verify-results.json '. + {verification: $v[0]}' \
+  | sdqctl cycle --from-json -
+```
+
 ---
 
 ## Relationship to INTEGRATION-PROPOSAL.md
