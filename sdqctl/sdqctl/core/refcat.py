@@ -196,21 +196,32 @@ def parse_ref(ref: str) -> RefSpec:
     )
 
 
-def resolve_alias(alias: str, aliases: Optional[dict[str, Path]] = None) -> Path:
+def resolve_alias(alias: str, aliases: Optional[dict[str, Path]] = None, cwd: Optional[Path] = None) -> Path:
     """Resolve alias to base path.
 
     Args:
         alias: Alias name (e.g., "loop", "aaps")
         aliases: Dictionary mapping aliases to paths
+        cwd: Current working directory for workspace.lock.json lookup
 
     Returns:
         Base path for the alias
 
     Raises:
         AliasNotFoundError: If alias is not defined
+    
+    Resolution order:
+        1. Explicit aliases dict passed in
+        2. workspace.lock.json in cwd or parent directories
+        3. ~/.sdqctl/aliases.yaml global config
     """
     if aliases and alias in aliases:
         return aliases[alias]
+
+    # Try workspace.lock.json (supports Nightscout ecosystem format)
+    workspace_alias = _resolve_workspace_alias(alias, cwd or Path.cwd())
+    if workspace_alias:
+        return workspace_alias
 
     # Try loading from ~/.sdqctl/aliases.yaml
     config_path = Path.home() / ".sdqctl" / "aliases.yaml"
@@ -225,7 +236,61 @@ def resolve_alias(alias: str, aliases: Optional[dict[str, Path]] = None) -> Path
         except Exception:
             pass
 
-    raise AliasNotFoundError(f"Unknown alias: '{alias}'. Define in ~/.sdqctl/aliases.yaml")
+    raise AliasNotFoundError(
+        f"Unknown alias: '{alias}'. Define in workspace.lock.json or ~/.sdqctl/aliases.yaml"
+    )
+
+
+def _resolve_workspace_alias(alias: str, start_dir: Path) -> Optional[Path]:
+    """Try to resolve alias from workspace.lock.json.
+    
+    Searches for workspace.lock.json in start_dir and parent directories.
+    Supports the Nightscout ecosystem format:
+    
+    {
+        "externals_dir": "externals",
+        "repos": [
+            {"alias": "loop", "name": "LoopWorkspace", ...},
+            {"alias": "crm", "aliases": ["ns"], "name": "cgm-remote-monitor", ...}
+        ]
+    }
+    """
+    import json
+    
+    # Walk up directory tree looking for workspace.lock.json
+    current = start_dir.resolve()
+    for _ in range(10):  # Max 10 levels up
+        lockfile = current / "workspace.lock.json"
+        if lockfile.exists():
+            try:
+                with open(lockfile) as f:
+                    data = json.load(f)
+                
+                externals_dir = data.get("externals_dir", "externals")
+                
+                for repo in data.get("repos", []):
+                    # Check primary alias
+                    if repo.get("alias") == alias:
+                        return current / externals_dir / repo["name"]
+                    # Check additional aliases
+                    if alias in repo.get("aliases", []):
+                        return current / externals_dir / repo["name"]
+                    # Check repo name as fallback
+                    if repo.get("name") == alias:
+                        return current / externals_dir / repo["name"]
+                
+                # Found lockfile but alias not in it
+                return None
+                
+            except (json.JSONDecodeError, KeyError, TypeError):
+                pass
+        
+        parent = current.parent
+        if parent == current:
+            break
+        current = parent
+    
+    return None
 
 
 def resolve_path(spec: RefSpec, cwd: Path, aliases: Optional[dict[str, Path]] = None) -> Path:
@@ -252,7 +317,7 @@ def resolve_path(spec: RefSpec, cwd: Path, aliases: Optional[dict[str, Path]] = 
 
     # Handle alias
     if spec.alias:
-        base = resolve_alias(spec.alias, aliases)
+        base = resolve_alias(spec.alias, aliases, cwd)
         full_path = base / path
         if full_path.exists():
             return full_path.resolve()

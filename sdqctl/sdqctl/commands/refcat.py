@@ -214,8 +214,9 @@ def refcat(
     
     # Print errors to stderr
     if errors and not json_output:
+        err_console = Console(stderr=True)
         for e in errors:
-            console.print(f"[red]{e}[/red]", file=sys.stderr)
+            err_console.print(f"[red]{e}[/red]")
         sys.exit(1)
 
 

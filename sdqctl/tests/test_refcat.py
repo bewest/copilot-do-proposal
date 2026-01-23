@@ -306,3 +306,79 @@ class TestAliasResolution:
         
         result = resolve_path(spec, tmp_path, aliases)
         assert result.exists()
+
+
+class TestWorkspaceLockJsonAliases:
+    """Tests for workspace.lock.json alias resolution."""
+
+    @pytest.fixture
+    def workspace_with_lock(self, tmp_path):
+        """Create a workspace with workspace.lock.json."""
+        import json
+        
+        # Create workspace structure
+        externals = tmp_path / "externals"
+        externals.mkdir()
+        
+        # Create mock repos
+        crm = externals / "cgm-remote-monitor"
+        crm.mkdir()
+        (crm / "lib").mkdir()
+        (crm / "lib" / "server.js").write_text("// server code")
+        
+        loop = externals / "LoopWorkspace"
+        loop.mkdir()
+        (loop / "Loop").mkdir()
+        (loop / "Loop" / "Manager.swift").write_text("// swift code")
+        
+        # Create workspace.lock.json
+        lockfile = tmp_path / "workspace.lock.json"
+        lockfile.write_text(json.dumps({
+            "externals_dir": "externals",
+            "repos": [
+                {"alias": "crm", "name": "cgm-remote-monitor", "aliases": ["ns"]},
+                {"alias": "loop", "name": "LoopWorkspace"},
+            ]
+        }))
+        
+        return tmp_path
+
+    def test_resolve_primary_alias(self, workspace_with_lock):
+        """Resolve primary alias from workspace.lock.json."""
+        from sdqctl.core.refcat import _resolve_workspace_alias
+        
+        result = _resolve_workspace_alias("crm", workspace_with_lock)
+        assert result is not None
+        assert result == workspace_with_lock / "externals" / "cgm-remote-monitor"
+
+    def test_resolve_secondary_alias(self, workspace_with_lock):
+        """Resolve secondary alias from aliases array."""
+        from sdqctl.core.refcat import _resolve_workspace_alias
+        
+        result = _resolve_workspace_alias("ns", workspace_with_lock)
+        assert result is not None
+        assert result == workspace_with_lock / "externals" / "cgm-remote-monitor"
+
+    def test_resolve_unknown_alias_returns_none(self, workspace_with_lock):
+        """Unknown alias returns None (not found in lockfile)."""
+        from sdqctl.core.refcat import _resolve_workspace_alias
+        
+        result = _resolve_workspace_alias("unknown", workspace_with_lock)
+        assert result is None
+
+    def test_full_extraction_with_workspace_alias(self, workspace_with_lock):
+        """Extract content using workspace alias."""
+        spec = RefSpec(path=Path("lib/server.js"), alias="crm")
+        result = extract_content(spec, workspace_with_lock)
+        assert "server code" in result.content
+
+    def test_lockfile_in_parent_directory(self, workspace_with_lock):
+        """Find lockfile when searching from subdirectory."""
+        from sdqctl.core.refcat import _resolve_workspace_alias
+        
+        subdir = workspace_with_lock / "some" / "nested" / "dir"
+        subdir.mkdir(parents=True)
+        
+        result = _resolve_workspace_alias("loop", subdir)
+        assert result is not None
+        assert result == workspace_with_lock / "externals" / "LoopWorkspace"

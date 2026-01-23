@@ -62,11 +62,35 @@ For cross-repository references in the Nightscout ecosystem:
 loop:LoopKit/LoopAlgorithm/Sources/LoopAlgorithm.swift#L10-L50
 aaps:app/src/main/java/info/nightscout/androidaps/MainActivity.kt#L100
 trio:Trio/Sources/APS/FreeAPS.swift#L50-L100
+crm:lib/server/treatments.js#L1-L50
 ```
 
-**Alias resolution**:
-- Aliases defined in `~/.sdqctl/aliases.yaml` or workflow-local `ALIAS` directive
-- Maps alias to absolute path or git remote
+**Alias resolution order**:
+
+1. **Explicit aliases dict** - Passed programmatically
+2. **workspace.lock.json** - Auto-detected in current or parent directories
+3. **~/.sdqctl/aliases.yaml** - Global user configuration
+
+#### workspace.lock.json Support
+
+REFCAT automatically reads aliases from `workspace.lock.json` files (used by the Nightscout ecosystem alignment workspace):
+
+```json
+{
+  "externals_dir": "externals",
+  "repos": [
+    {"alias": "loop", "name": "LoopWorkspace"},
+    {"alias": "crm", "aliases": ["ns"], "name": "cgm-remote-monitor"},
+    {"alias": "aaps", "name": "AndroidAPS"}
+  ]
+}
+```
+
+This enables seamless integration with multi-repo workspaces without manual alias configuration.
+
+#### Global Aliases (~/.sdqctl/aliases.yaml)
+
+For repos not in a workspace.lock.json:
 
 ```yaml
 # ~/.sdqctl/aliases.yaml
