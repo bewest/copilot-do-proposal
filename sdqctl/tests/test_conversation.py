@@ -15,6 +15,7 @@ from sdqctl.core.conversation import (
     substitute_template_variables,
     get_standard_variables,
 )
+from sdqctl.commands.run import process_elided_steps
 
 
 class TestConversationFileParsing:
@@ -551,3 +552,106 @@ class TestConversationDefaults:
         assert conv.output_format == "markdown"
         assert conv.run_on_error == "stop"
         assert conv.run_output == "always"
+
+
+class TestElisionProcessing:
+    """Tests for process_elided_steps() function."""
+
+    def test_no_elision_returns_unchanged(self):
+        """Steps without ELIDE are returned unchanged."""
+        steps = [
+            ConversationStep(type="prompt", content="First prompt"),
+            ConversationStep(type="prompt", content="Second prompt"),
+        ]
+        result = process_elided_steps(steps)
+        
+        assert len(result) == 2
+        assert result[0].type == "prompt"
+        assert result[1].type == "prompt"
+
+    def test_elide_merges_two_prompts(self):
+        """ELIDE between two prompts merges them into a merged_prompt."""
+        steps = [
+            ConversationStep(type="prompt", content="Analyze this."),
+            ConversationStep(type="elide", content=""),
+            ConversationStep(type="prompt", content="Fix any errors."),
+        ]
+        result = process_elided_steps(steps)
+        
+        assert len(result) == 1
+        assert result[0].type == "merged_prompt"
+        assert "Analyze this." in result[0].content
+        assert "Fix any errors." in result[0].content
+
+    def test_elide_merges_prompt_run_prompt(self):
+        """ELIDE merges RUN above with PROMPT below, first prompt is separate."""
+        steps = [
+            ConversationStep(type="prompt", content="Check tests."),
+            ConversationStep(type="run", content="pytest -v"),
+            ConversationStep(type="elide", content=""),
+            ConversationStep(type="prompt", content="Fix failures."),
+        ]
+        result = process_elided_steps(steps)
+        
+        # First prompt is standalone, RUN and second prompt are merged
+        assert len(result) == 2
+        assert result[0].type == "prompt"
+        assert result[0].content == "Check tests."
+        assert result[1].type == "merged_prompt"
+        assert "{{RUN:0:pytest -v}}" in result[1].content
+        assert "Fix failures." in result[1].content
+        # The merged step has run_commands attached
+        assert hasattr(result[1], 'run_commands')
+        assert result[1].run_commands == ["pytest -v"]
+
+    def test_multiple_elide_groups(self):
+        """Multiple ELIDE groups are processed independently."""
+        steps = [
+            ConversationStep(type="prompt", content="First."),
+            ConversationStep(type="elide", content=""),
+            ConversationStep(type="prompt", content="Second."),
+            ConversationStep(type="prompt", content="Third standalone."),
+        ]
+        result = process_elided_steps(steps)
+        
+        # First two should be merged, third standalone
+        assert len(result) == 2
+        assert result[0].type == "merged_prompt"
+        assert "First." in result[0].content
+        assert "Second." in result[0].content
+        assert result[1].type == "prompt"
+        assert result[1].content == "Third standalone."
+
+    def test_empty_steps_returns_empty(self):
+        """Empty steps list returns empty list."""
+        result = process_elided_steps([])
+        assert result == []
+
+    def test_elide_with_checkpoint_warns(self):
+        """Control steps like checkpoint in ELIDE group should warn."""
+        steps = [
+            ConversationStep(type="prompt", content="Before."),
+            ConversationStep(type="elide", content=""),
+            ConversationStep(type="checkpoint", content="cp1"),
+        ]
+        # Should still process without error
+        result = process_elided_steps(steps)
+        assert len(result) >= 1
+
+    def test_chained_elides_merge_all(self):
+        """Multiple consecutive ELIDEs chain together to merge multiple elements."""
+        steps = [
+            ConversationStep(type="prompt", content="First."),
+            ConversationStep(type="elide", content=""),
+            ConversationStep(type="run", content="echo test"),
+            ConversationStep(type="elide", content=""),
+            ConversationStep(type="prompt", content="Last."),
+        ]
+        result = process_elided_steps(steps)
+        
+        # All elements should be merged into one
+        assert len(result) == 1
+        assert result[0].type == "merged_prompt"
+        assert "First." in result[0].content
+        assert "{{RUN:0:echo test}}" in result[0].content
+        assert "Last." in result[0].content

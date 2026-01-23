@@ -150,6 +150,124 @@ def git_commit_checkpoint(
 console = Console()
 
 
+def process_elided_steps(steps: list) -> list:
+    """Process ELIDE directives by merging adjacent steps into single prompts.
+    
+    ELIDE merges the element above with the element below into a single prompt,
+    avoiding an agent turn between them. This is useful for combining test output
+    with error-fixing instructions, or context with instructions.
+    
+    Example:
+        PROMPT Analyze the test results below.
+        RUN pytest tests/ -v
+        ELIDE
+        PROMPT Fix any failing tests you find.
+    
+    Becomes a single merged prompt with test output injected.
+    
+    Args:
+        steps: List of ConversationStep objects or dicts
+        
+    Returns:
+        List of merged steps with ELIDE markers removed
+    """
+    if not steps:
+        return steps
+    
+    def get_type(step) -> str:
+        return step.type if hasattr(step, 'type') else step.get('type', '')
+    
+    def get_content(step) -> str:
+        return step.content if hasattr(step, 'content') else step.get('content', '')
+    
+    # Find ELIDE positions and build merged groups
+    # A group is a list of consecutive steps connected by ELIDE
+    groups = []
+    current_group = []
+    
+    for step in steps:
+        step_type = get_type(step)
+        
+        if step_type == "elide":
+            # ELIDE marks that we should continue the current group
+            # If current_group is empty, start with previous group's last item
+            continue
+        else:
+            # Check if this step should be merged with the previous group
+            # by looking back to see if the previous non-elide step was followed by ELIDE
+            should_merge = False
+            if current_group:
+                # Look back in original steps to see if there was an ELIDE between
+                for i, s in enumerate(steps):
+                    if s is step:
+                        # Found current step, look backwards for ELIDE
+                        j = i - 1
+                        while j >= 0:
+                            if get_type(steps[j]) == "elide":
+                                should_merge = True
+                                break
+                            elif get_type(steps[j]) != "elide":
+                                break
+                            j -= 1
+                        break
+            
+            if should_merge:
+                current_group.append(step)
+            else:
+                if current_group:
+                    groups.append(current_group)
+                current_group = [step]
+    
+    if current_group:
+        groups.append(current_group)
+    
+    # Now merge each group into a single step
+    from ..core.conversation import ConversationStep
+    merged_steps = []
+    
+    for group in groups:
+        if len(group) == 1:
+            # No merging needed
+            merged_steps.append(group[0])
+        else:
+            # Merge multiple steps into a single merged prompt step
+            # Combine prompts, run outputs become placeholders for later injection
+            merged_contents = []
+            merged_run_commands = []
+            has_prompt = False
+            
+            for step in group:
+                step_type = get_type(step)
+                content = get_content(step)
+                
+                if step_type == "prompt":
+                    merged_contents.append(content)
+                    has_prompt = True
+                elif step_type == "run":
+                    # Store RUN command to be executed and output injected
+                    merged_run_commands.append(content)
+                    # Add placeholder that will be replaced with output
+                    merged_contents.append(f"{{{{RUN:{len(merged_run_commands) - 1}:{content}}}}}")
+                elif step_type in ("checkpoint", "compact", "new_conversation"):
+                    # Control steps break the merge - shouldn't happen in valid ELIDE usage
+                    logger.warning(f"ELIDE cannot merge control step type '{step_type}'")
+                    # Add as-is for now
+                    merged_steps.append(step)
+                    continue
+            
+            if has_prompt or merged_contents:
+                merged_step = ConversationStep(
+                    type="merged_prompt",
+                    content="\n\n".join(merged_contents),
+                )
+                # Attach run commands for later execution
+                merged_step.run_commands = merged_run_commands  # type: ignore
+                merged_steps.append(merged_step)
+    
+    logger.debug(f"Processed {len(steps)} steps with ELIDE into {len(merged_steps)} merged steps")
+    return merged_steps
+
+
 @click.command("run")
 @click.argument("target")
 @click.option("--adapter", "-a", default=None, help="AI adapter (copilot, claude, openai, mock)")
@@ -501,6 +619,9 @@ async def _run_async(
                 {"type": "prompt", "content": p} for p in conv.prompts
             ]
             
+            # Process ELIDE directives - merge adjacent steps into single prompts
+            steps_to_process = process_elided_steps(steps_to_process)
+            
             for step in steps_to_process:
                 step_type = step.type if hasattr(step, 'type') else step.get('type')
                 step_content = step.content if hasattr(step, 'content') else step.get('content', '')
@@ -599,6 +720,129 @@ async def _run_async(
                         console.print(f"[dim]Checkpoint saved: {checkpoint_path}[/dim]")
                         console.print(f"\n[bold]To resume:[/bold] sdqctl resume {checkpoint_path}")
                         return  # Session cleanup handled by finally blocks
+            
+                elif step_type == "merged_prompt":
+                    # Handle ELIDE-merged prompts - execute embedded RUN commands and send as single prompt
+                    merged_content = step_content
+                    run_commands = getattr(step, 'run_commands', [])
+                    
+                    logger.info(f"🔗 Processing ELIDE-merged prompt with {len(run_commands)} embedded RUN commands")
+                    
+                    # Execute embedded RUN commands and replace placeholders
+                    for idx, cmd in enumerate(run_commands):
+                        placeholder = f"{{{{RUN:{idx}:{cmd}}}}}"
+                        
+                        logger.info(f"  🔧 RUN: {cmd}")
+                        progress(f"  🔧 Running: {cmd[:50]}...")
+                        
+                        try:
+                            # Determine working directory
+                            if conv.run_cwd:
+                                run_dir = Path(conv.run_cwd)
+                                if not run_dir.is_absolute():
+                                    base = conv.source_path.parent if conv.source_path else Path.cwd()
+                                    run_dir = base / run_dir
+                            elif conv.cwd:
+                                run_dir = Path(conv.cwd)
+                            else:
+                                run_dir = Path.cwd()
+                            
+                            result = _run_subprocess(
+                                cmd,
+                                allow_shell=conv.allow_shell,
+                                timeout=conv.run_timeout,
+                                cwd=run_dir,
+                                env=conv.run_env if conv.run_env else None,
+                            )
+                            
+                            output_text = result.stdout or ""
+                            if result.stderr:
+                                output_text += f"\n\n[stderr]\n{result.stderr}"
+                            output_text = _truncate_output(output_text, conv.run_output_limit)
+                            
+                            status_marker = "" if result.returncode == 0 else f" (exit {result.returncode})"
+                            run_output = f"```\n$ {cmd}{status_marker}\n{output_text}\n```"
+                            
+                        except Exception as e:
+                            logger.error(f"  ✗ RUN failed: {e}")
+                            run_output = f"```\n$ {cmd} (failed)\nError: {e}\n```"
+                        
+                        merged_content = merged_content.replace(placeholder, run_output)
+                    
+                    # Now send the merged prompt as a single prompt
+                    prompt = merged_content
+                    prompt_count += 1
+                    step_start = time.time()
+                    
+                    ctx_status = session.context.get_status()
+                    context_pct = ctx_status.get("usage_percent", 0)
+                    
+                    logger.info(f"Sending merged prompt {prompt_count}/{total_prompts}...")
+                    
+                    workflow_progress.prompt_sending(
+                        cycle=1, prompt=prompt_count,
+                        context_pct=context_pct,
+                        preview=f"[merged] {prompt[:40]}..." if verbosity >= 1 else None
+                    )
+                    
+                    # Build with prologue/epilogue
+                    base_path = conv.source_path.parent if conv.source_path else Path.cwd()
+                    is_first = (prompt_count == 1)
+                    is_last = (prompt_count == total_prompts)
+                    injected_prompt = build_prompt_with_injection(
+                        prompt, conv.prologues, conv.epilogues,
+                        base_path=base_path,
+                        variables=template_vars,
+                        is_first_prompt=is_first,
+                        is_last_prompt=is_last
+                    )
+                    
+                    full_prompt = injected_prompt
+                    if first_prompt and context_content:
+                        full_prompt = f"{context_content}\n\n{injected_prompt}"
+                    
+                    if first_prompt and not no_stop_file_prologue:
+                        stop_file_name = f"STOPAUTOMATION-{nonce}.json"
+                        stop_instruction = get_stop_file_instruction(stop_file_name)
+                        full_prompt = f"{full_prompt}\n\n{stop_instruction}"
+                    
+                    if first_prompt:
+                        first_prompt = False
+                    
+                    prompt_writer.write_prompt(
+                        full_prompt,
+                        cycle=1,
+                        total_cycles=1,
+                        prompt_idx=prompt_count,
+                        total_prompts=total_prompts,
+                        context_pct=context_pct,
+                    )
+                    
+                    logger.debug("Awaiting response...")
+                    
+                    def on_chunk(chunk: str) -> None:
+                        if logger.isEnabledFor(logging.DEBUG) and not json_output:
+                            console.print(chunk, end="")
+                    
+                    response = await ai_adapter.send(adapter_session, full_prompt, on_chunk=on_chunk)
+                    
+                    if logger.isEnabledFor(logging.DEBUG):
+                        console.print()
+                    
+                    step_elapsed = time.time() - step_start
+                    
+                    ctx_status = session.context.get_status()
+                    new_context_pct = ctx_status.get("usage_percent", 0)
+                    
+                    workflow_progress.prompt_complete(
+                        cycle=1, prompt=prompt_count,
+                        duration=step_elapsed,
+                        context_pct=new_context_pct,
+                    )
+                    
+                    responses.append(response)
+                    session.add_message("user", f"[merged prompt]\n{prompt}")
+                    session.add_message("assistant", response)
             
                 elif step_type == "checkpoint":
                     # Save session state and commit outputs to git

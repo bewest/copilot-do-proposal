@@ -325,6 +325,45 @@ RUN npm test            # Runs in ./backend directory
 
 When a RUN command fails with `RUN-ON-ERROR stop` (default), sdqctl automatically saves a checkpoint containing all captured output. This preserves debugging context even on failure.
 
+### ELIDE Directive (Merge Adjacent Elements)
+
+The `ELIDE` directive merges the element above with the element below into a single prompt, eliminating the agent turn between them. This is useful for:
+
+- **Combining test output with fix instructions** - Agent sees test failures and instructions in one turn
+- **Reducing token waste** - No meaningless intermediate "I see the output" responses
+- **Faster workflows** - Skip unnecessary agent reasoning cycles
+
+```dockerfile
+# Without ELIDE: 3 agent turns (wasteful)
+PROMPT Analyze test results.
+RUN pytest -v
+PROMPT Fix any failing tests.
+
+# With ELIDE: 1 agent turn (efficient)
+PROMPT Analyze test results.
+RUN pytest -v
+ELIDE
+PROMPT Fix any failing tests.
+
+# The agent receives a single merged prompt:
+#   Analyze test results.
+#   [test output from RUN]
+#   Fix any failing tests.
+```
+
+Chained ELIDEs merge multiple elements:
+
+```dockerfile
+PROMPT Review the build output.
+ELIDE
+RUN npm run build
+ELIDE
+RUN npm test
+ELIDE
+PROMPT Fix any errors in the build or tests.
+# All merged into a single prompt with both outputs
+```
+
 ### Human-in-the-Loop with PAUSE
 
 The `PAUSE` directive creates a checkpoint and exits, allowing human review before continuing:

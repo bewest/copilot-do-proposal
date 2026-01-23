@@ -615,3 +615,70 @@ async def compact_with_session_reset(
 ```
 
 This achieves actual token reduction by starting fresh while preserving context through the summary.
+
+---
+
+## Implemented: ELIDE Directive
+
+The `ELIDE` directive enables merging adjacent workflow elements into a single prompt, eliminating unnecessary agent turns between them.
+
+### Problem
+
+Without ELIDE, each element gets its own agent turn:
+```dockerfile
+PROMPT Check the test output.
+RUN pytest -v
+PROMPT Fix any errors.
+```
+This generates 3 separate prompts with 3 responses, including a potentially wasteful "I see the test output..." response.
+
+### Solution
+
+The `ELIDE` directive merges the element above with the element below:
+```dockerfile
+PROMPT Check the test output.
+RUN pytest -v
+ELIDE
+PROMPT Fix any errors.
+# Becomes a single merged prompt:
+#   Check the test output.
+#   [pytest output]
+#   Fix any errors.
+```
+
+### Benefits
+
+1. **Token efficiency** - No wasted tokens on intermediate "acknowledgment" responses
+2. **Faster execution** - Fewer API round trips
+3. **Better context coherence** - Agent sees related information together
+
+### Implementation
+
+The `process_elided_steps()` function in `run.py`:
+1. Scans steps for ELIDE markers
+2. Merges consecutive elements connected by ELIDE
+3. Creates `merged_prompt` steps with embedded RUN placeholders
+4. Executes RUN commands inline and injects output before sending
+
+```python
+# Example merged step structure
+ConversationStep(
+    type="merged_prompt",
+    content="Check output.\n\n{{RUN:0:pytest -v}}\n\nFix errors.",
+    run_commands=["pytest -v"]  # Attached for inline execution
+)
+```
+
+### Chaining
+
+Multiple ELIDEs chain together:
+```dockerfile
+PROMPT Review.
+ELIDE
+RUN build
+ELIDE
+RUN test
+ELIDE
+PROMPT Fix all issues.
+# All four elements become one prompt
+```
