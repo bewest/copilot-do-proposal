@@ -3,6 +3,7 @@
 import pytest
 from pathlib import Path
 
+from sdqctl.core.conversation import ConversationFile
 from sdqctl.verifiers import (
     VerificationError,
     VerificationResult,
@@ -157,3 +158,39 @@ class TestRefsVerifier:
         result = verifier.verify(tmp_path)
         
         assert result.passed
+
+
+class TestVerifyExecutionIntegration:
+    """Test VERIFY directive execution in workflows."""
+
+    def test_verify_step_in_workflow(self, tmp_path):
+        """Test that VERIFY steps run during workflow execution."""
+        # Create a test file with a valid reference
+        doc_dir = tmp_path / "docs"
+        doc_dir.mkdir()
+        test_file = doc_dir / "test.md"
+        test_file.write_text("See @../README.md for more info.")
+        
+        # Create the referenced file
+        readme = tmp_path / "README.md"
+        readme.write_text("# Test")
+        
+        # Create workflow with VERIFY step
+        workflow = tmp_path / "test.conv"
+        workflow.write_text("""MODEL mock
+ADAPTER mock
+VERIFY-ON-ERROR continue
+VERIFY-OUTPUT always
+VERIFY refs
+
+PROMPT Analyze the verification results.
+""")
+        
+        conv = ConversationFile.parse(workflow.read_text(), source_path=workflow)
+        
+        # Check parsing
+        verify_steps = [s for s in conv.steps if s.type == "verify"]
+        assert len(verify_steps) == 1
+        assert verify_steps[0].verify_type == "refs"
+        assert conv.verify_on_error == "continue"
+        assert conv.verify_output == "always"

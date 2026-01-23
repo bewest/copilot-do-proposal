@@ -115,14 +115,14 @@ Implemented:
 
 ### 3.3 VERIFY Directive Implementation
 
-**Status**: 🟡 Phases 1-3 Complete, Phase 4 pending  
+**Status**: ✅ Complete  
 **Proposal**: [VERIFICATION-DIRECTIVES.md](VERIFICATION-DIRECTIVES.md)
 
 Phase 1 (Core Library) ✅:
 - [x] `sdqctl/verifiers/base.py` - VerificationResult, VerificationError, Verifier protocol
 - [x] `sdqctl/verifiers/refs.py` - RefsVerifier (check @-references)
 - [x] `sdqctl/verifiers/__init__.py` - VERIFIERS registry
-- [x] `tests/test_verifiers.py` - 10 tests
+- [x] `tests/test_verifiers.py` - 11 tests
 
 Phase 2 (CLI Commands) ✅:
 - [x] `sdqctl verify refs` - Reference verification command
@@ -133,8 +133,10 @@ Phase 3 (Directive Parsing) ✅:
 - [x] ConversationStep with verify_type and verify_options
 - [x] 8 parsing tests
 
-Remaining:
-- [ ] Phase 4: Execution integration (run verifiers during workflow)
+Phase 4 (Execution Integration) ✅:
+- [x] Run verifiers during workflow execution
+- [x] Context injection based on verify_output setting
+- [x] Error handling based on verify_on_error setting
 
 ---
 

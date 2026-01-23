@@ -1120,6 +1120,76 @@ Please analyze the error and make necessary fixes. After fixing, the command wil
                     logger.info(f"  ✓ Wait complete")
                     progress(f"  ✓ Wait complete")
 
+                elif step_type == "verify":
+                    # Run verification step
+                    from ..verifiers import VERIFIERS
+                    
+                    verify_type = step.verify_type if hasattr(step, 'verify_type') else step.get('verify_type', 'all')
+                    verify_options = step.verify_options if hasattr(step, 'verify_options') else step.get('verify_options', {})
+                    
+                    logger.info(f"🔍 VERIFY: {verify_type}")
+                    progress(f"  🔍 Verifying: {verify_type}")
+                    
+                    # Determine path to verify (workflow dir by default)
+                    verify_path = conv.source_path.parent if conv.source_path else Path.cwd()
+                    if 'path' in verify_options:
+                        verify_path = Path(verify_options['path'])
+                    
+                    # Run appropriate verifier(s)
+                    verification_results = []
+                    if verify_type == "all":
+                        verifier_names = list(VERIFIERS.keys())
+                    else:
+                        verifier_names = [verify_type]
+                    
+                    all_passed = True
+                    for name in verifier_names:
+                        if name in VERIFIERS:
+                            verifier = VERIFIERS[name]()
+                            result = verifier.verify(verify_path)
+                            verification_results.append((name, result))
+                            if not result.passed:
+                                all_passed = False
+                                logger.warning(f"  ✗ {name}: {len(result.errors)} errors")
+                            else:
+                                logger.info(f"  ✓ {name}: passed")
+                        else:
+                            logger.warning(f"  ⚠ Unknown verifier: {name}")
+                    
+                    # Format output for context injection
+                    verify_output_lines = ["## Verification Results\n"]
+                    for name, result in verification_results:
+                        status = "✅ Passed" if result.passed else "❌ Failed"
+                        verify_output_lines.append(f"### {name}\n{status}: {result.summary}\n")
+                        if result.errors and conv.verify_output in ("always", "on-error"):
+                            for err in result.errors[:10]:  # Limit to first 10 errors
+                                verify_output_lines.append(f"- ERROR {err.file}:{err.line}: {err.message}")
+                            if len(result.errors) > 10:
+                                verify_output_lines.append(f"- ... and {len(result.errors) - 10} more errors")
+                    
+                    verify_output = "\n".join(verify_output_lines)
+                    
+                    # Apply output limit if set
+                    if conv.verify_limit:
+                        verify_output = _truncate_output(verify_output, conv.verify_limit)
+                    
+                    # Inject into session context based on verify_output setting
+                    should_inject = (
+                        conv.verify_output == "always" or
+                        (conv.verify_output == "on-error" and not all_passed)
+                    )
+                    if should_inject and conv.verify_output != "never":
+                        session.add_message("system", verify_output)
+                        pending_context.append(verify_output)
+                    
+                    # Handle failure based on verify_on_error setting
+                    if not all_passed:
+                        if conv.verify_on_error == "fail":
+                            raise RuntimeError(f"Verification failed: {verify_type}")
+                        elif conv.verify_on_error == "warn":
+                            progress(f"  ⚠ Verification warning: {verify_type}")
+                        # continue: just proceed
+
             # Mark complete (session cleanup in finally block)
             session.state.status = "completed"
 
