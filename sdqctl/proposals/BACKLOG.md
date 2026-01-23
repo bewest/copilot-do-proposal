@@ -7,38 +7,30 @@
 
 ## Current Proposals Status
 
-| Proposal | Status | Blocking Issues |
-|----------|--------|-----------------|
-| [RUN-BRANCHING](RUN-BRANCHING.md) | Draft | ON-FAILURE design decision |
-| [VERIFICATION-DIRECTIVES](VERIFICATION-DIRECTIVES.md) | Draft | Blocking vs parallel execution |
-| [PIPELINE-ARCHITECTURE](PIPELINE-ARCHITECTURE.md) | Draft | Schema versioning, `--from-json` impl |
+| Proposal | Status | Notes |
+|----------|--------|-------|
+| [RUN-BRANCHING](RUN-BRANCHING.md) | Ready | Decision: RUN-RETRY first, then ON-FAILURE |
+| [VERIFICATION-DIRECTIVES](VERIFICATION-DIRECTIVES.md) | Ready | Decision: Synchronous execution |
+| [PIPELINE-ARCHITECTURE](PIPELINE-ARCHITECTURE.md) | Ready | Decision: Add schema_version |
 | [STPA-INTEGRATION](STPA-INTEGRATION.md) | Draft | Depends on above three |
 
 ---
 
 ## Priority 1: Feature Interaction Matrix
 
-**Status**: 🔴 Not started  
-**Blocks**: All implementation work
+**Status**: ✅ Complete  
+**Document**: [docs/FEATURE-INTERACTIONS.md](../docs/FEATURE-INTERACTIONS.md)
 
-Before implementing any proposal, we need clarity on how features compose:
+All interaction questions resolved:
 
-### Interaction Questions
-
-| Feature A | Feature B | Question | Decision |
-|-----------|-----------|----------|----------|
-| ELIDE | RUN-BRANCHING | Can ELIDE chain contain ON-FAILURE? | ❓ Proposed: No (parse error) |
-| COMPACT | VERIFY | What happens to VERIFY output after compaction? | ❓ |
-| ELIDE | VERIFY | Does VERIFY output get elided into next prompt? | ❓ |
-| RUN-RETRY | MAX-CYCLES | Does retry count against cycle limit? | ❓ |
-| CHECKPOINT | RUN-BRANCHING | Can checkpoint inside ON-FAILURE block? | ❓ |
-| PIPELINE (--from-json) | Template vars | Which takes precedence? | ❓ |
-
-### Deliverable
-
-- [ ] Add `docs/FEATURE-INTERACTIONS.md` with interaction matrix
-- [ ] Update each proposal with "Interactions" section
-- [ ] Resolve blocking questions marked ❓ above
+| Feature A | Feature B | Decision |
+|-----------|-----------|----------|
+| ELIDE | RUN-BRANCHING | ❌ Parse error (branching not allowed in ELIDE chains) |
+| COMPACT | VERIFY | ✅ VERIFY output treated as normal context |
+| ELIDE | VERIFY | ✅ VERIFY output embedded in merged prompt |
+| RUN-RETRY | MAX-CYCLES | ✅ Retry counts separately from cycle limit |
+| CHECKPOINT | RUN-BRANCHING | ✅ Checkpoints allowed inside branches |
+| PIPELINE (--from-json) | Template vars | ✅ JSON stdin takes precedence |
 
 ---
 
@@ -46,50 +38,46 @@ Before implementing any proposal, we need clarity on how features compose:
 
 ### 2.1 ON-FAILURE: Full Blocks vs RUN-RETRY Only
 
-**Status**: 🔴 Undecided  
+**Status**: ✅ Decided  
 **Proposal**: [RUN-BRANCHING.md](RUN-BRANCHING.md)
 
-**Options**:
-- **A) RUN-RETRY only**: Simple retry with count, no arbitrary failure handling
-- **B) Full ON-FAILURE blocks**: Arbitrary directives on failure (PROMPT, RUN, etc.)
-- **C) Both**: RUN-RETRY for simple cases, ON-FAILURE for complex
+**Decision**: **Option C — Both RUN-RETRY and ON-FAILURE blocks**
 
-**Trade-offs**:
-| Option | Complexity | Power | Risk |
-|--------|------------|-------|------|
-| A | Low | Limited | None |
-| B | Medium | High | Infinite loops |
-| C | High | Maximum | Complexity |
+Implementation order:
+1. **Phase 1**: `RUN-RETRY N "prompt"` — simple retry with AI fix attempt
+2. **Phase 2**: `ON-FAILURE`/`ON-SUCCESS` blocks — full branching for complex cases
 
-**Decision**: ❓ TBD
+RUN-RETRY covers 80% of use cases with minimal complexity.
 
 ---
 
 ### 2.2 VERIFY Execution Model
 
-**Status**: 🔴 Undecided  
+**Status**: ✅ Decided  
 **Proposal**: [VERIFICATION-DIRECTIVES.md](VERIFICATION-DIRECTIVES.md)
 
-**Options**:
-- **A) Blocking**: Each VERIFY completes before next directive
-- **B) Parallel**: All VERIFYs run concurrently, results collected
-- **C) Deferred**: VERIFYs queue up, execute at cycle end
+**Decision**: **Option A — Blocking (synchronous)**
 
-**Decision**: ❓ TBD
+Each VERIFY completes before the next directive. Results guaranteed available for subsequent PROMPTs.
 
 ---
 
 ### 2.3 JSON Schema Versioning
 
-**Status**: 🔴 Undecided  
+**Status**: ✅ Decided  
 **Proposal**: [PIPELINE-ARCHITECTURE.md](PIPELINE-ARCHITECTURE.md)
 
-**Questions**:
-- Should `--json` output include schema version?
-- How to handle schema evolution (breaking changes)?
-- Validation: strict vs lenient mode?
+**Decision**: Add explicit `schema_version` field to JSON output.
 
-**Decision**: ❓ TBD
+```json
+{
+  "schema_version": "1.0",
+  "workflow": "...",
+  ...
+}
+```
+
+Versioning policy: major.minor where major = breaking changes.
 
 ---
 

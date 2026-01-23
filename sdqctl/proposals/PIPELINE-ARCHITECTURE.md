@@ -1,9 +1,10 @@
 # Proposal: Pipeline Architecture for Workflow Composition
 
-> **Status**: Draft / Discussion  
+> **Status**: Ready for Implementation  
 > **Date**: 2026-01-23  
 > **Author**: sdqctl development  
-> **Scope**: Round-trip JSON workflows, external transformation, stdin execution
+> **Scope**: Round-trip JSON workflows, external transformation, stdin execution  
+> **Decision**: Add schema_version field, support --from-json
 
 ---
 
@@ -322,7 +323,7 @@ sdqctl validate --from-json workflow.json --strict
 
 ### 1. Schema Versioning
 
-Should we add explicit schema version?
+**Decision: Yes, add explicit schema version**
 
 ```json
 {
@@ -332,7 +333,10 @@ Should we add explicit schema version?
 }
 ```
 
-**Recommendation**: Yes, add version field for forward compatibility.
+Versioning policy:
+- **Major version** (2.0): Breaking changes to stable fields
+- **Minor version** (1.1): New fields, no breaking changes
+- CLI validates version and warns on unknown major version
 
 ### 2. Partial Round-Trip
 

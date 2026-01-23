@@ -1,9 +1,10 @@
 # Proposal: Conditional Branching for RUN Directive
 
-> **Status**: Draft / Discussion  
-> **Date**: 2026-01-22  
+> **Status**: Ready for Implementation  
+> **Date**: 2026-01-23  
 > **Author**: sdqctl development  
-> **Scope**: Workflow control flow after RUN command success/failure
+> **Scope**: Workflow control flow after RUN command success/failure  
+> **Decision**: Option C — RUN-RETRY first, then ON-FAILURE blocks
 
 ---
 
@@ -216,15 +217,18 @@ RUN-RETRY 3 "Fix the failing tests based on error output"
 
 ## Recommendation
 
-**Start with Option E (RUN-RETRY)** as it:
-1. Addresses the most common use case (test → fix → retry)
+**Approved: Option C — RUN-RETRY first, then ON-FAILURE blocks**
+
+Implementation phases:
+
+1. **Phase 1 (P1)**: Implement `RUN-RETRY N "prompt"` — covers 80% of use cases
+2. **Phase 2 (P2)**: Implement `ON-FAILURE`/`ON-SUCCESS` blocks — for complex branching
+
+This approach:
+1. Addresses the most common use case (test → fix → retry) quickly
 2. Leverages AI instead of static control flow
 3. Has built-in safety (retry limit)
-4. Minimal syntax addition
-
-**Defer Option B (ON-FAILURE/ON-SUCCESS)** until we have more use cases that Option E doesn't cover.
-
-**Reject Option C (GOTO)** entirely.
+4. Defers complexity until patterns are proven
 
 ---
 

@@ -1,9 +1,10 @@
 # Proposal: Unified Verification Directives
 
-**Date:** 2026-01-22  
-**Status:** Proposal  
+**Date:** 2026-01-23  
+**Status:** Ready for Implementation  
 **Author:** Generated via sdqctl planning session  
-**Related:** INTEGRATION-PROPOSAL.md (Phase 3: Verify Commands)
+**Related:** INTEGRATION-PROPOSAL.md (Phase 3: Verify Commands)  
+**Decision:** Synchronous (blocking) execution model
 
 ---
 
@@ -455,15 +456,12 @@ def _execute_verify(directive: Directive, config: VerifyConfig) -> str:
 
 ### 1. Blocking vs Parallel Execution
 
-**Option A:** VERIFY runs synchronously before next PROMPT (proposed)
+**Decision: Option A — Blocking (synchronous)**
+
+VERIFY runs synchronously before next PROMPT:
 - Simpler mental model
 - Results guaranteed available
-
-**Option B:** VERIFY runs in parallel, results injected when ready
-- Faster for multiple verifications
-- More complex state management
-
-**Recommendation:** Start with Option A (synchronous)
+- Parallel execution deferred to future if needed
 
 ### 2. Output Location
 

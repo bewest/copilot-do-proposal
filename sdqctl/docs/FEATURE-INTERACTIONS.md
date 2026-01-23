@@ -51,10 +51,10 @@ sdqctl features are designed to be orthogonal but must have defined behavior whe
 |                 | ELIDE | COMPACT | VERIFY | RUN-BRANCH | CHECKPOINT | MAX-CYCLES |
 |-----------------|-------|---------|--------|------------|------------|------------|
 | **ELIDE**       | —     | ⚠️      | ✅     | ❌         | ⚠️         | ✅         |
-| **COMPACT**     | ⚠️    | —       | 🔶     | ✅         | ✅         | ✅         |
-| **VERIFY**      | ✅    | 🔶      | —      | ✅         | ✅         | ✅         |
-| **RUN-BRANCH**  | ❌    | ✅      | ✅     | —          | 🔶         | ⚠️         |
-| **CHECKPOINT**  | ⚠️    | ✅      | ✅     | 🔶         | —          | ✅         |
+| **COMPACT**     | ⚠️    | —       | ✅     | ✅         | ✅         | ✅         |
+| **VERIFY**      | ✅    | ✅      | —      | ✅         | ✅         | ✅         |
+| **RUN-BRANCH**  | ❌    | ✅      | ✅     | —          | ✅         | ⚠️         |
+| **CHECKPOINT**  | ⚠️    | ✅      | ✅     | ✅         | —          | ✅         |
 | **MAX-CYCLES**  | ✅    | ✅      | ✅     | ⚠️         | ✅         | —          |
 
 ---
@@ -118,16 +118,25 @@ PROMPT Fix failures        # ← Still same turn
 
 ---
 
-### COMPACT + VERIFY 🔶
+### COMPACT + VERIFY ✅
 
-**Question**: What happens to VERIFY output after COMPACT?
+**Decision**: VERIFY output is treated like any other context during COMPACT.
 
-**Options**:
-1. VERIFY output included in compaction summary
-2. VERIFY output preserved verbatim (exempt from compaction)
-3. VERIFY results saved to separate file, reference in summary
+**Behavior**:
+1. VERIFY output included in compaction summary (not preserved verbatim)
+2. To preserve specific findings, use `COMPACT-PRESERVE verification`
+3. Critical VERIFY results should be written to files before COMPACT
 
-**Proposed**: Option 1 — treat VERIFY output like any other context.
+```dockerfile
+VERIFY refs
+VERIFY traceability
+# Optional: preserve verification if needed
+COMPACT-PRESERVE verification
+COMPACT
+PROMPT Continue analysis with summarized context...
+```
+
+**Rationale**: Consistent with how RUN output and PROMPT results are handled. Users who need exact VERIFY results can save them explicitly.
 
 ---
 
@@ -145,9 +154,9 @@ PROMPT Fix any missing references found above.
 
 ---
 
-### RUN-BRANCH + CHECKPOINT 🔶
+### RUN-BRANCH + CHECKPOINT ✅
 
-**Question**: Can CHECKPOINT appear inside ON-FAILURE block?
+**Decision**: CHECKPOINT is allowed inside ON-FAILURE blocks.
 
 ```dockerfile
 RUN pytest
@@ -156,11 +165,14 @@ ON-FAILURE
   PROMPT Fix the failing tests
 ```
 
-**Options**:
-1. ✅ Allow — useful for resuming failed branches
-2. ❌ Disallow — branching is transient, shouldn't checkpoint
+**Behavior**: Checkpoint saves the branch state, including:
+- The failure context from RUN
+- Any prompts/responses within the branch
+- Position within the ON-FAILURE block
 
-**Proposed**: Option 1 — allow checkpoints in branches.
+**Resume behavior**: `sdqctl resume` continues from checkpoint position within the branch.
+
+**Rationale**: Useful for long recovery operations where human review may be needed mid-fix.
 
 ---
 
@@ -209,9 +221,9 @@ When using `--from-json` with existing template variables:
 
 ## Open Questions
 
-1. **COMPACT + VERIFY**: Should verification results be compactable? (See above)
-2. **RUN-BRANCH + CHECKPOINT**: Allow checkpoints in branches? (See above)
-3. **Nested branching**: Allow ON-FAILURE inside ON-FAILURE? (Proposed: No)
+~~1. **COMPACT + VERIFY**: Should verification results be compactable?~~ **Resolved**: Yes, treated as normal context.
+~~2. **RUN-BRANCH + CHECKPOINT**: Allow checkpoints in branches?~~ **Resolved**: Yes, allowed.
+3. **Nested branching**: Allow ON-FAILURE inside ON-FAILURE? **Decision: No** — parse error to prevent infinite nesting.
 
 ---
 
