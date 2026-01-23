@@ -91,6 +91,7 @@ class DirectiveType(Enum):
     RUN_TIMEOUT = "RUN-TIMEOUT"  # Timeout in seconds for RUN commands
     RUN_ASYNC = "RUN-ASYNC"  # Run command in background, don't wait
     RUN_WAIT = "RUN-WAIT"  # Wait/sleep (e.g., 5s, 1m)
+    RUN_RETRY = "RUN-RETRY"  # Retry with AI fix: RUN-RETRY N "prompt"
 
     # Flow control
     PAUSE = "PAUSE"
@@ -182,9 +183,11 @@ class FileRestrictions:
 class ConversationStep:
     """A step in the conversation flow (PROMPT, COMPACT, NEW-CONVERSATION, etc.)."""
     
-    type: str  # "prompt", "compact", "new_conversation", "checkpoint"
+    type: str  # "prompt", "compact", "new_conversation", "checkpoint", "run", "run_retry"
     content: str = ""  # Prompt text or checkpoint name
     preserve: list[str] = field(default_factory=list)  # For compact
+    retry_count: int = 0  # For run_retry: max retries
+    retry_prompt: str = ""  # For run_retry: prompt to send on failure
     
 
 def _get_default_model() -> str:
@@ -683,6 +686,37 @@ def _apply_directive(conv: ConversationFile, directive: Directive) -> None:
         # Command execution settings
         case DirectiveType.RUN:
             conv.steps.append(ConversationStep(type="run", content=directive.value))
+        case DirectiveType.RUN_RETRY:
+            # RUN-RETRY modifies the previous RUN step to enable retry-with-AI-fix
+            # Format: N "prompt" or N 'prompt' where N is retry count
+            # Examples: RUN-RETRY 3 "Fix the failing tests"
+            #           RUN-RETRY 2 'Analyze and fix errors'
+            value = directive.value.strip()
+            import re
+            match = re.match(r'^(\d+)\s+["\'](.+)["\']$', value, re.DOTALL)
+            if match:
+                retry_count = int(match.group(1))
+                retry_prompt = match.group(2)
+            else:
+                # Fallback: first word is count, rest is prompt
+                parts = value.split(None, 1)
+                retry_count = int(parts[0]) if parts else 3
+                retry_prompt = parts[1] if len(parts) > 1 else "Fix the error and try again"
+            
+            # Find the last RUN step and attach retry config to it
+            for i in range(len(conv.steps) - 1, -1, -1):
+                if conv.steps[i].type == "run":
+                    conv.steps[i].retry_count = retry_count
+                    conv.steps[i].retry_prompt = retry_prompt
+                    break
+            else:
+                # No preceding RUN - create standalone (will fail at execution if no command)
+                conv.steps.append(ConversationStep(
+                    type="run",
+                    content="",
+                    retry_count=retry_count,
+                    retry_prompt=retry_prompt
+                ))
         case DirectiveType.RUN_ASYNC:
             conv.steps.append(ConversationStep(type="run_async", content=directive.value))
         case DirectiveType.RUN_WAIT:

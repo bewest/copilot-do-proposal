@@ -171,6 +171,7 @@ OUTPUT-FILE security-report.md
 | `EPILOGUE` | Append to last prompt of cycle (inline or @file) |
 | `PROMPT` | Prompt to send (runs LLM conversation cycle) |
 | `RUN` | Execute shell command |
+| `RUN-RETRY` | Retry with AI fix: `RUN-RETRY N "prompt"` |
 | `RUN-ON-ERROR` | Behavior on command failure (stop, continue) |
 | `RUN-OUTPUT` | When to include output (always, on-error, never) |
 | `RUN-OUTPUT-LIMIT` | Max output chars (10K, 50K, 1M, none) |
@@ -324,6 +325,41 @@ RUN npm test            # Runs in ./backend directory
 #### Auto-Checkpoint on Failure
 
 When a RUN command fails with `RUN-ON-ERROR stop` (default), sdqctl automatically saves a checkpoint containing all captured output. This preserves debugging context even on failure.
+
+#### RUN-RETRY (AI-Assisted Retry)
+
+Enable automatic retry with AI fix when commands fail:
+
+```dockerfile
+RUN npm test
+RUN-RETRY 3 "Fix the failing tests based on error output"
+```
+
+**Behavior**:
+1. Run the command
+2. If it fails, send error output + retry prompt to AI
+3. AI analyzes errors and makes fixes
+4. Run the command again
+5. Repeat up to N times
+6. If still failing after all retries, use `RUN-ON-ERROR` behavior
+
+**Use cases**:
+- Test-fix-retry loops
+- Lint-fix cycles
+- Build error recovery
+
+```dockerfile
+# Retry with custom prompt
+RUN pytest tests/
+RUN-RETRY 2 "Analyze the test failures and fix the code"
+
+# Works with other RUN options
+RUN-TIMEOUT 5m
+RUN npm run build
+RUN-RETRY 3 "Fix build errors"
+```
+
+**Note**: RUN-RETRY modifies the immediately preceding RUN directive. Each retry sends the error to the AI for analysis, consuming additional tokens.
 
 ### ELIDE Directive (Merge Adjacent Elements)
 
@@ -565,6 +601,7 @@ ruff check sdqctl/
 - ✅ **Hook Event Logging** - Track hook.start/hook.end events
 - ✅ **Model Change Tracking** - Log session.model_change events
 - ✅ **Session Handoff Logging** - Track session.handoff events
+- ✅ **RUN-RETRY Directive** - AI-assisted retry on command failure ([docs](#run-retry-ai-assisted-retry))
 
 ### Waiting on SDK
 
@@ -572,19 +609,19 @@ ruff check sdqctl/
 
 ### Planned Features
 
-#### P1: Conditional RUN Branching
+#### P1: Conditional RUN Branching (Phase 2)
 
-The `RUN` directive currently lacks conditional branching on failure. Proposed:
+Phase 1 (RUN-RETRY) is complete. Phase 2 adds full ON-FAILURE/ON-SUCCESS blocks:
 
 ```dockerfile
-# Current: fails workflow on error
 RUN npm test
-
-# Proposed: branch on failure
-RUN npm test
-  ON-FAILURE PROMPT "Tests failed. Analyze errors and fix."
-  ON-SUCCESS PROMPT "Tests passed. Continue to documentation."
+ON-FAILURE
+  PROMPT "Tests failed. Analyze errors and fix."
+ON-SUCCESS
+  PROMPT "Tests passed. Continue to documentation."
 ```
+
+See [proposals/RUN-BRANCHING.md](./proposals/RUN-BRANCHING.md) for design details.
 
 #### P1: Tight Validation Tool Integration
 

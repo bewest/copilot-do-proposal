@@ -211,6 +211,46 @@ PROMPT Check results.
         assert conv.run_on_error == "continue"
         assert conv.run_output == "on-error"
 
+    def test_parse_run_retry(self):
+        """Test parsing RUN-RETRY directive."""
+        content = """MODEL gpt-4
+ADAPTER mock
+RUN npm test
+RUN-RETRY 3 "Fix the failing tests based on error output"
+PROMPT Verify all tests pass.
+"""
+        conv = ConversationFile.parse(content)
+        
+        run_steps = [s for s in conv.steps if s.type == "run"]
+        assert len(run_steps) == 1
+        assert run_steps[0].content == "npm test"
+        assert run_steps[0].retry_count == 3
+        assert run_steps[0].retry_prompt == "Fix the failing tests based on error output"
+
+    def test_parse_run_retry_single_quotes(self):
+        """Test parsing RUN-RETRY with single quotes."""
+        content = """RUN pytest
+RUN-RETRY 2 'Analyze and fix errors'
+"""
+        conv = ConversationFile.parse(content)
+        
+        run_steps = [s for s in conv.steps if s.type == "run"]
+        assert len(run_steps) == 1
+        assert run_steps[0].retry_count == 2
+        assert run_steps[0].retry_prompt == "Analyze and fix errors"
+
+    def test_parse_run_retry_fallback_format(self):
+        """Test parsing RUN-RETRY with fallback format (no quotes)."""
+        content = """RUN make build
+RUN-RETRY 1 Fix build errors
+"""
+        conv = ConversationFile.parse(content)
+        
+        run_steps = [s for s in conv.steps if s.type == "run"]
+        assert len(run_steps) == 1
+        assert run_steps[0].retry_count == 1
+        assert run_steps[0].retry_prompt == "Fix build errors"
+
     def test_parse_pause(self, pause_conv_content):
         """Test parsing PAUSE directive with message."""
         conv = ConversationFile.parse(pause_conv_content)

@@ -912,112 +912,152 @@ async def _run_async(
                     logger.debug("New session created")
             
                 elif step_type == "run":
-                    # Execute shell command
+                    # Execute shell command (with optional retry-with-AI-fix)
                     command = step_content
-                    logger.info(f"🔧 RUN: {command}")
-                    progress(f"  🔧 Running: {command[:50]}...")
+                    retry_count = getattr(step, 'retry_count', 0) if hasattr(step, 'retry_count') else 0
+                    retry_prompt = getattr(step, 'retry_prompt', '') if hasattr(step, 'retry_prompt') else ''
                     
-                    run_start = time.time()
-                    try:
-                        # Determine working directory: run_cwd overrides cwd
-                        if conv.run_cwd:
-                            run_dir = Path(conv.run_cwd)
-                            # Make relative paths relative to workflow dir or cwd
-                            if not run_dir.is_absolute():
-                                base = conv.source_path.parent if conv.source_path else Path.cwd()
-                                run_dir = base / run_dir
-                        elif conv.cwd:
-                            run_dir = Path(conv.cwd)
+                    max_attempts = retry_count + 1  # retry_count is number of retries AFTER first attempt
+                    attempt = 0
+                    last_result = None
+                    
+                    while attempt < max_attempts:
+                        attempt += 1
+                        is_retry = attempt > 1
+                        
+                        if is_retry:
+                            logger.info(f"🔄 RUN-RETRY attempt {attempt}/{max_attempts}: {command}")
+                            progress(f"  🔄 Retry {attempt}/{max_attempts}: {command[:40]}...")
                         else:
-                            run_dir = Path.cwd()
+                            logger.info(f"🔧 RUN: {command}")
+                            progress(f"  🔧 Running: {command[:50]}...")
                         
-                        result = _run_subprocess(
-                            command,
-                            allow_shell=conv.allow_shell,
-                            timeout=conv.run_timeout,
-                            cwd=run_dir,
-                            env=conv.run_env if conv.run_env else None,
-                        )
-                        run_elapsed = time.time() - run_start
+                        run_start = time.time()
+                        try:
+                            # Determine working directory: run_cwd overrides cwd
+                            if conv.run_cwd:
+                                run_dir = Path(conv.run_cwd)
+                                if not run_dir.is_absolute():
+                                    base = conv.source_path.parent if conv.source_path else Path.cwd()
+                                    run_dir = base / run_dir
+                            elif conv.cwd:
+                                run_dir = Path(conv.cwd)
+                            else:
+                                run_dir = Path.cwd()
+                            
+                            result = _run_subprocess(
+                                command,
+                                allow_shell=conv.allow_shell,
+                                timeout=conv.run_timeout,
+                                cwd=run_dir,
+                                env=conv.run_env if conv.run_env else None,
+                            )
+                            run_elapsed = time.time() - run_start
+                            last_result = result
+                            
+                            if result.returncode == 0:
+                                logger.info(f"  ✓ Command succeeded ({run_elapsed:.1f}s)")
+                                progress(f"  ✓ Command succeeded ({run_elapsed:.1f}s)")
+                                break  # Success - exit retry loop
+                            else:
+                                logger.warning(f"  ✗ Command failed with exit code {result.returncode}")
+                                progress(f"  ✗ Command failed (exit {result.returncode})")
+                                
+                                # If retries remaining, send to AI for fix
+                                if retry_count > 0 and attempt < max_attempts:
+                                    # Capture error output for AI
+                                    error_output = result.stdout or ""
+                                    if result.stderr:
+                                        error_output += f"\n\n[stderr]\n{result.stderr}"
+                                    error_output = _truncate_output(error_output, conv.run_output_limit)
+                                    
+                                    # Build retry prompt for AI
+                                    full_retry_prompt = f"""{retry_prompt}
+
+Command that failed:
+```
+$ {command}
+{error_output}
+```
+
+Exit code: {result.returncode}
+
+Please analyze the error and make necessary fixes. After fixing, the command will be retried automatically."""
+                                    
+                                    logger.info(f"  📤 Sending error to AI for fix...")
+                                    progress(f"  📤 Asking AI to fix...")
+                                    
+                                    # Send to AI and wait for response
+                                    try:
+                                        retry_response = run_async(ai_adapter.run(
+                                            adapter_session,
+                                            full_retry_prompt,
+                                            restrictions=restrictions,
+                                            stream=show_streaming,
+                                        ))
+                                        if retry_response:
+                                            logger.info(f"  📥 AI fix response received ({len(retry_response)} chars)")
+                                            progress(f"  📥 AI response received, retrying...")
+                                            # Add AI response to session context
+                                            session.add_message("assistant", retry_response)
+                                    except Exception as ai_err:
+                                        logger.error(f"  ✗ AI fix request failed: {ai_err}")
+                                        progress(f"  ✗ AI request failed: {ai_err}")
+                                        break  # Can't retry without AI, exit loop
+                                    
+                                    continue  # Retry the command
                         
-                        # Determine if we should include output
+                        except subprocess.TimeoutExpired as e:
+                            logger.error(f"  ✗ Command timed out after {conv.run_timeout}s")
+                            progress(f"  ✗ Command timed out after {conv.run_timeout}s")
+                            # Timeout - no retry (complex to handle)
+                            last_result = type('Result', (), {
+                                'returncode': -1, 
+                                'stdout': e.stdout or '', 
+                                'stderr': e.stderr or f'Timeout after {conv.run_timeout}s'
+                            })()
+                            break
+                        
+                        except Exception as e:
+                            logger.error(f"  ✗ Command error: {e}")
+                            last_result = type('Result', (), {
+                                'returncode': -1, 
+                                'stdout': '', 
+                                'stderr': str(e)
+                            })()
+                            break
+                    
+                    # After retry loop, handle final result
+                    if last_result:
                         include_output = (
                             conv.run_output == "always" or
-                            (conv.run_output == "on-error" and result.returncode != 0)
+                            (conv.run_output == "on-error" and last_result.returncode != 0)
                         )
                         
-                        if result.returncode == 0:
-                            logger.info(f"  ✓ Command succeeded ({run_elapsed:.1f}s)")
-                            progress(f"  ✓ Command succeeded ({run_elapsed:.1f}s)")
-                        else:
-                            logger.warning(f"  ✗ Command failed with exit code {result.returncode}")
-                            progress(f"  ✗ Command failed (exit {result.returncode})")
-                            
-                        # Add output to context for next prompt if configured
-                        # NOTE: Capture output BEFORE any early return to preserve debugging context
                         if include_output:
-                            output_text = result.stdout or ""
-                            if result.stderr:
-                                output_text += f"\n\n[stderr]\n{result.stderr}"
-                            
-                            # Apply output limit if configured
+                            output_text = last_result.stdout or ""
+                            if last_result.stderr:
+                                output_text += f"\n\n[stderr]\n{last_result.stderr}"
                             output_text = _truncate_output(output_text, conv.run_output_limit)
                             
-                            # Store as context for next prompt (add to session messages)
                             if output_text.strip():
-                                status_marker = "" if result.returncode == 0 else f" (exit {result.returncode})"
-                                run_context = f"```\n$ {command}{status_marker}\n{output_text}\n```"
+                                status_marker = "" if last_result.returncode == 0 else f" (exit {last_result.returncode})"
+                                retry_marker = f" [after {attempt} attempt(s)]" if retry_count > 0 else ""
+                                run_context = f"```\n$ {command}{status_marker}{retry_marker}\n{output_text}\n```"
                                 session.add_message("system", f"[RUN output]\n{run_context}")
                                 logger.debug(f"Added RUN output to context ({len(output_text)} chars)")
                         
-                        # Handle stop-on-error AFTER capturing output
-                        if result.returncode != 0 and conv.run_on_error == "stop":
-                                console.print(f"[red]RUN failed: {command}[/red]")
-                                console.print(f"[dim]Exit code: {result.returncode}[/dim]")
-                                if result.stderr:
-                                    console.print(f"[dim]stderr: {result.stderr[:500]}[/dim]")
-                                session.state.status = "failed"
-                                # Save checkpoint to preserve captured output before exit
-                                checkpoint_path = session.save_pause_checkpoint(f"RUN failed: {command} (exit {result.returncode})")
-                                console.print(f"[dim]Checkpoint saved: {checkpoint_path}[/dim]")
-                                return  # Session cleanup handled by finally blocks
-                    
-                    except subprocess.TimeoutExpired as e:
-                        logger.error(f"  ✗ Command timed out after {conv.run_timeout}s")
-                        progress(f"  ✗ Command timed out after {conv.run_timeout}s")
-                        
-                        # Capture partial output (always - timeout output is valuable for debugging)
-                        partial_stdout = e.stdout or ""
-                        partial_stderr = e.stderr or ""
-                        partial_output = partial_stdout
-                        if partial_stderr:
-                            partial_output += f"\n\n[stderr]\n{partial_stderr}"
-                        
-                        # Apply output limit if configured
-                        partial_output = _truncate_output(partial_output, conv.run_output_limit)
-                        
-                        if partial_output.strip():
-                            run_context = f"```\n$ {command}\n[TIMEOUT after {conv.run_timeout}s]\n{partial_output}\n```"
-                            session.add_message("system", f"[RUN timeout - partial output]\n{run_context}")
-                            logger.debug(f"Captured partial output on timeout ({len(partial_output)} chars)")
-                        
-                        if conv.run_on_error == "stop":
-                            console.print(f"[red]RUN timed out: {command}[/red]")
+                        # Handle stop-on-error AFTER capturing output and exhausting retries
+                        if last_result.returncode != 0 and conv.run_on_error == "stop":
+                            retry_msg = f" after {attempt} attempts" if retry_count > 0 else ""
+                            console.print(f"[red]RUN failed{retry_msg}: {command}[/red]")
+                            console.print(f"[dim]Exit code: {last_result.returncode}[/dim]")
+                            if last_result.stderr:
+                                console.print(f"[dim]stderr: {last_result.stderr[:500]}[/dim]")
                             session.state.status = "failed"
-                            # Save checkpoint to preserve captured output before exit
-                            checkpoint_path = session.save_pause_checkpoint(f"RUN timed out: {command}")
+                            checkpoint_path = session.save_pause_checkpoint(f"RUN failed: {command} (exit {last_result.returncode})")
                             console.print(f"[dim]Checkpoint saved: {checkpoint_path}[/dim]")
-                            return  # Session cleanup handled by finally blocks
-                    
-                    except Exception as e:
-                        logger.error(f"  ✗ Command error: {e}")
-                        
-                        if conv.run_on_error == "stop":
-                            console.print(f"[red]RUN error: {e}[/red]")
-                            session.state.status = "failed"
-                            # Save checkpoint to preserve session state before exit
-                            checkpoint_path = session.save_pause_checkpoint(f"RUN error: {e}")
-                            console.print(f"[dim]Checkpoint saved: {checkpoint_path}[/dim]")
+                            return
                             return
                 
                 elif step_type == "run_async":
