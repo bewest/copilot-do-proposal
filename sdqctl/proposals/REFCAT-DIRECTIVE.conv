@@ -218,7 +218,6 @@ PROMPT |
   Implement these files now. Start with `refcat.py` core module.
 
 RUN-ON-ERROR continue
-RUN-RETRY 2 "If implementation fails, check error output and fix the issue"
 
 ELIDE
 
