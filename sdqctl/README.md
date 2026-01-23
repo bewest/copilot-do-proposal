@@ -638,6 +638,19 @@ sdqctl status --adapters
 sdqctl status --sessions
 ```
 
+### `sdqctl help`
+
+Comprehensive help system:
+
+```bash
+sdqctl help                  # Overview
+sdqctl help run              # Command help
+sdqctl help directives       # Topic help
+sdqctl help --list           # List all commands and topics
+```
+
+Available topics: `directives`, `adapters`, `workflow`, `variables`, `context`, `examples`
+
 ## Adapters
 
 | Adapter | Package | Description |
