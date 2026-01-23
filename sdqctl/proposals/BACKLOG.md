@@ -45,7 +45,7 @@ All 7 proposed tooling commands are **fully implemented**:
 |-----------|----------|------------|----------------|
 | `ON-FAILURE` | RUN-BRANCHING | High | Defer - synthesis cycles cover 80% of use cases |
 | `ON-SUCCESS` | RUN-BRANCHING | High | Defer - pairs with ON-FAILURE |
-| `VERIFY-TRACE` | STPA-INTEGRATION | Medium | Implement after traceability verifier |
+| `VERIFY-TRACE` | STPA-INTEGRATION | N/A | ✅ Use `VERIFY traceability` instead |
 
 ### Key Findings
 

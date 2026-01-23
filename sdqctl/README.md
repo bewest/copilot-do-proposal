@@ -596,6 +596,12 @@ Static verification suite for workflows and references:
 # Verify @-references resolve to files
 sdqctl verify refs
 
+# Verify markdown links
+sdqctl verify links
+
+# Verify STPA traceability (UCA→SC→REQ→SPEC→TEST)
+sdqctl verify traceability
+
 # Run all verifications
 sdqctl verify all
 
@@ -614,6 +620,12 @@ Run verifications during workflow execution:
 # Verify all @-references before proceeding
 VERIFY refs
 
+# Verify markdown links
+VERIFY links
+
+# Verify STPA traceability chain
+VERIFY traceability
+
 # Control error handling
 VERIFY-ON-ERROR continue
 VERIFY refs
@@ -623,9 +635,9 @@ VERIFY-OUTPUT on-error
 VERIFY refs
 
 # Combine with ELIDE to fix issues
-VERIFY refs
+VERIFY traceability
 ELIDE
-PROMPT Fix any missing references found above.
+PROMPT Fix any traceability gaps found above.
 ```
 
 ### `sdqctl status`

@@ -544,3 +544,34 @@ class TestTraceabilityVerifier:
         
         assert result.details["files_scanned"] == 1
         assert "UCA-ROOT-001" in result.details["artifacts_by_type"].get("UCA", [])
+
+
+class TestVerifyTraceabilityDirective:
+    """Tests for VERIFY traceability directive parsing."""
+    
+    def test_verify_traceability_parsing(self):
+        """Test parsing VERIFY traceability directive."""
+        from sdqctl.core.conversation import ConversationFile
+        
+        conv = ConversationFile.parse("""MODEL mock
+ADAPTER mock
+VERIFY traceability
+PROMPT Analyze traceability results.
+""")
+        
+        verify_steps = [s for s in conv.steps if s.type == "verify"]
+        assert len(verify_steps) == 1
+        assert verify_steps[0].verify_type == "traceability"
+    
+    def test_verify_all_includes_traceability(self):
+        """Test that VERIFY all includes traceability verifier."""
+        from sdqctl.verifiers import VERIFIERS
+        
+        # Verify all registered verifiers include traceability
+        assert "traceability" in VERIFIERS
+        
+        # All 3 verifiers should be present
+        assert len(VERIFIERS) >= 3
+        assert "refs" in VERIFIERS
+        assert "links" in VERIFIERS
+        assert "traceability" in VERIFIERS
