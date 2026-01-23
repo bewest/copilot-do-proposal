@@ -1,9 +1,10 @@
 # Proposal: CLI Ergonomics & Help System
 
-> **Status**: Draft  
+> **Status**: Draft (Naming Assessment Complete)  
 > **Date**: 2026-01-23  
 > **Author**: Ben West  
-> **Scope**: Help system, command taxonomy, naming investigation
+> **Scope**: Help system, command taxonomy, naming investigation  
+> **Assessment Date**: 2026-01-23
 
 ---
 
@@ -203,6 +204,245 @@ Before any rename, we need:
 
 ---
 
+## Naming Assessment Results (2026-01-23)
+
+> **Status**: ✅ Investigation Complete  
+> **Recommendation**: `invoke` (safest) or keep `run` with documentation fix
+
+### Code Impact Analysis
+
+**Total References Found**: 128 occurrences across codebase
+
+#### Python Files Requiring Modification
+
+| File | Change Required |
+|------|-----------------|
+| `sdqctl/commands/run.py` | Rename to `{new}.py` |
+| `sdqctl/commands/__init__.py` | Update import |
+| `sdqctl/cli.py` (line 83) | Update `cli.add_command()` |
+| `tests/test_run_command.py` | Rename test file |
+| `tests/test_conversation.py` | Update import (`process_elided_steps`) |
+| `tests/test_stop_file_existence_check.py` | Update import |
+| `sdqctl/core/logging.py` | Update reference |
+
+#### Documentation Files
+
+| File | References |
+|------|------------|
+| `README.md` | 11 |
+| `docs/GETTING-STARTED.md` | 9 |
+| `docs/TRACEABILITY-WORKFLOW.md` | 6 |
+| `docs/REVERSE-ENGINEERING.md` | 5 |
+| `docs/IO-ARCHITECTURE.md` | 3 |
+| `examples/workflows/*.conv` | 20+ files |
+| `sdqctl/commands/help.py` | ~20 |
+
+#### Additional Impact
+
+- `render run` subcommand: 10+ references
+- Entry point in `pyproject.toml`: `sdqctl = "sdqctl.cli:main"` (unchanged)
+
+### Technical Conflict Analysis
+
+#### Python Keyword/Builtin Status
+
+```python
+import keyword
+yield: keyword.iskeyword('yield')  # True  - RESERVED
+do:    keyword.iskeyword('do')     # False - Safe
+exec:  keyword.iskeyword('exec')   # False - Builtin (shadows exec())
+invoke: keyword.iskeyword('invoke') # False - Safe
+```
+
+#### Shell Keyword/Builtin Status
+
+```bash
+type yield   # not found - Safe
+type do      # shell keyword (do...done) - CONFLICT
+type exec    # shell builtin - CONFLICT
+type invoke  # not found - Safe
+```
+
+### Detailed Candidate Evaluation
+
+#### 1. YIELD ("yielding control to agent")
+
+| Aspect | Rating | Notes |
+|--------|--------|-------|
+| Semantic Fit | ★★★★★ | Perfect - "surrender control to agent" |
+| Technical | ★★☆☆☆ | Python keyword blocks implementation |
+| Ecosystem | ★★★★☆ | Unique, no CLI precedent |
+| User Experience | ★★★☆☆ | Unfamiliar verb |
+
+**Critical Issue**: Python reserved keyword
+```python
+# These are SyntaxErrors:
+from .yield import yield
+def yield(): pass
+
+# Must use workarounds:
+# File: yield_cmd.py
+# Function: yield_cmd()
+# Import: from .yield_cmd import yield_cmd as yield_command
+```
+
+**Verdict**: Best semantics, HIGH implementation friction
+
+#### 2. DO (plan/do mental model)
+
+| Aspect | Rating | Notes |
+|--------|--------|-------|
+| Semantic Fit | ★★★☆☆ | Generic, maps to plan→do |
+| Technical | ★★★★★ | Clean Python implementation |
+| Ecosystem | ★★★☆☆ | Shell keyword creates friction |
+| User Experience | ★★★★★ | Short (2 chars), intuitive |
+
+**Shell Friction**:
+```bash
+# Visually confusing in loops:
+for f in *.conv; do sdqctl do $f; done
+#                ^^        ^^
+```
+
+**Verdict**: Best UX, shell keyword causes documentation friction
+
+#### 3. EXEC (generic execution)
+
+| Aspect | Rating | Notes |
+|--------|--------|-------|
+| Semantic Fit | ★★☆☆☆ | Same as "run" - no improvement |
+| Technical | ★★★★☆ | Shadows Python builtin |
+| Ecosystem | ★★☆☆☆ | Overloaded (docker exec, kubectl exec) |
+| User Experience | ★★★☆☆ | Familiar but wrong mental model |
+
+**Verdict**: NO ADVANTAGE over 'run' - NOT RECOMMENDED
+
+#### 4. INVOKE (call a workflow)
+
+| Aspect | Rating | Notes |
+|--------|--------|-------|
+| Semantic Fit | ★★★★☆ | "Trigger/delegate" - good for AI handoff |
+| Technical | ★★★★★ | No Python/shell conflicts |
+| Ecosystem | ★★★★☆ | AWS Lambda, PowerShell precedent |
+| User Experience | ★★★☆☆ | Longer (6 chars), formal tone |
+
+**Implementation**: Clean path
+```python
+# File: invoke.py
+# Function: invoke()
+# Import: from .invoke import invoke
+# No workarounds needed
+```
+
+**Verdict**: SAFEST CHOICE - cleanest implementation
+
+#### 5. RUN (keep current)
+
+| Aspect | Rating | Notes |
+|--------|--------|-------|
+| Semantic Fit | ★★☆☆☆ | Conflicts with RUN directive |
+| Technical | ★★★★★ | Already implemented |
+| Ecosystem | ★★★★★ | Universal pattern |
+| User Experience | ★★★★★ | Zero learning curve |
+
+**Alternative Fix**: Add `sdqctl help run-vs-RUN` documentation topic
+
+**Verdict**: LOWEST COST - address confusion via documentation
+
+### Recommendation Matrix
+
+| Criteria (1-5) | yield | do | exec | invoke | run |
+|----------------|-------|-----|------|--------|-----|
+| Technical safety | 3 | 4 | 3 | **5** | 5 |
+| Semantic clarity | **5** | 4 | 2 | 4 | 2 |
+| Ergonomics | 2 | **5** | 4 | 3 | 5 |
+| Uniqueness | **5** | 3 | 1 | 4 | 1 |
+| Migration cost | 2 | 3 | 3 | 4 | **5** |
+| **TOTAL** | 17 | 19 | 13 | **20** | 18 |
+
+### Backward Compatibility Options
+
+#### Option A: Hard Rename (Breaking)
+
+```python
+# Simply rename, remove old command
+cli.add_command(invoke)  # 'run' gone
+```
+
+- **User Impact**: HIGH - all scripts break
+- **Maintenance**: None
+- **Recommended For**: Pre-1.0 projects
+
+#### Option B: Deprecation Period
+
+```python
+# In invoke.py:
+@click.command("invoke")
+@click.pass_context
+def invoke(ctx, ...):
+    if ctx.info_name == 'run':
+        click.secho("⚠ 'run' deprecated, use 'invoke'", fg='yellow', err=True)
+    # ... rest of command
+
+# In cli.py:
+cli.add_command(invoke)              # Primary
+cli.add_command(invoke, name='run')  # Deprecated alias
+```
+
+- **User Impact**: LOW - scripts work, see warning
+- **Maintenance**: Temporary (remove in v2.0)
+- **Recommended For**: Mature projects
+
+#### Option C: Permanent Alias
+
+```python
+cli.add_command(invoke)
+cli.add_command(invoke, name='run')  # Silent, forever
+```
+
+- **User Impact**: NONE
+- **Maintenance**: Forever
+- **Recommended For**: Risk-averse projects
+
+#### Option D: Hidden Alias (Recommended)
+
+```python
+cli.add_command(invoke)
+
+@cli.command('run', hidden=True)
+@click.pass_context
+def run_alias(ctx):
+    click.secho("⚠ 'run' deprecated, use 'invoke'", fg='yellow', err=True)
+    ctx.invoke(invoke, **ctx.params)
+```
+
+- **User Impact**: LOW - scripts work, warning shown
+- **Maintenance**: Temporary
+- **Help Output**: Clean (run not shown)
+- **Recommended For**: Mature projects
+
+### Final Recommendation
+
+```
+IF renaming is desired:
+  → Use 'invoke' (score: 20/25)
+  → Use Option D (hidden alias with deprecation warning)
+  
+IF minimal disruption preferred:
+  → Keep 'run'
+  → Add 'sdqctl help run-vs-RUN' topic to clarify distinction
+  → Document: "run command yields to agent; RUN directive executes shell"
+```
+
+### Decision Pending
+
+User must decide:
+
+1. **Command Name**: invoke / do / yield / keep run?
+2. **Compatibility** (if renaming): A / B / C / D?
+
+---
+
 ## Implementation Workflows
 
 Three .conv files implement this proposal:
@@ -242,9 +482,12 @@ Three .conv files implement this proposal:
 - [ ] Updated BACKLOG.md
 
 ### Naming Assessment
-- [ ] Impact report for top 3 candidates
-- [ ] Backward compatibility strategy
-- [ ] Recommendation document
+- [x] Impact report for top 3 candidates
+- [x] Backward compatibility strategy
+- [x] Recommendation document
+- [ ] User decision on command name
+- [ ] User decision on compatibility option
+- [ ] Implementation (if approved)
 
 ---
 
