@@ -27,17 +27,17 @@ All 7 proposed tooling commands are **fully implemented**:
 
 #### P0: Documentation Gaps (Quick Wins)
 
-| Gap | Location | Effort |
-|-----|----------|--------|
-| Pipeline schema docs | Create `docs/PIPELINE-SCHEMA.md` | 1 hour |
-| Verifier extension guide | Add to `docs/` | 1 hour |
+| Gap | Location | Effort | Status |
+|-----|----------|--------|--------|
+| Pipeline schema docs | `docs/PIPELINE-SCHEMA.md` | 1 hour | ✅ Complete |
+| Verifier extension guide | `docs/EXTENDING-VERIFIERS.md` | 1 hour | ✅ Complete |
 
 #### P1: Verifier Expansion (High Value)
 
-| Verifier | Use Case | Effort |
-|----------|----------|--------|
-| `traceability` | STPA REQ→SPEC→TEST validation | 4 hours |
-| `links` | URL/file link checking | 2 hours |
+| Verifier | Use Case | Effort | Status |
+|----------|----------|--------|--------|
+| `traceability` | STPA REQ→SPEC→TEST validation | 4 hours | ⏳ Pending |
+| `links` | URL/file link checking | 2 hours | ✅ Complete |
 
 #### P2: Directive Implementation (Deferred)
 

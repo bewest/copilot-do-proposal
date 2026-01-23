@@ -8,6 +8,7 @@ from sdqctl.verifiers import (
     VerificationError,
     VerificationResult,
     RefsVerifier,
+    LinksVerifier,
     VERIFIERS,
 )
 
@@ -194,3 +195,161 @@ PROMPT Analyze the verification results.
         assert verify_steps[0].verify_type == "refs"
         assert conv.verify_on_error == "continue"
         assert conv.verify_output == "always"
+
+
+class TestLinksVerifier:
+    """Tests for LinksVerifier."""
+    
+    def test_verifier_registered(self):
+        """Test that links verifier is in the registry."""
+        assert "links" in VERIFIERS
+        assert VERIFIERS["links"] == LinksVerifier
+    
+    def test_verify_empty_directory(self, tmp_path):
+        """Test verification of empty directory."""
+        verifier = LinksVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["files_scanned"] == 0
+        assert result.details["links_found"] == 0
+    
+    def test_verify_valid_link(self, tmp_path):
+        """Test verification with valid markdown link."""
+        # Create target file
+        target = tmp_path / "target.md"
+        target.write_text("# Target")
+        
+        # Create file with link
+        source = tmp_path / "source.md"
+        source.write_text("See [the target](target.md) for details")
+        
+        verifier = LinksVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["links_valid"] == 1
+        assert result.details["links_broken"] == 0
+    
+    def test_verify_broken_link(self, tmp_path):
+        """Test verification with broken markdown link."""
+        # Create file with broken link
+        source = tmp_path / "source.md"
+        source.write_text("See [missing](nonexistent.md) for details")
+        
+        verifier = LinksVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert not result.passed
+        assert result.details["links_broken"] == 1
+        assert len(result.errors) == 1
+        assert "Broken link" in result.errors[0].message
+        assert "nonexistent.md" in result.errors[0].message
+    
+    def test_external_urls_skipped(self, tmp_path):
+        """Test that external URLs are skipped by default."""
+        source = tmp_path / "source.md"
+        source.write_text("See [GitHub](https://github.com/example)")
+        
+        verifier = LinksVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["links_external"] == 1
+    
+    def test_anchor_links_valid(self, tmp_path):
+        """Test that anchor-only links are considered valid."""
+        source = tmp_path / "source.md"
+        source.write_text("See [section](#section-name)")
+        
+        verifier = LinksVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["links_valid"] == 1
+    
+    def test_relative_path_link(self, tmp_path):
+        """Test relative path links."""
+        subdir = tmp_path / "docs"
+        subdir.mkdir()
+        
+        target = subdir / "target.md"
+        target.write_text("# Target")
+        
+        source = tmp_path / "README.md"
+        source.write_text("See [the docs](docs/target.md)")
+        
+        verifier = LinksVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["links_valid"] == 1
+    
+    def test_link_with_anchor(self, tmp_path):
+        """Test link to file with anchor is valid if file exists."""
+        target = tmp_path / "target.md"
+        target.write_text("# Target\n\n## Section")
+        
+        source = tmp_path / "source.md"
+        source.write_text("See [section](target.md#section)")
+        
+        verifier = LinksVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["links_valid"] == 1
+    
+    def test_multiple_links_mixed(self, tmp_path):
+        """Test file with multiple links, some valid some broken."""
+        # Create only one target
+        target = tmp_path / "exists.md"
+        target.write_text("# Exists")
+        
+        source = tmp_path / "source.md"
+        source.write_text("""
+        - [Valid](exists.md)
+        - [Broken](missing.md)
+        - [External](https://example.com)
+        """)
+        
+        verifier = LinksVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert not result.passed
+        assert result.details["links_valid"] == 1
+        assert result.details["links_broken"] == 1
+        assert result.details["links_external"] == 1
+    
+    def test_recursive_scan(self, tmp_path):
+        """Test recursive scanning of subdirectories."""
+        subdir = tmp_path / "sub"
+        subdir.mkdir()
+        
+        source = subdir / "nested.md"
+        source.write_text("See [broken](nonexistent.md)")
+        
+        verifier = LinksVerifier()
+        result = verifier.verify(tmp_path, recursive=True)
+        
+        assert not result.passed
+        assert result.details["files_scanned"] == 1
+        assert result.details["links_broken"] == 1
+    
+    def test_non_recursive_scan(self, tmp_path):
+        """Test non-recursive scanning skips subdirectories."""
+        subdir = tmp_path / "sub"
+        subdir.mkdir()
+        
+        # File in subdir with broken link
+        nested = subdir / "nested.md"
+        nested.write_text("See [broken](nonexistent.md)")
+        
+        # File in root with valid link
+        root_file = tmp_path / "root.md"
+        root_file.write_text("See [sub](sub/)")
+        
+        verifier = LinksVerifier()
+        result = verifier.verify(tmp_path, recursive=False)
+        
+        # Only root file scanned
+        assert result.details["files_scanned"] == 1
