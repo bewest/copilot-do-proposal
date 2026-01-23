@@ -1,0 +1,100 @@
+# refcat-directive.conv - Proposal for content extraction from refs
+# Deferred: 2026-01-23
+# Context: Identified during Nightscout ecosystem evaluation
+# Run: sdqctl run proposals/REFCAT-DIRECTIVE.conv --adapter copilot
+
+MODEL claude-sonnet-4
+ADAPTER copilot
+MODE analysis
+MAX-CYCLES 2
+VALIDATION-MODE lenient
+
+CONTEXT @proposals/VERIFICATION-DIRECTIVES.md
+CONTEXT @sdqctl/verifiers/refs.py
+CONTEXT-OPTIONAL @docs/DIRECTIVES.md
+
+PROLOGUE Session: {{DATE}} | Proposal Development: REFCAT Directive
+PROLOGUE Objective: Design a content extraction tool for code references
+
+PROMPT ## Problem Statement
+
+During integration testing with the Nightscout ecosystem workspace, we identified a critical gap:
+
+### Reference Format Mismatch
+
+| System | Format | Example | Features |
+|--------|--------|---------|----------|
+| **Ecosystem** | `` `alias:path#anchor` `` | `` `loop:Loop/Models/Override.swift#L10-L50` `` | Alias resolution, line ranges |
+| **sdqctl** | `@path` | `@traceability/requirements.md` | Relative paths only |
+
+### Current Tools Only Validate
+
+Both `verify_refs.py` (ecosystem) and `sdqctl verify refs` only **validate** that refs resolve to files. Neither extracts content.
+
+### Use Case
+
+When an AI agent sees a ref like `loop:Loop/Models/Override.swift#L10-L50`, it should be able to:
+1. Resolve the alias `loop` to `externals/LoopWorkspace/`
+2. Find the file at that path
+3. Extract lines 10-50
+4. Include that content in context
+
+This enables "follow the ref" workflows without translating to grep commands.
+
+PROMPT ## Proposed Solution: `refcat` 
+
+### As a CLI Command
+
+```bash
+# Extract content from ecosystem ref
+sdqctl refcat "loop:Loop/Models/Override.swift#L10-L50"
+# -> outputs lines 10-50
+
+# Extract from @-style ref
+sdqctl refcat @traceability/requirements.md
+# -> outputs full file
+
+# With JSON output
+sdqctl refcat "loop:file.swift#L10-L50" --json
+# -> {"path": "...", "lines": [...], "content": "..."}
+```
+
+### As a ConversationFile Directive
+
+```dockerfile
+# Include content from ref in context
+REFCAT loop:Loop/Models/Override.swift#L10-L50
+
+# Multiple refs
+REFCAT aaps:database/entities/Bolus.kt#L1-L100
+REFCAT trio:FreeAPS/Sources/Models/Override.swift
+```
+
+### Configuration
+
+Alias resolution requires a lockfile mapping. Options:
+
+1. **Ecosystem pattern**: Read `workspace.lock.json`
+2. **sdqctl pattern**: Configure in `.sdqctl.yaml`:
+   ```yaml
+   aliases:
+     loop: externals/LoopWorkspace
+     aaps: externals/AndroidAPS
+   ```
+3. **Hybrid**: Check both, prefer project config
+
+## Design Questions
+
+1. Should REFCAT be a separate directive or extend CONTEXT?
+2. How to handle missing files (error vs warning)?
+3. Should output include line numbers?
+4. Format for line range: `#L10-L50` vs `#10-50` vs `:10:50`?
+
+Please analyze and propose a design that:
+- Works with both ref formats
+- Integrates cleanly with existing CONTEXT directive
+- Provides JSON output for tooling
+- Handles errors gracefully
+
+OUTPUT-FORMAT markdown
+OUTPUT-FILE proposals/REFCAT-DIRECTIVE.md
