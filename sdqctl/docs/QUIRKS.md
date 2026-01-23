@@ -14,6 +14,160 @@ This document catalogs non-obvious behaviors discovered while developing and usi
 | [Q-004](#q-004-verbose-logging-shows-duplicate-content) | Verbose logging shows duplicate content | P2 | ✅ IMPROVED |
 | [Q-005](#q-005-tool-names-show-unknown-in-verbose-logs) | Tool names show "unknown" in verbose logs | P2 | ✅ FIXED |
 | [Q-010](#q-010-compact-directive-ignored-by-cycle-command) | COMPACT directive ignored by cycle command | P1 | ✅ FIXED |
+| [Q-011](#q-011-compaction-threshold-options-not-fully-wired) | Compaction threshold options not fully wired | P1 | 🔶 KNOWN |
+| [Q-012](#q-012-compact-directive-is-unconditional) | COMPACT directive triggers unconditionally | P2 | 🔶 KNOWN |
+
+---
+
+## Q-011: Compaction Threshold Options Not Fully Wired
+
+**Priority:** P1 - Medium Impact  
+**Discovered:** 2026-01-23  
+**Status:** 🔶 KNOWN - Documented for future implementation
+
+### Description
+
+Several compaction threshold options are **declared but not functionally implemented**:
+
+| Option | CLI Location | Implementation Status |
+|--------|--------------|----------------------|
+| `--min-compaction-density` | run.py:289, cycle.py:73 | ❌ **NOT WIRED** - parameter captured but never used |
+| `CONTEXT-LIMIT N%` | conversation.py:673 | ✅ Sets threshold, but only checked at cycle boundaries |
+| Automatic compaction | cycle.py:638-650 | ⚠️ **Partial** - only at cycle boundaries, not per-turn |
+
+### Expected Mental Model (NOT how it works)
+
+Users may expect:
+1. **Operating threshold** + **max threshold** (two-tier system)
+2. Compaction triggers **before the next turn** when threshold exceeded
+3. `--min-compaction-density 30` skips compaction if context < 30% full
+4. `COMPACT` directive respects thresholds (conditional)
+5. Setting `CONTEXT-LIMIT 80%` triggers compaction before any turn that would exceed 80%
+
+### Actual Behavior
+
+1. **Single threshold only**: `limit_threshold` (default 80%) set via `CONTEXT-LIMIT`
+2. **Compaction only at cycle boundaries**: Between cycles in `cycle` command, not between prompts
+3. **`--min-compaction-density` is a stub**: Declared, accepted, but never checked:
+   ```python
+   # run.py line 289-290 - DECLARED
+   @click.option("--min-compaction-density", type=int, default=0,
+                 help="Skip compaction if context usage below this % (e.g., 30 = skip if < 30% full)")
+   
+   # BUT: No code checks this value during compaction decisions
+   ```
+4. **`COMPACT` directive is unconditional**: See Q-012
+
+### Code References
+
+**Threshold check location** (`cycle.py:638-650`):
+```python
+# ONLY checked between cycles, not between prompts
+if session_mode == "accumulate" and session.needs_compaction():
+    console.print(f"\n[yellow]Context near limit, compacting...[/yellow]")
+    compact_result = await ai_adapter.compact(...)
+```
+
+**`needs_compaction()` implementation** (`session.py:265-267`):
+```python
+def needs_compaction(self) -> bool:
+    """Check if context window is near limit."""
+    return self.context.window.is_near_limit  # usage_percent >= limit_threshold
+```
+
+**`run` command**: Does NOT have automatic compaction at cycle boundaries (only explicit `COMPACT` directives).
+
+### Impact
+
+- **Workflows setting `--min-compaction-density`** have no effect
+- **Threshold-based policies** only work at cycle boundaries, not per-prompt
+- **No "operating threshold" vs "max threshold"** distinction - single threshold model only
+- **Can't skip compaction** when context is lightly used
+
+### Workaround
+
+1. Use explicit `COMPACT` directives at strategic points in workflows
+2. Use `cycle` command with `-n N` to get automatic compaction at cycle boundaries
+3. Don't rely on `--min-compaction-density` - it has no effect
+
+### Future Implementation
+
+To implement the expected mental model:
+
+1. **Wire `--min-compaction-density`** in compaction decision:
+   ```python
+   if session.needs_compaction() and session.usage_percent >= min_compaction_density:
+       # compact
+   ```
+
+2. **Add per-turn compaction check** (before sending each prompt, not just cycle boundaries)
+
+3. **Optional two-tier thresholds**:
+   - `--compact-at N%` (operating threshold - request compaction)
+   - `--compact-force N%` (max threshold - mandatory compaction)
+
+---
+
+## Q-012: COMPACT Directive Triggers Unconditionally
+
+**Priority:** P2 - Low Impact  
+**Discovered:** 2026-01-23  
+**Status:** 🔶 KNOWN - Documented for future implementation
+
+### Description
+
+The `COMPACT` directive in workflow files **always triggers compaction**, regardless of:
+- Current context utilization
+- `--min-compaction-density` setting
+- Whether compaction would provide any benefit
+
+### Expected Mental Model
+
+```dockerfile
+# User expectation: COMPACT only runs if context > 50% full
+CONTEXT-LIMIT 50%
+PROMPT "First task..."
+COMPACT                    # Expected: skip if context < 50% full
+PROMPT "Second task..."
+```
+
+### Actual Behavior
+
+```python
+# run.py lines 885-899
+elif step_type == "compact":
+    # Request compaction from the AI - NO threshold check!
+    logger.info("🗜  COMPACTING conversation...")
+    compact_prompt = session.get_compaction_prompt()
+    response = await ai_adapter.send(adapter_session, compact_prompt)
+```
+
+The `COMPACT` step executes **unconditionally** - no check against `limit_threshold` or `min_compaction_density`.
+
+### Impact
+
+- **Unnecessary compaction calls** when context is light
+- **Wasted tokens** on compaction prompts that provide no benefit
+- **Mismatch with automatic compaction** (which IS conditional at cycle boundaries)
+
+### Workaround
+
+Don't place `COMPACT` directives unless you know compaction is needed. Use multi-cycle workflows with `cycle -n N` instead - those get automatic conditional compaction.
+
+### Future Implementation
+
+Add conditional check before COMPACT execution:
+
+```python
+elif step_type == "compact":
+    if session.needs_compaction():  # Check threshold
+        logger.info("🗜  COMPACTING conversation...")
+        # ... execute compaction
+    else:
+        logger.info("📊 Skipping COMPACT - context below threshold")
+```
+
+Or introduce `COMPACT-IF-NEEDED` vs `COMPACT` (forced) directives.
 
 ---
 
