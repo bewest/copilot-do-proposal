@@ -93,6 +93,12 @@ class DirectiveType(Enum):
     RUN_WAIT = "RUN-WAIT"  # Wait/sleep (e.g., 5s, 1m)
     RUN_RETRY = "RUN-RETRY"  # Retry with AI fix: RUN-RETRY N "prompt"
 
+    # Verification
+    VERIFY = "VERIFY"  # Run verification: VERIFY refs, VERIFY links, VERIFY all
+    VERIFY_ON_ERROR = "VERIFY-ON-ERROR"  # Failure behavior: fail, continue, warn
+    VERIFY_OUTPUT = "VERIFY-OUTPUT"  # Output injection: on-error, always, never
+    VERIFY_LIMIT = "VERIFY-LIMIT"  # Max output size: 5K, 10K, 50K, none
+
     # Flow control
     PAUSE = "PAUSE"
 
@@ -183,11 +189,13 @@ class FileRestrictions:
 class ConversationStep:
     """A step in the conversation flow (PROMPT, COMPACT, NEW-CONVERSATION, etc.)."""
     
-    type: str  # "prompt", "compact", "new_conversation", "checkpoint", "run", "run_retry"
+    type: str  # "prompt", "compact", "new_conversation", "checkpoint", "run", "run_retry", "verify"
     content: str = ""  # Prompt text or checkpoint name
     preserve: list[str] = field(default_factory=list)  # For compact
     retry_count: int = 0  # For run_retry: max retries
     retry_prompt: str = ""  # For run_retry: prompt to send on failure
+    verify_type: str = ""  # For verify: refs, links, traceability, all
+    verify_options: dict = field(default_factory=dict)  # For verify: additional options
     
 
 def _get_default_model() -> str:
@@ -280,6 +288,11 @@ class ConversationFile:
     allow_shell: bool = False  # Security: must opt-in to shell=True for RUN
     run_timeout: int = 60  # Timeout in seconds for RUN commands
     async_processes: list = field(default_factory=list)  # Background processes from RUN-ASYNC
+
+    # Verification settings
+    verify_on_error: str = "fail"  # fail, continue, warn
+    verify_output: str = "on-error"  # on-error, always, never
+    verify_limit: Optional[int] = None  # Max output chars (None = unlimited)
 
     # Flow control
     pause_points: list[tuple[int, str]] = field(default_factory=list)  # (after_prompt_index, message)
@@ -808,6 +821,41 @@ def _apply_directive(conv: ConversationFile, directive: Directive) -> None:
                 conv.run_timeout = int(value[:-1])
             else:
                 conv.run_timeout = int(value)
+        
+        # Verification directives
+        case DirectiveType.VERIFY:
+            # VERIFY <type> [options]
+            # Examples: VERIFY refs, VERIFY links --external, VERIFY all
+            parts = directive.value.strip().split(None, 1)
+            verify_type = parts[0].lower() if parts else "all"
+            options = {}
+            if len(parts) > 1:
+                # Parse --key=value or --key options
+                import re
+                for opt_match in re.finditer(r'--(\w+)(?:=(\S+))?', parts[1]):
+                    key = opt_match.group(1)
+                    value = opt_match.group(2) if opt_match.group(2) else "true"
+                    options[key] = value
+            conv.steps.append(ConversationStep(
+                type="verify",
+                verify_type=verify_type,
+                verify_options=options
+            ))
+        case DirectiveType.VERIFY_ON_ERROR:
+            conv.verify_on_error = directive.value.strip().lower()
+        case DirectiveType.VERIFY_OUTPUT:
+            conv.verify_output = directive.value.strip().lower()
+        case DirectiveType.VERIFY_LIMIT:
+            # Parse limit: "5K", "10K", "50K", "none"
+            value = directive.value.strip().lower()
+            if value in ("none", "unlimited", ""):
+                conv.verify_limit = None
+            elif value.endswith("k"):
+                conv.verify_limit = int(value[:-1]) * 1000
+            elif value.endswith("m"):
+                conv.verify_limit = int(value[:-1]) * 1000000
+            else:
+                conv.verify_limit = int(value)
         
         case DirectiveType.PAUSE:
             # PAUSE after the last prompt added so far

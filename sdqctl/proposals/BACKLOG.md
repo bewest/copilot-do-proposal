@@ -115,7 +115,7 @@ Implemented:
 
 ### 3.3 VERIFY Directive Implementation
 
-**Status**: 🟡 Phase 1 Complete, Phases 2-4 pending  
+**Status**: 🟡 Phases 1-3 Complete, Phase 4 pending  
 **Proposal**: [VERIFICATION-DIRECTIVES.md](VERIFICATION-DIRECTIVES.md)
 
 Phase 1 (Core Library) ✅:
@@ -128,9 +128,13 @@ Phase 2 (CLI Commands) ✅:
 - [x] `sdqctl verify refs` - Reference verification command
 - [x] `sdqctl verify all` - Run all verifications
 
+Phase 3 (Directive Parsing) ✅:
+- [x] VERIFY, VERIFY-ON-ERROR, VERIFY-OUTPUT, VERIFY-LIMIT directives
+- [x] ConversationStep with verify_type and verify_options
+- [x] 8 parsing tests
+
 Remaining:
-- [ ] Phase 3: VERIFY directive parsing in .conv files
-- [ ] Phase 4: Execution integration (context injection)
+- [ ] Phase 4: Execution integration (run verifiers during workflow)
 
 ---
 

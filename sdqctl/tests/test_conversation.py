@@ -777,3 +777,100 @@ class TestElisionProcessing:
         assert "First." in result[0].content
         assert "{{RUN:0:echo test}}" in result[0].content
         assert "Last." in result[0].content
+
+
+class TestVerifyDirectiveParsing:
+    """Tests for VERIFY directive parsing."""
+
+    def test_parse_verify_simple(self):
+        """Test parsing basic VERIFY directive."""
+        content = """MODEL gpt-4
+VERIFY refs
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        verify_steps = [s for s in conv.steps if s.type == "verify"]
+        assert len(verify_steps) == 1
+        assert verify_steps[0].verify_type == "refs"
+        assert verify_steps[0].verify_options == {}
+
+    def test_parse_verify_with_options(self):
+        """Test parsing VERIFY with --option flags."""
+        content = """MODEL gpt-4
+VERIFY links --external --timeout=30
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        verify_steps = [s for s in conv.steps if s.type == "verify"]
+        assert len(verify_steps) == 1
+        assert verify_steps[0].verify_type == "links"
+        assert verify_steps[0].verify_options == {"external": "true", "timeout": "30"}
+
+    def test_parse_verify_all(self):
+        """Test parsing VERIFY all."""
+        content = """MODEL gpt-4
+VERIFY all
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        verify_steps = [s for s in conv.steps if s.type == "verify"]
+        assert len(verify_steps) == 1
+        assert verify_steps[0].verify_type == "all"
+
+    def test_parse_verify_on_error(self):
+        """Test parsing VERIFY-ON-ERROR directive."""
+        content = """MODEL gpt-4
+VERIFY-ON-ERROR continue
+VERIFY refs
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        assert conv.verify_on_error == "continue"
+
+    def test_parse_verify_output(self):
+        """Test parsing VERIFY-OUTPUT directive."""
+        content = """MODEL gpt-4
+VERIFY-OUTPUT always
+VERIFY refs
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        assert conv.verify_output == "always"
+
+    def test_parse_verify_limit(self):
+        """Test parsing VERIFY-LIMIT directive."""
+        content = """MODEL gpt-4
+VERIFY-LIMIT 10K
+VERIFY refs
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        assert conv.verify_limit == 10000
+
+    def test_parse_verify_limit_megabytes(self):
+        """Test parsing VERIFY-LIMIT with M suffix."""
+        content = """MODEL gpt-4
+VERIFY-LIMIT 1M
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        assert conv.verify_limit == 1000000
+
+    def test_parse_multiple_verify_steps(self):
+        """Test parsing multiple VERIFY directives."""
+        content = """MODEL gpt-4
+VERIFY refs
+VERIFY links
+VERIFY traceability
+PROMPT Analyze all results.
+"""
+        conv = ConversationFile.parse(content)
+        
+        verify_steps = [s for s in conv.steps if s.type == "verify"]
+        assert len(verify_steps) == 3
+        assert verify_steps[0].verify_type == "refs"
+        assert verify_steps[1].verify_type == "links"
+        assert verify_steps[2].verify_type == "traceability"
