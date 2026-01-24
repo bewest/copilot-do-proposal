@@ -71,6 +71,7 @@ Directives control workflow behavior in `.conv` files.
 | `PAUSE` | Checkpoint and exit | `PAUSE Review findings` |
 | `ELIDE` | Merge adjacent elements | `ELIDE` |
 | `COMPACT` | Trigger compaction | `COMPACT` |
+| `REQUIRE` | Pre-flight checks | `REQUIRE @file.py cmd:git` |
 
 ## Output Directives
 

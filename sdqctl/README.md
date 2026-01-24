@@ -172,6 +172,7 @@ OUTPUT-FILE security-report.md
 | `PROLOGUE` | Prepend to first prompt of cycle (inline or @file) |
 | `EPILOGUE` | Append to last prompt of cycle (inline or @file) |
 | `HELP` | Inject help topics into prologues: `HELP directives workflow` |
+| `REQUIRE` | Pre-flight checks: `REQUIRE @file.py cmd:git` |
 | `PROMPT` | Prompt to send (runs LLM conversation cycle) |
 | `RUN` | Execute shell command |
 | `RUN-RETRY` | Retry with AI fix: `RUN-RETRY N "prompt"` |
