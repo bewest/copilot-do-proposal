@@ -391,6 +391,53 @@ No deprecations required.
 
 ---
 
+## 8. Implementation Notes
+
+### 8.1 Implementation Status
+
+| Component | Status | Location |
+|-----------|--------|----------|
+| Core module | ✅ Complete | `sdqctl/core/refcat.py` |
+| CLI command | ✅ Complete | `sdqctl/commands/refcat.py` |
+| REFCAT directive | ✅ Complete | `sdqctl/core/conversation.py` |
+| Renderer integration | ✅ Complete | `sdqctl/core/renderer.py` |
+| Validation | ✅ Complete | `sdqctl/cli.py` |
+| Unit tests | ✅ Complete | `tests/test_refcat.py` |
+
+### 8.2 Test Coverage
+
+- **46 core tests** in `tests/test_refcat.py`
+  - Parsing, extraction, formatting
+  - Alias resolution (including `workspace.lock.json`)
+  - Error handling
+  - Glob pattern expansion
+
+- **10 directive tests** in `tests/test_conversation.py`
+  - `TestRefcatDirectiveParsing` (6 tests)
+  - `TestRefcatValidation` (4 tests)
+
+- **4 renderer tests** in `tests/test_render_command.py`
+  - `TestRenderWithRefcat`
+
+### 8.3 Key Files Modified (2026-01-24)
+
+1. `sdqctl/core/conversation.py`
+   - Added `DirectiveType.REFCAT`
+   - Added `refcat_refs` field to `ConversationFile`
+   - Added `validate_refcat_refs()` method
+   - Updated `apply_directive()` and `to_string()`
+
+2. `sdqctl/core/renderer.py`
+   - Added REFCAT import
+   - Added `refcat_content` field to `RenderedCycle`
+   - Updated `render_cycle()` to extract REFCAT content
+   - Updated `format_rendered_markdown()` and `format_rendered_json()`
+
+3. `sdqctl/cli.py`
+   - Added REFCAT validation in `validate` command
+
+---
+
 ## Appendix A: Regex Patterns
 
 ```python

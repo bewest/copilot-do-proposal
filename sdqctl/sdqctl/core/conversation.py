@@ -99,6 +99,9 @@ class DirectiveType(Enum):
     VERIFY_OUTPUT = "VERIFY-OUTPUT"  # Output injection: on-error, always, never
     VERIFY_LIMIT = "VERIFY-LIMIT"  # Max output size: 5K, 10K, 50K, none
 
+    # REFCAT - Reference Catalog for precise file excerpts
+    REFCAT = "REFCAT"  # Line-level file references: REFCAT @file.py#L10-L50
+
     # Flow control
     PAUSE = "PAUSE"
 
@@ -293,6 +296,9 @@ class ConversationFile:
     verify_on_error: str = "fail"  # fail, continue, warn
     verify_output: str = "on-error"  # on-error, always, never
     verify_limit: Optional[int] = None  # Max output chars (None = unlimited)
+
+    # REFCAT - Reference Catalog (line-level file excerpts)
+    refcat_refs: list[str] = field(default_factory=list)  # @file.py#L10-L50
 
     # Flow control
     pause_points: list[tuple[int, str]] = field(default_factory=list)  # (after_prompt_index, message)
@@ -515,6 +521,36 @@ class ConversationFile:
         
         return errors, warnings
     
+    def validate_refcat_refs(
+        self,
+        allow_missing: bool = False,
+    ) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+        """Validate that all REFCAT file references exist.
+        
+        Args:
+            allow_missing: If True, returns warnings instead of errors
+        
+        Returns:
+            Tuple of (errors, warnings) where each is a list of (ref, error_message).
+        """
+        from .refcat import parse_ref, resolve_path, RefcatError
+        
+        errors = []
+        warnings = []
+        workflow_base = self.source_path.parent if self.source_path else Path.cwd()
+        
+        for ref in self.refcat_refs:
+            try:
+                spec = parse_ref(ref)
+                resolve_path(spec, workflow_base)
+            except RefcatError as e:
+                if allow_missing:
+                    warnings.append((ref, str(e)))
+                else:
+                    errors.append((ref, str(e)))
+        
+        return errors, warnings
+    
     def _check_pattern_exists(self, resolved_pattern: Path, glob_module) -> bool:
         """Check if a pattern (file or glob) resolves to existing files."""
         pattern_str = str(resolved_pattern)
@@ -566,8 +602,12 @@ class ConversationFile:
             lines.append(f"CONTEXT-OPTIONAL {ctx}")
         for pattern in self.context_exclude:
             lines.append(f"CONTEXT-EXCLUDE {pattern}")
+        
+        # REFCAT - line-level file excerpts
+        for ref in self.refcat_refs:
+            lines.append(f"REFCAT {ref}")
 
-        if self.context_files or self.context_files_optional or self.context_exclude:
+        if self.context_files or self.context_files_optional or self.context_exclude or self.refcat_refs:
             lines.append("")
 
         # Compaction
@@ -678,6 +718,13 @@ def _apply_directive(conv: ConversationFile, directive: Directive) -> None:
             conv.on_context_limit = directive.value
         case DirectiveType.VALIDATION_MODE:
             conv.validation_mode = directive.value.lower()
+        
+        # REFCAT - line-level file excerpts
+        case DirectiveType.REFCAT:
+            # REFCAT can have multiple refs separated by spaces
+            # REFCAT @file.py#L10-L50 @other.py#L1-L20
+            refs = directive.value.split()
+            conv.refcat_refs.extend(refs)
         
         # File restrictions
         case DirectiveType.ALLOW_FILES:

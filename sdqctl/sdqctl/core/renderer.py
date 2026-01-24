@@ -20,6 +20,13 @@ from .conversation import (
     resolve_content_reference,
     substitute_template_variables,
 )
+from .refcat import (
+    parse_ref,
+    extract_content,
+    format_for_context,
+    RefcatConfig,
+    RefcatError,
+)
 
 
 @dataclass
@@ -40,8 +47,9 @@ class RenderedCycle:
     number: int  # 1-based cycle number
     context_files: list[ContextFile]
     context_content: str  # Formatted context for injection
-    prompts: list[RenderedPrompt]
-    variables: dict[str, str]  # Template variables used
+    refcat_content: str = ""  # REFCAT extracted content
+    prompts: list[RenderedPrompt] = field(default_factory=list)
+    variables: dict[str, str] = field(default_factory=dict)  # Template variables used
 
 
 @dataclass
@@ -125,6 +133,7 @@ def render_cycle(
     context_manager: ContextManager,
     base_variables: dict[str, str],
     include_context: bool = True,
+    refcat_refs: list[str] | None = None,
 ) -> RenderedCycle:
     """Render a single cycle of a workflow.
     
@@ -135,6 +144,7 @@ def render_cycle(
         context_manager: Context manager with loaded files
         base_variables: Base template variables (without cycle-specific)
         include_context: Whether to include context file contents
+        refcat_refs: Optional list of REFCAT refs to extract
         
     Returns:
         RenderedCycle with all prompts resolved
@@ -148,6 +158,25 @@ def render_cycle(
     # Get context
     context_files = list(context_manager.files) if include_context else []
     context_content = context_manager.get_context_content() if include_context else ""
+    
+    # Extract REFCAT content
+    refcat_content = ""
+    if refcat_refs and include_context:
+        base_path = conv.source_path.parent if conv.source_path else Path.cwd()
+        refcat_parts = []
+        config = RefcatConfig(show_cwd=True, show_attribution=True)
+        
+        for ref in refcat_refs:
+            try:
+                spec = parse_ref(ref)
+                extracted = extract_content(spec, base_path)
+                formatted = format_for_context(extracted, config)
+                refcat_parts.append(formatted)
+            except RefcatError as e:
+                refcat_parts.append(f"<!-- REFCAT error for {ref}: {e} -->")
+        
+        if refcat_parts:
+            refcat_content = "\n\n".join(refcat_parts)
     
     # Render all prompts
     base_path = conv.source_path.parent if conv.source_path else None
@@ -170,6 +199,7 @@ def render_cycle(
         number=cycle_number,
         context_files=context_files,
         context_content=context_content,
+        refcat_content=refcat_content,
         prompts=rendered_prompts,
         variables=variables,
     )
@@ -230,6 +260,7 @@ def render_workflow(
             context_manager=context_manager,
             base_variables=base_variables,
             include_context=include_context,
+            refcat_refs=conv.refcat_refs,
         )
         rendered_cycles.append(rendered_cycle)
     
@@ -327,6 +358,17 @@ def format_rendered_markdown(
                     lines.append(ctx_file.content.rstrip())
                     lines.append("```")
                     lines.append("")
+        
+        # REFCAT excerpts
+        if include_context and cycle.refcat_content:
+            lines.append("### REFCAT Excerpts")
+            lines.append("")
+            if plan_mode:
+                # Plan mode: just note that REFCAT refs exist
+                lines.append("*REFCAT references will be extracted at runtime*")
+            else:
+                lines.append(cycle.refcat_content)
+            lines.append("")
         
         # Prompts
         for prompt in cycle.prompts:
@@ -454,6 +496,7 @@ def format_rendered_json(rendered: RenderedWorkflow, plan_mode: bool = False) ->
                         }
                         for cf in cycle.context_files
                     ],
+                    "refcat_content": cycle.refcat_content if cycle.refcat_content else None,
                     "prompts": [
                         {
                             "index": p.index,

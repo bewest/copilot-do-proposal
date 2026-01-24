@@ -314,3 +314,76 @@ class TestRenderWithContext:
         
         assert len(result.cycles[0].context_files) == 1
         assert result.cycles[0].context_files[0].content == "print('hello')"
+
+
+class TestRenderWithRefcat:
+    """Tests for rendering with REFCAT refs."""
+    
+    def test_refcat_content_included(self, tmp_path):
+        """REFCAT refs should be extracted and included in render."""
+        # Create a test file
+        test_file = tmp_path / "sample.py"
+        test_file.write_text(dedent("""\
+            line 1
+            line 2
+            line 3
+            line 4
+            line 5
+        """).strip())
+        
+        conv = ConversationFile()
+        conv.prompts = ["Analyze"]
+        conv.refcat_refs = [f"@{test_file}#L2-L4"]
+        conv.source_path = tmp_path / "test.conv"
+        
+        result = render_workflow(conv, include_context=True)
+        
+        assert result.cycles[0].refcat_content != ""
+        assert "line 2" in result.cycles[0].refcat_content
+        assert "line 3" in result.cycles[0].refcat_content
+        assert "line 4" in result.cycles[0].refcat_content
+        assert "## From:" in result.cycles[0].refcat_content
+    
+    def test_refcat_error_handled_gracefully(self, tmp_path):
+        """Missing REFCAT refs should produce error comments, not crash."""
+        conv = ConversationFile()
+        conv.prompts = ["Analyze"]
+        conv.refcat_refs = ["@nonexistent.py#L1-L10"]
+        conv.source_path = tmp_path / "test.conv"
+        
+        result = render_workflow(conv, include_context=True)
+        
+        # Should have an error comment in refcat_content
+        assert "<!-- REFCAT error" in result.cycles[0].refcat_content
+    
+    def test_refcat_in_markdown_output(self, tmp_path):
+        """REFCAT content should appear in markdown output."""
+        test_file = tmp_path / "sample.py"
+        test_file.write_text("def foo():\n    pass")
+        
+        conv = ConversationFile()
+        conv.prompts = ["Analyze"]
+        conv.refcat_refs = [f"@{test_file}#L1-L2"]
+        conv.source_path = tmp_path / "test.conv"
+        
+        result = render_workflow(conv, include_context=True)
+        md = format_rendered_markdown(result)
+        
+        assert "### REFCAT Excerpts" in md
+        assert "def foo():" in md
+    
+    def test_refcat_in_json_output(self, tmp_path):
+        """REFCAT content should appear in JSON output."""
+        test_file = tmp_path / "sample.py"
+        test_file.write_text("def bar():\n    return 42")
+        
+        conv = ConversationFile()
+        conv.prompts = ["Analyze"]
+        conv.refcat_refs = [f"@{test_file}#L1-L2"]
+        conv.source_path = tmp_path / "test.conv"
+        
+        result = render_workflow(conv, include_context=True)
+        data = format_rendered_json(result)
+        
+        assert data["cycles"][0]["refcat_content"] is not None
+        assert "def bar():" in data["cycles"][0]["refcat_content"]

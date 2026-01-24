@@ -874,3 +874,134 @@ PROMPT Analyze all results.
         assert verify_steps[0].verify_type == "refs"
         assert verify_steps[1].verify_type == "links"
         assert verify_steps[2].verify_type == "traceability"
+
+
+class TestRefcatDirectiveParsing:
+    """Tests for REFCAT directive parsing."""
+
+    def test_parse_refcat_single_ref(self):
+        """Test parsing single REFCAT ref."""
+        content = """MODEL gpt-4
+REFCAT @sdqctl/core/context.py#L10-L50
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert len(conv.refcat_refs) == 1
+        assert conv.refcat_refs[0] == "@sdqctl/core/context.py#L10-L50"
+
+    def test_parse_refcat_multiple_refs_one_line(self):
+        """Test parsing multiple REFCAT refs on one line."""
+        content = """MODEL gpt-4
+REFCAT @file1.py#L1-L10 @file2.py#L20-L30
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert len(conv.refcat_refs) == 2
+        assert "@file1.py#L1-L10" in conv.refcat_refs
+        assert "@file2.py#L20-L30" in conv.refcat_refs
+
+    def test_parse_refcat_multiple_directives(self):
+        """Test parsing multiple REFCAT directives."""
+        content = """MODEL gpt-4
+REFCAT @context.py#L10-L50
+REFCAT @renderer.py#L1-L20
+REFCAT loop:LoopKit/Sources/Algorithm.swift#L100
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert len(conv.refcat_refs) == 3
+        assert "@context.py#L10-L50" in conv.refcat_refs
+        assert "@renderer.py#L1-L20" in conv.refcat_refs
+        assert "loop:LoopKit/Sources/Algorithm.swift#L100" in conv.refcat_refs
+
+    def test_parse_refcat_with_alias(self):
+        """Test parsing REFCAT with alias prefix."""
+        content = """MODEL gpt-4
+REFCAT loop:LoopKit/Sources/Algorithm.swift#L100-L200
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert len(conv.refcat_refs) == 1
+        assert conv.refcat_refs[0] == "loop:LoopKit/Sources/Algorithm.swift#L100-L200"
+
+    def test_parse_refcat_single_line(self):
+        """Test parsing REFCAT with single line ref."""
+        content = """MODEL gpt-4
+REFCAT @file.py#L10
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert len(conv.refcat_refs) == 1
+        assert conv.refcat_refs[0] == "@file.py#L10"
+
+    def test_to_string_includes_refcat(self):
+        """Test that to_string() serializes REFCAT refs."""
+        content = """MODEL gpt-4
+REFCAT @file.py#L10-L50
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        output = conv.to_string()
+        
+        assert "REFCAT @file.py#L10-L50" in output
+
+
+class TestRefcatValidation:
+    """Tests for REFCAT ref validation."""
+
+    def test_validate_refcat_existing_file(self, tmp_path):
+        """Validate REFCAT refs to existing files succeed."""
+        # Create test file
+        test_file = tmp_path / "sample.py"
+        test_file.write_text("line 1\nline 2\nline 3")
+        
+        content = f"""MODEL gpt-4
+REFCAT @{test_file}#L1-L2
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content, source_path=tmp_path / "test.conv")
+        errors, warnings = conv.validate_refcat_refs()
+        
+        assert len(errors) == 0
+        assert len(warnings) == 0
+
+    def test_validate_refcat_missing_file(self, tmp_path):
+        """Validate REFCAT refs to missing files fail."""
+        content = """MODEL gpt-4
+REFCAT @nonexistent.py#L1-L10
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content, source_path=tmp_path / "test.conv")
+        errors, warnings = conv.validate_refcat_refs()
+        
+        assert len(errors) == 1
+        assert "nonexistent.py" in errors[0][0]
+
+    def test_validate_refcat_allow_missing(self, tmp_path):
+        """Validate REFCAT refs with allow_missing returns warnings."""
+        content = """MODEL gpt-4
+REFCAT @nonexistent.py#L1-L10
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content, source_path=tmp_path / "test.conv")
+        errors, warnings = conv.validate_refcat_refs(allow_missing=True)
+        
+        assert len(errors) == 0
+        assert len(warnings) == 1
+
+    def test_validate_refcat_invalid_syntax(self, tmp_path):
+        """Validate REFCAT refs with invalid syntax fail."""
+        content = """MODEL gpt-4
+REFCAT invalid#syntax
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content, source_path=tmp_path / "test.conv")
+        errors, warnings = conv.validate_refcat_refs()
+        
+        # Should have an error (either parse or file not found)
+        assert len(errors) == 1

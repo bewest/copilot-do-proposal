@@ -422,6 +422,17 @@ def validate(workflow: str, allow_missing: bool, exclude: tuple, strict: bool, j
         for pattern, path in context_warnings:
             warnings.append(f"Context pattern matches no files (optional/excluded): {pattern}")
         
+        # Check REFCAT refs
+        refcat_errors, refcat_warnings = conv.validate_refcat_refs(
+            allow_missing=is_lenient,
+        )
+        
+        # Convert REFCAT issues to messages
+        for ref, msg in refcat_errors:
+            errors.append(f"REFCAT ref invalid: {ref} ({msg})")
+        for ref, msg in refcat_warnings:
+            warnings.append(f"REFCAT ref invalid (allowed-missing): {ref} ({msg})")
+        
         # JSON output
         if json_output:
             result = {
