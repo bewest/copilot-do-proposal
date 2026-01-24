@@ -483,7 +483,35 @@ VERIFY runs synchronously before next PROMPT:
 
 **Recommendation:** Option A by default, Option C for override
 
-### 4. Interaction with ELIDE
+### 4. Orphan Detection Strictness
+
+**✅ DECIDED (2026-01-24): Configurable with `--strict` flag**
+
+```bash
+# Default: warn on orphans, exit 0
+sdqctl verify traceability
+# Output: ⚠ Orphan requirements: REQ-003, REQ-007
+
+# Strict mode: fail on orphans, exit 1 (for CI pipelines)
+sdqctl verify traceability --strict
+# Output: ✗ Orphan requirements: REQ-003, REQ-007
+# Exit code: 1
+```
+
+**Implementation:**
+```python
+@click.option("--strict", is_flag=True, help="Fail on warnings (exit 1)")
+def verify_traceability(strict: bool):
+    results = run_traceability_check()
+    if results.orphans:
+        if strict:
+            console.print("[red]✗ Orphans found[/red]")
+            sys.exit(1)
+        else:
+            console.print("[yellow]⚠ Orphans found[/yellow]")
+```
+
+### 5. Interaction with ELIDE
 
 When VERIFY is used with ELIDE, the verification results should be included in the merged prompt:
 

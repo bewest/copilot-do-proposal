@@ -334,15 +334,110 @@ ON-SUCCESS
   PROMPT All tests passed. Proceed to deployment.
 ```
 
-### Open Question
+### ELIDE + Branching Interaction
 
-**Q6: Should ELIDE auto-break when it encounters a branching construct?**
+**✅ DECIDED (2026-01-24): Parse error**
 
-Option A: Parse error — ELIDE before ON-FAILURE is invalid syntax
-Option B: Implicit chain break — ELIDE ends, branching starts new sequence
-Option C: Warning — Allow but warn that branching won't execute as expected
+ELIDE before ON-FAILURE/ON-SUCCESS is invalid syntax. The parser will reject:
 
-**Recommendation**: Option A (parse error) for clarity.
+```dockerfile
+PROMPT Analyze the code.
+ELIDE
+RUN pytest
+ON-FAILURE          # ← Parse error: ELIDE chain cannot contain branching
+  PROMPT Fix tests.
+```
+
+**Rationale**: ELIDE merges steps into a single AI turn for efficiency. Branching constructs (ON-FAILURE, ON-SUCCESS) require separate turns to react to outcomes. These are fundamentally incompatible execution models.
+
+**Correct patterns:**
+
+```dockerfile
+# Pattern 1: ELIDE for analysis (no branching)
+PROMPT Analyze the code.
+ELIDE
+RUN pytest
+ELIDE
+PROMPT Summarize failures.
+
+# Pattern 2: Branching for recovery (no ELIDE)
+RUN pytest
+ON-FAILURE
+  PROMPT Fix the failing tests.
+  RUN pytest
+```
+
+---
+
+## JSON Serialization & Round-Tripping
+
+> **Added**: 2026-01-24 | **Related**: [PIPELINE-ARCHITECTURE.md](PIPELINE-ARCHITECTURE.md)
+
+### Impact on Pipeline JSON Schema
+
+ON-FAILURE/ON-SUCCESS blocks introduce **conditional execution paths** that must be represented in the rendered JSON for round-trip compatibility.
+
+#### Current Schema (without branching)
+
+```json
+{
+  "schema_version": "1.0",
+  "cycles": [{
+    "steps": [
+      {"type": "prompt", "content": "..."},
+      {"type": "run", "command": "pytest"}
+    ]
+  }]
+}
+```
+
+#### Proposed Schema (with branching)
+
+```json
+{
+  "schema_version": "1.1",
+  "cycles": [{
+    "steps": [
+      {"type": "prompt", "content": "..."},
+      {
+        "type": "run",
+        "command": "pytest",
+        "on_failure": [
+          {"type": "prompt", "content": "Fix failing tests."},
+          {"type": "run", "command": "pytest"}
+        ],
+        "on_success": [
+          {"type": "prompt", "content": "All tests passed."}
+        ]
+      }
+    ]
+  }]
+}
+```
+
+### Round-Trip Considerations
+
+| Concern | Resolution |
+|---------|------------|
+| **Nested blocks** | JSON naturally represents tree structures; blocks become arrays |
+| **Execution state** | Add `"branch_taken": "success"` after execution for replay |
+| **Template vars in branches** | `{{RUN_EXIT_CODE}}`, `{{RUN_STDERR}}` resolve at runtime |
+| **Partial execution** | Checkpoint before branching, resume from branch entry |
+
+### Schema Version Bump
+
+Adding branching requires **minor version bump** (1.0 → 1.1):
+- New fields (`on_failure`, `on_success`) are optional
+- Old clients ignore unknown fields (forward compatible)
+- Old JSON works with new sdqctl (backward compatible)
+
+### Limitations
+
+Branching blocks **cannot** be modified via JSON round-trip in meaningful ways:
+- External tools can't know which branch will execute
+- Modifying `on_failure` blocks is speculative
+
+**Recommendation**: For complex branching logic, prefer synthesis cycles with escape hatches over JSON manipulation.
 
 ---
 

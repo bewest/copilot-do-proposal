@@ -168,7 +168,26 @@ PROMPT Analyze for security vulnerabilities...
 | **C: Operator config** | Operators define their mappings; full control | Per-site configuration burden |
 | **D: Hybrid** | sdqctl provides defaults, operators/adapters override | More complex but flexible |
 
-**Recommendation**: Option D (Hybrid) - sdqctl maintains a default capability registry, adapters can extend it, operators can override.
+**✅ DECIDED (2026-01-24): Adapter-first with hints**
+
+Adapters implement `select_model(requirements: dict) -> str` to "right-size" model selection:
+
+1. Workflow specifies preferences: `MODEL-REQUIRES context:50k speed:fast`
+2. sdqctl passes requirements as hints to adapter
+3. Adapter selects best-fit model from its available models
+4. Fallback: use explicit `MODEL` if adapter can't satisfy requirements
+
+```python
+# Adapter interface
+class AIAdapter:
+    def select_model(self, requirements: dict[str, str]) -> str:
+        """Select best model matching requirements. Returns model identifier."""
+        # Default: return self.default_model
+        # Copilot adapter: may delegate to backend
+        ...
+```
+
+This approach keeps adapters in control while sdqctl provides a consistent interface.
 
 ### Q2: Compatibility with MODEL
 

@@ -615,17 +615,31 @@ artifact_aliases:
 
 ---
 
-## Open Questions
+## Resolved Questions
 
-1. **Global vs Scoped IDs?**
-   - Option A: `REQ-001` (simple, may collide in multi-project)
-   - Option B: `REQ-LOOP-001` (explicit, verbose)
-   - **Recommendation:** Allow both; scoped preferred for multi-project
+### 1. Global vs Scoped IDs
 
-2. **Verification Strictness?**
-   - Option A: Fail on orphans (strict)
-   - Option B: Warn only (lenient)
-   - **Recommendation:** Configurable, default lenient
+**✅ DECIDED (2026-01-24): Allow both, prefer scoped for multi-project**
+
+| Context | Format | Example |
+|---------|--------|---------|
+| Single project | Simple | `REQ-001`, `UCA-015` |
+| Cross-project refs | Scoped | `REQ-LOOP-001`, `UCA-TRIO-015` |
+| Ecosystem docs | Scoped | `GAP-XDRIP-003` |
+
+The `traceability` verifier will detect collisions when simple IDs are used across projects.
+
+### 2. Verification Strictness
+
+**✅ DECIDED (2026-01-24): Configurable with `--strict` flag, default warn**
+
+```bash
+# Default: warn on orphans, exit 0
+sdqctl verify traceability
+
+# Strict: fail on orphans, exit 1 (for CI)
+sdqctl verify traceability --strict
+```
 
 3. **BUG vs Q distinction?**
    - Q = Quirk (known surprising behavior, may be intentional)
