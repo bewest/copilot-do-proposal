@@ -353,3 +353,218 @@ Each phase outputs to files that the next phase references.
 - **[Getting Started](GETTING-STARTED.md)** — sdqctl basics
 
 See `examples/workflows/test-discovery.conv` for a working traceability example.
+
+---
+
+## Appendix: Author Requirements for sdqctl Traceability
+
+This section documents what authors need to do in their markdown, code, tests, docs, and JSON files for sdqctl tools to establish traceability.
+
+### Reference Formats
+
+sdqctl tools recognize two types of traceable references:
+
+#### 1. @-References (File References)
+
+Reference files relative to workspace root:
+
+```markdown
+# ✅ CORRECT: Relative to workspace root
+See @traceability/requirements.md for the full list.
+Context from @mapping/loop/README.md shows the implementation.
+
+# ✅ CORRECT: Explicit relative path
+See @./local-file.md in this directory.
+
+# ❌ INCORRECT: Paths that don't exist
+See @docs/missing-file.md for details.
+```
+
+#### 2. Alias References (Code References)
+
+Reference code in external repositories using `alias:path` format:
+
+```markdown
+# ✅ CORRECT: Full path from alias root
+See `loop:LoopKit/LoopKit/TemporaryScheduleOverride.swift#L22-L50` for the implementation.
+The algorithm is in `aaps:database/impl/src/main/kotlin/app/aaps/database/entities/Carbs.kt`.
+
+# ❌ INCORRECT: Short-form (won't validate)
+See `loop:TemporaryScheduleOverride.swift` for the implementation.
+
+# ❌ INCORRECT: Placeholder paths
+See `loop:path/to/file.swift` for details.
+```
+
+**Finding correct paths:**
+```bash
+# Use find to locate the file
+find externals/LoopWorkspace -name "TemporaryScheduleOverride.swift"
+# → externals/LoopWorkspace/LoopKit/LoopKit/TemporaryScheduleOverride.swift
+
+# Construct the ref (remove externals/LoopWorkspace prefix, use loop: alias)
+# loop:LoopKit/LoopKit/TemporaryScheduleOverride.swift
+```
+
+### Workspace Configuration
+
+For alias references to work, create a `workspace.lock.json`:
+
+```json
+{
+  "aliases": {
+    "loop": {
+      "path": "externals/LoopWorkspace",
+      "type": "git",
+      "url": "https://github.com/LoopKit/LoopWorkspace.git"
+    },
+    "aaps": {
+      "path": "externals/AndroidAPS",
+      "type": "git",
+      "url": "https://github.com/nightscout/AndroidAPS.git"
+    },
+    "trio": {
+      "path": "externals/Trio",
+      "type": "git",
+      "url": "https://github.com/nightscout/Trio.git"
+    }
+  }
+}
+```
+
+### Requirement Format (REQ-NNN)
+
+For sdqctl to track requirements:
+
+```markdown
+### REQ-001: Override Identity
+
+**Statement**: Every override MUST have a unique, stable identifier that persists across system restarts.
+
+**Rationale**: Required for supersession tracking and historical queries.
+
+**Type**: Functional
+
+**Priority**: P0
+
+**Verification**: Create override, restart system, query by ID - should return same override.
+
+**Code References**:
+- `loop:LoopKit/LoopKit/TemporaryScheduleOverride.swift#L22` - UUID property
+- `trio:Trio/Sources/Models/Override.swift#L15` - id field
+```
+
+### Gap Format (GAP-XXX-NNN)
+
+For tracking implementation gaps:
+
+```markdown
+### GAP-SYNC-004: Override supersession not tracked
+
+**Scenario**: [Override Supersede](../conformance/scenarios/override-supersede/)
+
+**Description**: When a new override is created that supersedes an existing one, 
+the supersession relationship is not recorded.
+
+**Impact**: Cannot query "what override was active at time T"
+
+**Severity**: Medium
+
+**Related Requirements**: [REQ-001](#req-001-override-identity)
+
+**Code References**:
+- `loop:Loop/Managers/LoopDataManager.swift#L200-L250` - no supersession tracking
+```
+
+### Test Traceability
+
+Link tests to requirements and specs:
+
+```python
+def test_override_identity_persists():
+    """Test REQ-001: Override identity persists across restarts.
+    
+    Requirement: REQ-001
+    Specification: SPEC-001
+    Scenario: override-supersede
+    """
+    # Test implementation
+    pass
+```
+
+### JSON Schema Traceability
+
+In JSON schemas, use `$comment` for traceability:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/override.schema.json",
+  "$comment": "REQ-001: Override Identity",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "$comment": "REQ-001: Unique stable identifier"
+    }
+  }
+}
+```
+
+### Verification Commands
+
+```bash
+# Verify all references
+sdqctl verify refs
+
+# With fix suggestions
+sdqctl verify refs --suggest-fixes -v
+
+# Verify links (markdown links)
+sdqctl verify links
+
+# Verify traceability coverage
+sdqctl verify traceability
+
+# All verifications
+sdqctl verify all
+
+# JSON output for CI
+sdqctl verify refs --json > refs-report.json
+```
+
+### Fixing Broken References
+
+Use the fix-broken-refs workflow:
+
+```bash
+# 3-cycle workflow to fix broken refs
+sdqctl cycle examples/workflows/traceability/fix-broken-refs.conv -n 3
+
+# Or manually with suggestions
+sdqctl verify refs --suggest-fixes -v 2>&1 | grep "Suggestion"
+```
+
+### Common Issues and Solutions
+
+| Issue | Example | Solution |
+|-------|---------|----------|
+| Short-form ref | `trio:Preferences.swift` | Use full path: `trio:Trio/Sources/Models/Preferences.swift` |
+| Unknown alias | `CGMBLEKit:File.swift` | Add alias to `workspace.lock.json` |
+| Missing file | `loop:Missing.swift` | Check if file moved, use `find` to locate |
+| Placeholder path | `path/to/file.swift` | Replace with actual file path |
+
+### Tool Cohesion
+
+sdqctl tools are designed with loose coupling:
+
+| Tool | Purpose | Inputs | Outputs |
+|------|---------|--------|---------|
+| `refcat` | Extract code snippets | `alias:path#lines` | Code content |
+| `verify refs` | Validate references | Markdown/conv files | Error report |
+| `verify links` | Validate markdown links | Markdown files | Broken links |
+| `verify traceability` | Check REQ→Test coverage | All files | Coverage matrix |
+| `validate` | Validate workflow syntax | .conv files | Syntax errors |
+
+Tools can be used independently or composed in workflows.
