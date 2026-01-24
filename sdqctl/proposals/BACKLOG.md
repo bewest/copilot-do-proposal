@@ -10,8 +10,8 @@
 **Analysis Date**: 2026-01-23 | **Phases Completed**: 4/4  
 **SDK v2 Analysis**: 2026-01-24 | **New Proposals**: 3 (Infinite Sessions, Session Persistence, Metadata APIs)
 
-Note: remember to cross reference and evalute priorities across  roadmaps.
-Let's PRIORITIZE error handling and production hardening (magic constants, invalid inputs).
+Note: remember to cross reference and evaluate priorities across roadmaps.
+Error handling phases 0-3 complete (2026-01-24). Next priorities: SDK integration (P1) and STPA directives (P2).
 
 ### Tooling Commands Status (Non-SDK)
 
@@ -223,65 +223,30 @@ Potential additions based on usage patterns:
 | `TIMEOUT` | Global workflow timeout | Long-running protection |
 | `RETRY-LIMIT` | Global retry cap | Token budget control |
 | ~~`COMPACT-IF-NEEDED`~~ | ~~Conditional compaction~~ | ✅ Now default behavior - `COMPACT` respects threshold ([Q-012](../docs/QUIRKS.md#q-012-compact-directive-is-unconditional) FIXED) |
-| `INCLUDE-HELP` | Inject help topic into prompt | Agent workflow authoring (see below) |
+| ~~`INCLUDE-HELP`~~ | ~~Inject help topic into prompt~~ | ✅ Implemented as `HELP` directive 2026-01-24 |
 
 ### Help System: Agent Accessibility Gap
 
 > **Discovered:** 2026-01-23  
-> **Status:** Documented - future enhancement
+> **Status:** ✅ RESOLVED - HELP directive implemented 2026-01-24
 
-#### Current State
+#### Implementation (2026-01-24)
 
-Help content is stored inline in Python code (`sdqctl/commands/help.py`):
-- `TOPICS` dict: 6 topics (directives, adapters, workflow, variables, context, examples)
-- `COMMAND_HELP` dict: 11 commands
-- `get_overview()` function: returns markdown overview
-
-**Programmatic access exists** but is Python-only:
-```python
-from sdqctl.commands.help import TOPICS, COMMAND_HELP, get_overview
-TOPICS["directives"]  # Returns full directive reference as markdown
-```
-
-#### Gap: No Help Directive
-
-Agents authoring workflows must manually copy/paste documentation into PROLOGUE:
-```dockerfile
-# Current workaround - manual injection
-PROLOGUE """
-You are implementing an sdqctl workflow. Available directives:
-- CONTEXT: Include file patterns
-- PROMPT: Send prompt to AI
-- RUN: Execute shell command
-...
-"""
-```
-
-#### Proposed Enhancement: `HELP` Directive
+The `HELP` directive was implemented to inject built-in help content into workflow prompts:
 
 ```dockerfile
-# Proposed - automatic injection
-HELP directives              # Inject full directive reference
-HELP workflow                # Inject format guide
-HELP variables context       # Inject multiple topics
+# Single topic injection
+HELP directives              # Inject directive reference
+
+# Multiple topics
+HELP workflow validation     # Inject both topics
 ```
 
-**Implementation sketch:**
-```python
-# In conversation.py DirectiveType enum:
-HELP = "HELP"
+**Available Topics**: directives, adapters, workflow, variables, context, examples, validation, ai
 
-# In parser:
-case DirectiveType.HELP:
-    topics = directive.value.split()
-    for topic in topics:
-        if topic in TOPICS:
-            conv.prologues.append(TOPICS[topic])
-```
+See [P1: HELP Directive](#p1-help-directive) for implementation details.
 
-**Note**: This is simpler than `INCLUDE` - it only injects built-in help content, not external files.
-
-#### Alternative: Agent-Optimized Help Format
+#### Future Enhancement: Agent-Optimized Help Format
 
 Current help is human-optimized (tables, examples). Could add LLM-optimized variants:
 - Structured examples with input→output pairs
@@ -289,9 +254,7 @@ Current help is human-optimized (tables, examples). Could add LLM-optimized vari
 - Decision trees for directive selection
 - JSON-LD or structured data format
 
-#### Priority
-
-**P1 (Medium)** - Simple implementation, useful for meta-workflows that synthesize other workflows. See [Open Questions §HELP Directive](#p1-help-directive).
+**Status**: Deferred - current implementation sufficient for meta-workflows.
 
 ### Compaction Policy: Known Gaps
 
