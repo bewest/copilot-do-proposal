@@ -314,11 +314,12 @@ sdqctl run security-audit.conv --adapter copilot
 
 Once comfortable with `run`, explore:
 
-1. **[Context Management](CONTEXT-MANAGEMENT.md)** — Optimal context window strategies
-2. **[Synthesis Cycles](SYNTHESIS-CYCLES.md)** — Self-improving iteration patterns
-3. **[Traceability Workflows](TRACEABILITY-WORKFLOW.md)** — Requirements → code → verification
-4. **[Reverse Engineering](REVERSE-ENGINEERING.md)** — Code → documentation
-5. **[Known Quirks](QUIRKS.md)** — Surprising behaviors and workarounds
+1. **[Philosophy](PHILOSOPHY.md)** — Workflow design principles and patterns
+2. **[Context Management](CONTEXT-MANAGEMENT.md)** — Optimal context window strategies
+3. **[Synthesis Cycles](SYNTHESIS-CYCLES.md)** — Self-improving iteration patterns
+4. **[Traceability Workflows](TRACEABILITY-WORKFLOW.md)** — Requirements → code → verification
+5. **[Reverse Engineering](REVERSE-ENGINEERING.md)** — Code → documentation
+6. **[Known Quirks](QUIRKS.md)** — Surprising behaviors and workarounds
 
 See `examples/workflows/` for ready-to-use templates, including:
 - `examples/workflows/stpa/` — STPA safety analysis workflows

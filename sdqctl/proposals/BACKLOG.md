@@ -660,10 +660,30 @@ case DirectiveType.HELP:
 | `sdqctl artifact rename` command | P3 | 2 hours | Update all references |
 | Nightscout ecosystem conventions doc | P3 | 1 hour | Cross-project patterns |
 
+### Session 2026-01-24 (Documentation Philosophy)
+
+- [x] **PHILOSOPHY.md** - Created comprehensive workflow design philosophy guide
+  - Command roles: run (1 iteration) vs cycle (N iterations)
+  - Anatomy of effective conversation files
+  - Double diamond design pattern
+  - Backlog-driven workflow design
+  - Anti-patterns documentation
+- [x] **GLOSSARY.md** - Enhanced terminology definitions
+  - Added Prompt/Phase/Iteration/Cycle table
+  - Added run vs cycle command disambiguation
+  - Clarified that phases are NOT selectable steps
+- [x] **Cross-references** - Added PHILOSOPHY.md links to:
+  - GETTING-STARTED.md
+  - SYNTHESIS-CYCLES.md
+  - WORKFLOW-DESIGN.md
+  - README.md
+- [x] **Fixed broken link** - examples/workflows/README.md QUINE-WORKFLOWS.md → SYNTHESIS-CYCLES.md
+
 ---
 
 ## References
 
+- [PHILOSOPHY.md](../docs/PHILOSOPHY.md) - Workflow design principles
 - [GLOSSARY.md](../docs/GLOSSARY.md) - Terminology definitions
 - [SYNTHESIS-CYCLES.md](../docs/SYNTHESIS-CYCLES.md) - Iterative workflow patterns
 - [VALIDATION-WORKFLOW.md](../docs/VALIDATION-WORKFLOW.md) - Validation/verification guide

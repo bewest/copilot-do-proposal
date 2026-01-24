@@ -10,7 +10,7 @@ For in-depth explanations, see the guides in `docs/`:
 |-------|----------|
 | [Getting Started](../../docs/GETTING-STARTED.md) | First steps with sdqctl |
 | [Context Management](../../docs/CONTEXT-MANAGEMENT.md) | Optimal context window strategies |
-| [Quine Workflows](../../docs/QUINE-WORKFLOWS.md) | Self-improving iteration loops |
+| [Synthesis Cycles](../../docs/SYNTHESIS-CYCLES.md) | Self-improving iteration loops |
 | [Traceability](../../docs/TRACEABILITY-WORKFLOW.md) | Requirements → code → verification |
 | [Reverse Engineering](../../docs/REVERSE-ENGINEERING.md) | Code → documentation |
 

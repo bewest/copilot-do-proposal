@@ -43,6 +43,8 @@ The `--prologue` and `--epilogue` options (and their ConversationFile equivalent
 - ✅ **Checkpointing** - Save/resume long-running workflows
 - ⚡ **Batch execution** - Parallel workflow execution
 
+> **📖 Design Philosophy**: See [docs/PHILOSOPHY.md](docs/PHILOSOPHY.md) for workflow design principles, terminology definitions, and the double diamond pattern.
+
 ## Installation
 
 ```bash

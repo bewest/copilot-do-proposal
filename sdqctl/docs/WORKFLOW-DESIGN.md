@@ -257,6 +257,8 @@ Run with: `sdqctl apply audit-components.conv --components "lib/*.py"`
 | Doc | Focus |
 |-----|-------|
 | **This doc** | Conversation file design philosophy |
+| [PHILOSOPHY.md](PHILOSOPHY.md) | Core workflow design principles |
+| [GLOSSARY.md](GLOSSARY.md) | Terminology definitions |
 | [CONTEXT-MANAGEMENT.md](CONTEXT-MANAGEMENT.md) | Token budgets, COMPACT timing |
 | [SYNTHESIS-CYCLES.md](SYNTHESIS-CYCLES.md) | Multi-cycle iteration patterns |
 | [QUIRKS.md](QUIRKS.md) | Surprising behaviors to avoid |

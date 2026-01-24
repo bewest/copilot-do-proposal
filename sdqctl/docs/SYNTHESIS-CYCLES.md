@@ -467,6 +467,7 @@ PROMPT Review the focus document at reports/auth-improvements.md.
 
 ## Next Steps
 
+- **[Philosophy](PHILOSOPHY.md)** — Core workflow design principles
 - **[Workflow Design](WORKFLOW-DESIGN.md)** — Core principle: specs in docs, orchestration in .conv
 - **[Glossary](GLOSSARY.md)** — Terminology definitions
 - **[Context Management](CONTEXT-MANAGEMENT.md)** — Optimal context window strategies

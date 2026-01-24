@@ -41,6 +41,21 @@ These patterns are ORTHOGONAL — combine them as needed:
 
 ## Core Concepts
 
+### Prompt, Phase, and Iteration
+
+These terms describe different levels of workflow structure:
+
+| Term | Definition | Example |
+|------|------------|---------|
+| **Prompt** | A single `PROMPT` directive; one agent turn | `PROMPT Analyze the code.` |
+| **Phase** | A logical grouping of prompts within one iteration | "Phase 1: Select", "Phase 2: Execute" |
+| **Iteration** | One complete pass through ALL prompts in a workflow | Running all 4 phases once |
+| **Cycle** | Synonym for iteration (used in `sdqctl cycle` command) | `sdqctl cycle -n 3` = 3 iterations |
+
+**Key insight**: Phases are NOT selectable steps. The agent processes all prompts sequentially during each iteration. Phases are organizational labels, not menu options.
+
+**See also**: [Philosophy](PHILOSOPHY.md) — Workflow design principles
+
 ### Conversation Script
 
 A `.conv` file that declaratively specifies a workflow. Contains directives (MODEL, ADAPTER, PROMPT, RUN, etc.) that define what the AI agent should do.
@@ -175,10 +190,25 @@ PROMPT Fix any failures.
 # sdqctl run my-workflow.conv  # ← run command: sends to AI
 ```
 
+### run vs cycle (commands)
+
+Both commands execute workflows, but with different iteration counts:
+
+**`sdqctl run`** — Executes workflow **once** (1 iteration).
+- Good for: Testing, priming, single-spike work
+- Example: `sdqctl run workflow.conv --adapter copilot`
+
+**`sdqctl cycle`** — Executes workflow **N times** (N iterations).
+- Good for: Iterative refinement, backlog processing
+- Example: `sdqctl cycle workflow.conv -n 3 --adapter copilot`
+
+**Note**: The name `cycle` can be confusing—it sounds singular but means "iterate N times." See [Philosophy](PHILOSOPHY.md#command-roles) for details and [CLI-ERGONOMICS.md](../proposals/CLI-ERGONOMICS.md) for potential rename options.
+
 ---
 
 ## See Also
 
+- [Philosophy](PHILOSOPHY.md) — Workflow design principles
 - [Synthesis Cycles](SYNTHESIS-CYCLES.md) — Iterative AI-driven workflows
 - [Traceability Workflows](TRACEABILITY-WORKFLOW.md) — REQ → SPEC → TEST → CODE
 - [Context Management](CONTEXT-MANAGEMENT.md) — Managing context window
