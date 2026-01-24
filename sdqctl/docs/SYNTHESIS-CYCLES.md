@@ -114,9 +114,9 @@ The key insight: **the output of cycle N becomes the context for cycle N+1** (th
 
 ---
 
-## Example: progress-tracker.conv
+## Example: implement-improvements.conv
 
-The `examples/workflows/progress-tracker.conv` demonstrates this pattern:
+The `examples/workflows/implement-improvements.conv` demonstrates this pattern:
 
 ```dockerfile
 MODEL gpt-4
@@ -170,7 +170,7 @@ Summarize:
 
 ```bash
 # Hint at the backlog file in the prompt, don't inject it
-sdqctl cycle examples/workflows/progress-tracker.conv \
+sdqctl cycle examples/workflows/implement-improvements.conv \
   --adapter copilot \
   -n 3
 ```
@@ -250,7 +250,7 @@ End each session with a "next command":
 ```dockerfile
 PROMPT Output the exact command for the next session:
   ```bash
-  sdqctl cycle examples/workflows/progress-tracker.conv \
+  sdqctl cycle examples/workflows/implement-improvements.conv \
     --adapter copilot -n 3
   ```
 ```
@@ -294,7 +294,7 @@ sdqctl run examples/workflows/test-discovery.conv --adapter copilot
 ### Step 2: Run Improvement Cycles
 
 ```bash
-sdqctl cycle examples/workflows/progress-tracker.conv \
+sdqctl cycle examples/workflows/implement-improvements.conv \
   --adapter copilot -n 3
 ```
 
@@ -308,7 +308,7 @@ The workflow:
 
 The final output includes the command for the next session:
 ```bash
-sdqctl cycle examples/workflows/progress-tracker.conv \
+sdqctl cycle examples/workflows/implement-improvements.conv \
   --adapter copilot -n 3
 ```
 
@@ -375,7 +375,7 @@ PROMPT Select the SINGLE most impactful item.
 
 ❌ Naming a workflow after its output type:
 ```bash
-progress-tracker.conv   # Agent interprets role as "tracking"
+implement-improvements.conv   # Agent interprets role as "tracking"
 documentation-sync.conv # Agent focuses on docs, not implementation
 ```
 
@@ -474,7 +474,7 @@ PROMPT Review the focus document at reports/auth-improvements.md.
 - **[Reverse Engineering](REVERSE-ENGINEERING.md)** — Code → documentation
 - **[Getting Started](GETTING-STARTED.md)** — Basics of sdqctl
 
-See `examples/workflows/progress-tracker.conv` for a complete working example.
+See `examples/workflows/implement-improvements.conv` for a complete working example.
 
 ---
 

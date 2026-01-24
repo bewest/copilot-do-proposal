@@ -129,7 +129,7 @@ From workflow analysis:
 |----------|---------------|----------|
 | `test-discovery.conv` | **4,096 lines** | Heavy CONTEXT injection |
 | `fix-quirks.conv` | 103 lines | Hint-based (agent reads on demand) |
-| `progress-tracker.conv` | 95 lines | Minimal prologue, hints in prompts |
+| `implement-improvements.conv` | 95 lines | Minimal prologue, hints in prompts |
 | `security-audit.conv` | 85 lines | Role prologue only |
 
 The `test-discovery.conv` workflow pre-loads 6 files via CONTEXT, consuming context before the agent even starts. The hint-based workflows reserve that capacity for tool results.
@@ -251,7 +251,7 @@ These workflows use the hint pattern effectively:
 
 ### Medium Workflows (100-200 rendered lines)
 
-Examples: `progress-tracker.conv`, `fix-quirks.conv`, `sdk-debug-integration.conv`
+Examples: `implement-improvements.conv`, `fix-quirks.conv`, `sdk-debug-integration.conv`
 
 Include more PROLOGUE/EPILOGUE guidance:
 - Session context (date, branch, commit)

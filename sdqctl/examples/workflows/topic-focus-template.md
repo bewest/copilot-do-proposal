@@ -110,7 +110,7 @@ cd /path/to/project
 sdqctl -vv cycle -n 3 --adapter copilot \
   --prologue @reports/[topic]-improvements-focus.md \
   --epilogue "Update @reports/[topic]-improvements-focus.md with completed items and lessons learned" \
-  examples/workflows/progress-tracker.conv
+  examples/workflows/implement-improvements.conv
 ```
 
 ---

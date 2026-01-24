@@ -311,11 +311,11 @@ Showing key actions at default level (no flags) could be considered, but would r
 
 ### Description
 
-The `{{WORKFLOW_NAME}}` template variable extracts the filename stem (e.g., `progress-tracker` from `progress-tracker.conv`). When this variable is used in prompts, headers, or prologues, **the agent uses the filename words as semantic signals** about its intended role.
+The `{{WORKFLOW_NAME}}` template variable extracts the filename stem (e.g., `progress-tracker` from `implement-improvements.conv`). When this variable is used in prompts, headers, or prologues, **the agent uses the filename words as semantic signals** about its intended role.
 
 ### Example
 
-A workflow file named `progress-tracker.conv` with this header:
+A workflow file named `implement-improvements.conv` with this header:
 
 ```dockerfile
 HEADER # sdqctl Progress Report
@@ -343,7 +343,7 @@ When the filename contains words like "tracker", "doc", or "report", the agent m
 **1. Choose implementation-oriented filenames:**
 ```bash
 # Instead of:
-progress-tracker.conv
+implement-improvements.conv
 documentation-sync.conv
 
 # Use:
@@ -416,17 +416,6 @@ OUTPUT-FILE reports/{{WORKFLOW_NAME}}-{{DATE}}.md
 1. **Choose implementation-oriented filenames**
 2. **Add explicit role clarification in PROLOGUE**
 3. **Avoid using `{{WORKFLOW_NAME}}` in prompts**
-
-### Known Deviation: progress-tracker.conv
-
-The flagship synthesis cycle workflow `examples/workflows/progress-tracker.conv` uses a passive name that contradicts this guidance. This is an **acknowledged historical deviation**:
-
-- The file is heavily referenced in documentation and examples
-- Renaming would be a breaking change for users following tutorials
-- The PROLOGUE contains explicit role clarification that mitigates the issue
-- The fix in 2026-01-22 (excluding WORKFLOW_NAME from prompts) reduces the impact
-
-**Recommendation:** When creating new synthesis workflows, prefer action-oriented names like `implement-improvements.conv` or `fix-and-iterate.conv`.
 
 ---
 

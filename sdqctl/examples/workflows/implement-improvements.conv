@@ -1,4 +1,4 @@
-# progress-tracker.conv - Synthesis cycle for self-improving workflows
+# implement-improvements.conv - Synthesis cycle for self-improving workflows
 #
 # A workflow that uses sdqctl to improve sdqctl itself.
 # Reads findings from test discovery, works on the most impactful item,
@@ -6,7 +6,7 @@
 #
 # Usage:
 #   cd /path/to/sdqctl
-#   sdqctl cycle progress-tracker.conv \
+#   sdqctl cycle examples/workflows/implement-improvements.conv \
 #     --prologue reports/test-discovery-2026-01-20.md \
 #     --adapter copilot
 #

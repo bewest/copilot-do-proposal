@@ -41,7 +41,7 @@ sdqctl run examples/workflows/human-review.conv --adapter mock --verbose
 - `typescript-migration.conv` - Multi-cycle TypeScript conversion
 - `documentation-sync.conv` - Documentation consistency check
 - `human-review.conv` - Human-in-the-loop review with PAUSE directive
-- `progress-tracker.conv` - Quine-like self-improving workflow
+- `implement-improvements.conv` - Quine-like self-improving workflow
 - `test-discovery.conv` - Analyze code for test requirements
 
 ### Pattern Quick Reference
@@ -51,14 +51,14 @@ sdqctl run examples/workflows/human-review.conv --adapter mock --verbose
 | **Testing a workflow** | `sdqctl run workflow.conv --dry-run` | Before committing to cycles |
 | **Single execution** | `sdqctl run workflow.conv` | One-off tasks, priming |
 | **Iterative refinement** | `sdqctl cycle workflow.conv -n 3` | Multi-step improvements |
-| **Quine loop** | `sdqctl cycle progress-tracker.conv` | Self-improving workflows |
+| **Quine loop** | `sdqctl cycle implement-improvements.conv` | Self-improving workflows |
 | **Batch processing** | `sdqctl apply workflow.conv --components "*.py"` | Per-component work |
 
 ---
 
 ## Topic-Priming Prologue Pattern
 
-When improving a codebase iteratively, use `progress-tracker.conv` with a **topic-focused prologue** to concentrate cycles on a specific area.
+When improving a codebase iteratively, use `implement-improvements.conv` with a **topic-focused prologue** to concentrate cycles on a specific area.
 
 ### The Pattern
 
@@ -77,7 +77,7 @@ When improving a codebase iteratively, use `progress-tracker.conv` with a **topi
 sdqctl -vv cycle -n 3 --adapter copilot \
   --prologue @reports/run-improvements-focus.md \
   --epilogue "Update @reports/run-improvements-focus.md with completed items and lessons" \
-  examples/workflows/progress-tracker.conv
+  examples/workflows/implement-improvements.conv
 ```
 
 ### Topic Focus Document Structure
