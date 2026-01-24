@@ -279,7 +279,7 @@ class RefsVerifier:
             total_count += 1
             
             # Use refcat for resolution
-            resolved = self._resolve_alias_ref(alias, ref_path, root)
+            resolved, alias_known = self._resolve_alias_ref(alias, ref_path, root)
             
             if resolved and resolved.exists():
                 valid_count += 1
@@ -287,8 +287,10 @@ class RefsVerifier:
                 # Provide helpful error message
                 if resolved:
                     hint = f"Expected at {resolved}"
-                else:
+                elif not alias_known:
                     hint = f"Unknown alias '{alias}' - check workspace.lock.json"
+                else:
+                    hint = f"Could not resolve path for alias '{alias}'"
                 
                 errors.append(VerificationError(
                     file=str(filepath.relative_to(root) if filepath.is_relative_to(root) else filepath),
@@ -304,16 +306,32 @@ class RefsVerifier:
         alias: str,
         ref_path: str,
         root: Path
-    ) -> Optional[Path]:
+    ) -> tuple[Optional[Path], bool]:
         """Resolve alias:path using refcat module.
         
-        Falls back to None if alias cannot be resolved.
+        Returns:
+            Tuple of (resolved_path, alias_known)
+            - resolved_path: The resolved path (even if file doesn't exist)
+            - alias_known: True if alias was found in workspace.lock.json
         """
         try:
-            from ..core.refcat import RefSpec, resolve_path
+            from ..core.refcat import RefSpec, resolve_path, AliasNotFoundError
+            from ..core.refcat import FileNotFoundError as RefcatFileNotFoundError
             
             spec = RefSpec(path=Path(ref_path), alias=alias)
-            return resolve_path(spec, root)
+            resolved = resolve_path(spec, root)
+            return resolved, True
+        except AliasNotFoundError:
+            # Alias not in workspace.lock.json
+            return None, False
+        except RefcatFileNotFoundError as e:
+            # Alias was known but file doesn't exist
+            # Extract path from error message
+            msg = str(e)
+            if 'resolved to' in msg:
+                path_str = msg.split('resolved to')[-1].strip().rstrip(')')
+                return Path(path_str), True
+            return None, True
         except Exception:
-            # Alias not found or other error
-            return None
+            # Other error - assume alias unknown
+            return None, False
