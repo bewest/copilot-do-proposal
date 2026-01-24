@@ -29,6 +29,7 @@ from ..core.refcat import (
     RefcatConfig,
     RefcatError,
     extract_content,
+    format_as_spec,
     format_for_context,
     format_for_json,
     parse_ref,
@@ -148,6 +149,17 @@ def _expand_glob_patterns(refs: list[str], cwd: Path) -> list[str | Path]:
     is_flag=True,
     help="Only list matching files (for glob patterns)",
 )
+@click.option(
+    "--no-attribution",
+    is_flag=True,
+    help="Don't show '## From:' header (keeps code fences)",
+)
+@click.option(
+    "--spec",
+    "spec_output",
+    is_flag=True,
+    help="Output normalized ref spec strings for round-tripping",
+)
 def refcat(
     refs: tuple[str, ...],
     json_output: bool,
@@ -159,6 +171,8 @@ def refcat(
     validate_only: bool,
     from_workflow: Optional[Path],
     list_files: bool,
+    no_attribution: bool,
+    spec_output: bool,
 ) -> None:
     """Extract file content with line-level precision.
     
@@ -200,6 +214,7 @@ def refcat(
     config = RefcatConfig(
         show_line_numbers=not no_line_numbers,
         show_cwd=not no_cwd,
+        show_attribution=not no_attribution,
         relative_paths=not absolute,
     )
     
@@ -259,6 +274,7 @@ def refcat(
                     "ref": ref_str,
                     "extracted": extracted,
                     "formatted": format_for_context(extracted, config),
+                    "spec": format_as_spec(extracted, config),
                 })
                 
         except FileNotFoundError as e:
@@ -293,12 +309,18 @@ def refcat(
         else:
             output = {
                 "refs": [
-                    format_for_json(r["extracted"]) if "extracted" in r else r
+                    format_for_json(r["extracted"], include_spec=spec_output) if "extracted" in r else r
                     for r in results
                 ],
                 "errors": errors,
             }
         console.print_json(json.dumps(output, indent=2))
+    
+    elif spec_output:
+        # Spec mode: output normalized ref spec strings
+        for r in results:
+            if "spec" in r:
+                print(r["spec"])
         
     elif validate_only:
         # Validation mode output

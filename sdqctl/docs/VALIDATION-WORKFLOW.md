@@ -163,6 +163,12 @@ sdqctl refcat @file.py#L10-L50 --validate-only
 
 # JSON output
 sdqctl refcat @file.py#L10-L50 --json
+
+# Output without attribution header
+sdqctl refcat @file.py#L10-L50 --no-attribution
+
+# Output normalized ref spec for round-tripping
+sdqctl refcat @file.py#L10-L50 --spec
 ```
 
 **Reference syntax**:

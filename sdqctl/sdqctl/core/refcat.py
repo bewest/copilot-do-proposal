@@ -81,6 +81,7 @@ class RefcatConfig:
 
     show_line_numbers: bool = True
     show_cwd: bool = True
+    show_attribution: bool = True  # Show "## From:" header
     relative_paths: bool = True
     language_detect: bool = True
     line_number_width: int = 0  # 0 = auto-detect
@@ -493,12 +494,49 @@ def format_for_context(
     else:
         content = extracted.content
 
-    return f"{header}\n```{lang}\n{content}\n```"
+    # Build output
+    if config.show_attribution:
+        return f"{header}\n```{lang}\n{content}\n```"
+    else:
+        return f"```{lang}\n{content}\n```"
 
 
-def format_for_json(extracted: ExtractedContent) -> dict:
+def format_as_spec(extracted: ExtractedContent, config: Optional[RefcatConfig] = None) -> str:
+    """Format extracted content as a normalized ref spec string.
+    
+    Produces output like:
+        @path/file.py#L10-L50
+    
+    Args:
+        extracted: Extracted content
+        config: Formatting configuration
+    
+    Returns:
+        Normalized ref spec string
+    """
+    if config is None:
+        config = RefcatConfig()
+    
+    # Determine path display
+    try:
+        if config.relative_paths:
+            display_path = extracted.path.relative_to(extracted.cwd)
+        else:
+            display_path = extracted.path
+    except ValueError:
+        display_path = extracted.path
+    
+    # Build spec string
+    is_full_file = extracted.line_start == 1 and extracted.line_end == extracted.total_lines
+    if is_full_file:
+        return f"@{display_path}"
+    else:
+        return f"@{display_path}#L{extracted.line_start}-L{extracted.line_end}"
+
+
+def format_for_json(extracted: ExtractedContent, include_spec: bool = False) -> dict:
     """Format extracted content as JSON-serializable dict."""
-    return {
+    result = {
         "path": str(extracted.path),
         "line_start": extracted.line_start,
         "line_end": extracted.line_end,
@@ -508,6 +546,9 @@ def format_for_json(extracted: ExtractedContent) -> dict:
         "content": extracted.content,
         "lines": extracted.lines,
     }
+    if include_spec:
+        result["spec"] = format_as_spec(extracted)
+    return result
 
 
 def extract_ref(

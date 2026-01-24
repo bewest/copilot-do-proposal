@@ -14,6 +14,7 @@ from sdqctl.core.refcat import (
     RefcatConfig,
     parse_ref,
     extract_content,
+    format_as_spec,
     format_for_context,
     format_for_json,
     extract_ref,
@@ -223,6 +224,60 @@ class TestFormatForContext:
         result = format_for_context(extracted, config)
         assert "(relative to" not in result
 
+    def test_format_no_attribution(self, extracted):
+        """Can disable attribution header."""
+        config = RefcatConfig(show_attribution=False)
+        result = format_for_context(extracted, config)
+        assert "## From:" not in result
+        assert "```python" in result  # Still has code fence
+
+
+class TestFormatAsSpec:
+    """Tests for format_as_spec() function."""
+
+    @pytest.fixture
+    def extracted_partial(self, tmp_path):
+        """Create sample partial extracted content."""
+        return ExtractedContent(
+            path=tmp_path / "test.py",
+            content="def foo():\n    pass",
+            lines=["def foo():", "    pass"],
+            line_start=10,
+            line_end=11,
+            total_lines=100,
+            cwd=tmp_path,
+        )
+
+    @pytest.fixture
+    def extracted_full(self, tmp_path):
+        """Create sample full file extracted content."""
+        return ExtractedContent(
+            path=tmp_path / "test.py",
+            content="full content",
+            lines=["full content"],
+            line_start=1,
+            line_end=1,
+            total_lines=1,
+            cwd=tmp_path,
+        )
+
+    def test_spec_partial_file(self, extracted_partial):
+        """Spec for partial extraction includes line range."""
+        result = format_as_spec(extracted_partial)
+        assert result == "@test.py#L10-L11"
+
+    def test_spec_full_file(self, extracted_full):
+        """Spec for full file has no line range."""
+        result = format_as_spec(extracted_full)
+        assert result == "@test.py"
+
+    def test_spec_with_absolute_paths(self, extracted_partial):
+        """Spec can use absolute paths."""
+        config = RefcatConfig(relative_paths=False)
+        result = format_as_spec(extracted_partial, config)
+        assert result.startswith("@/")
+        assert "#L10-L11" in result
+
 
 class TestFormatForJson:
     """Tests for format_for_json() function."""
@@ -246,6 +301,22 @@ class TestFormatForJson:
         assert "content" in result
         assert "lines" in result
         assert result["was_clamped"] is False
+
+    def test_json_with_spec(self, tmp_path):
+        """JSON output can include spec string."""
+        extracted = ExtractedContent(
+            path=tmp_path / "test.py",
+            content="test content",
+            lines=["test content"],
+            line_start=10,
+            line_end=20,
+            total_lines=100,
+            cwd=tmp_path,
+            was_clamped=False,
+        )
+        result = format_for_json(extracted, include_spec=True)
+        assert "spec" in result
+        assert result["spec"] == "@test.py#L10-L20"
 
 
 class TestDetectLanguage:

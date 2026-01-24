@@ -142,9 +142,40 @@ When REFCAT extracts content, it MUST include metadata for agent disambiguation:
 class RefcatConfig:
     show_line_numbers: bool = True      # Prefix lines with numbers
     show_cwd: bool = True               # Include CWD in header
+    show_attribution: bool = True       # Show "## From:" header
     relative_paths: bool = True         # Use relative vs absolute paths
     language_detect: bool = True        # Auto-detect language for highlighting
     context_lines: int = 0              # Extra lines before/after range
+```
+
+### 2.4 Output Formats
+
+REFCAT supports multiple output formats controlled by CLI flags:
+
+| Flag | Description | Example Output |
+|------|-------------|----------------|
+| (default) | Full markdown with attribution | `## From: path:10-20` + fenced code |
+| `--no-attribution` | Markdown without header | Fenced code block only |
+| `--quiet` | Raw content only | Plain text, no fences |
+| `--spec` | Normalized ref spec | `@path/file.py#L10-L20` |
+| `--json` | JSON structure | `{"refs": [...], "errors": []}` |
+| `--json --spec` | JSON with spec field | Includes `"spec": "@path#L10-L20"` |
+
+### 2.5 Round-Trip Format
+
+The `--spec` flag outputs the normalized ref spec string, useful for:
+- Validating that refs can be parsed and re-serialized
+- Extracting refs from context for reuse
+- Generating refs from extracted content
+
+```bash
+# Full file outputs without line range
+$ sdqctl refcat @file.py --spec
+@file.py
+
+# Partial extraction includes line range
+$ sdqctl refcat @file.py#L10-L20 --spec
+@file.py#L10-L20
 ```
 
 ## 3. Error Handling
