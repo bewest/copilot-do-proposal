@@ -1,6 +1,6 @@
 # SDK Metadata APIs Integration
 
-> **Status**: In Progress - Phase 1 Complete  
+> **Status**: Phase 2 Complete  
 > **Date**: 2026-01-24  
 > **Priority**: P1 (Quick Win)  
 > **Scope**: Status, auth, and model discovery APIs
@@ -156,7 +156,40 @@ Added to `sdqctl/adapters/mock.py`:
 
 Added 4 tests in `tests/test_adapters.py::TestAdapterMetadataAPIs`
 
-### Phase 2: Status Command Enhancement (Pending)
+### Phase 2: Status Command Enhancement ✅ Complete (2026-01-24)
+
+Implemented enhanced status command with adapter metadata display.
+
+**New CLI Options:**
+- `--models` - Show available models with context window and vision support
+- `--auth` - Show authentication status
+- `--all` - Show comprehensive status (adapters, models, auth, sessions)
+- `-a/--adapter` - Specify which adapter to query (default: copilot)
+
+**Usage Examples:**
+```bash
+# Default overview with CLI/auth status
+sdqctl status
+
+# Show available models
+sdqctl status --models
+
+# Show auth status details
+sdqctl status --auth
+
+# Show everything
+sdqctl status --all
+
+# JSON output for scripting
+sdqctl status --json
+```
+
+**Implementation:**
+- Updated `sdqctl/commands/status.py` with async metadata retrieval
+- Added `_show_overview_async()`, `_show_models_async()`, `_show_auth_async()`, `_show_all_async()`
+- 6 tests in `tests/test_cli.py::TestStatusCommand`
+
+Previous sketch (superseded by actual implementation):
 
 ```python
 # sdqctl/commands/status.py

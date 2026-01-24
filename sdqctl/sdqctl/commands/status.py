@@ -5,6 +5,9 @@ Usage:
     sdqctl status
     sdqctl status --sessions
     sdqctl status --checkpoints
+    sdqctl status --models
+    sdqctl status --auth
+    sdqctl status --all
 """
 
 import json
@@ -16,7 +19,9 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from ..adapters import list_adapters
+from .. import __version__
+from ..adapters import list_adapters, get_adapter
+from .utils import run_async
 
 console = Console()
 
@@ -27,29 +32,49 @@ SDQCTL_DIR = Path.home() / ".sdqctl"
 @click.option("--sessions", is_flag=True, help="Show session details")
 @click.option("--checkpoints", is_flag=True, help="Show checkpoint details")
 @click.option("--adapters", is_flag=True, help="Show available adapters")
+@click.option("--models", is_flag=True, help="Show available models")
+@click.option("--auth", is_flag=True, help="Show authentication status")
+@click.option("--all", "show_all", is_flag=True, help="Show all details (adapters, models, auth, sessions)")
+@click.option("--adapter", "-a", default="copilot", help="Adapter to query for --models/--auth (default: copilot)")
 @click.option("--json", "json_output", is_flag=True, help="JSON output")
 def status(
     sessions: bool,
     checkpoints: bool,
     adapters: bool,
+    models: bool,
+    auth: bool,
+    show_all: bool,
+    adapter: str,
     json_output: bool,
 ) -> None:
     """Show session and system status."""
 
-    if adapters:
+    if adapters and not show_all:
         _show_adapters(json_output)
         return
 
-    if sessions or checkpoints:
+    if (sessions or checkpoints) and not show_all:
         _show_sessions(json_output, show_checkpoints=checkpoints)
         return
+    
+    if models and not show_all:
+        run_async(_show_models_async(adapter, json_output))
+        return
+    
+    if auth and not show_all:
+        run_async(_show_auth_async(adapter, json_output))
+        return
 
-    # Default: show overview
-    _show_overview(json_output)
+    if show_all:
+        run_async(_show_all_async(adapter, json_output))
+        return
+
+    # Default: show overview with enhanced info
+    run_async(_show_overview_async(adapter, json_output))
 
 
-def _show_overview(json_output: bool) -> None:
-    """Show system overview."""
+async def _show_overview_async(adapter_name: str, json_output: bool) -> None:
+    """Show enhanced system overview with CLI status."""
     sessions_dir = SDQCTL_DIR / "sessions"
     session_count = 0
     checkpoint_count = 0
@@ -61,21 +86,240 @@ def _show_overview(json_output: bool) -> None:
             checkpoint_count += len(list(session_dir.glob("checkpoint-*.json")))
 
     available_adapters = list_adapters()
+    
+    # Try to get CLI and auth status from adapter
+    cli_status = {}
+    auth_status = {}
+    try:
+        ai_adapter = get_adapter(adapter_name)
+        await ai_adapter.start()
+        try:
+            cli_status = await ai_adapter.get_cli_status()
+            auth_status = await ai_adapter.get_auth_status()
+        finally:
+            await ai_adapter.stop()
+    except Exception:
+        pass  # Ignore errors - adapter may not be available
 
     if json_output:
-        console.print_json(json.dumps({
+        data = {
+            "version": __version__,
             "sdqctl_dir": str(SDQCTL_DIR),
             "sessions": session_count,
             "checkpoints": checkpoint_count,
             "adapters": available_adapters,
-        }))
+        }
+        if cli_status:
+            data["cli_status"] = cli_status
+        if auth_status:
+            data["auth_status"] = auth_status
+        console.print_json(json.dumps(data))
     else:
-        console.print("\n[bold]sdqctl Status[/bold]\n")
-        console.print(f"  Config directory: {SDQCTL_DIR}")
-        console.print(f"  Sessions: {session_count}")
-        console.print(f"  Checkpoints: {checkpoint_count}")
-        console.print(f"  Available adapters: {', '.join(available_adapters) or 'none'}")
+        console.print(f"\n[bold]sdqctl v{__version__}[/bold]")
+        console.print("─" * 35)
+        
+        # CLI status
+        if cli_status:
+            version = cli_status.get("version", "unknown")
+            protocol = cli_status.get("protocol_version", "?")
+            console.print(f"  Copilot CLI:  v{version} (protocol v{protocol})")
+        
+        # Auth status
+        if auth_status:
+            if auth_status.get("authenticated"):
+                login = auth_status.get("login", "unknown")
+                auth_type = auth_status.get("auth_type", "?")
+                console.print(f"  Auth:         [green]✓[/green] {login} ({auth_type})")
+            else:
+                console.print(f"  Auth:         [red]✗[/red] Not authenticated")
+        
+        console.print(f"  Config:       {SDQCTL_DIR}")
+        console.print(f"  Sessions:     {session_count}")
+        console.print(f"  Checkpoints:  {checkpoint_count}")
+        console.print(f"  Adapters:     {', '.join(available_adapters) or 'none'}")
         console.print()
+
+
+async def _show_models_async(adapter_name: str, json_output: bool) -> None:
+    """Show available models from adapter."""
+    try:
+        ai_adapter = get_adapter(adapter_name)
+        await ai_adapter.start()
+        try:
+            models = await ai_adapter.list_models()
+        finally:
+            await ai_adapter.stop()
+    except Exception as e:
+        if json_output:
+            console.print_json(json.dumps({"error": str(e), "models": []}))
+        else:
+            console.print(f"[red]Error getting models: {e}[/red]")
+        return
+
+    if json_output:
+        console.print_json(json.dumps({"models": models}))
+    else:
+        if not models:
+            console.print("[yellow]No models available[/yellow]")
+            return
+            
+        table = Table(title="Available Models")
+        table.add_column("Model ID", style="cyan")
+        table.add_column("Context", style="green")
+        table.add_column("Vision", style="green")
+        
+        for m in models:
+            context = f"{m.get('context_window', 0)//1000}K" if m.get('context_window') else "?"
+            vision = "[green]✓[/green]" if m.get("vision") else "[dim]✗[/dim]"
+            table.add_row(m.get("id", "unknown"), context, vision)
+        
+        console.print(table)
+
+
+async def _show_auth_async(adapter_name: str, json_output: bool) -> None:
+    """Show authentication status from adapter."""
+    try:
+        ai_adapter = get_adapter(adapter_name)
+        await ai_adapter.start()
+        try:
+            auth_status = await ai_adapter.get_auth_status()
+            cli_status = await ai_adapter.get_cli_status()
+        finally:
+            await ai_adapter.stop()
+    except Exception as e:
+        if json_output:
+            console.print_json(json.dumps({"error": str(e), "auth_status": {}}))
+        else:
+            console.print(f"[red]Error getting auth status: {e}[/red]")
+        return
+
+    if json_output:
+        data = {"auth_status": auth_status}
+        if cli_status:
+            data["cli_status"] = cli_status
+        console.print_json(json.dumps(data))
+    else:
+        console.print("\n[bold]Authentication Status[/bold]")
+        console.print("─" * 35)
+        
+        if cli_status:
+            version = cli_status.get("version", "unknown")
+            protocol = cli_status.get("protocol_version", "?")
+            console.print(f"  CLI Version:  v{version}")
+            console.print(f"  Protocol:     v{protocol}")
+        
+        if auth_status:
+            if auth_status.get("authenticated"):
+                console.print(f"  Status:       [green]✓ Authenticated[/green]")
+                console.print(f"  Login:        {auth_status.get('login', 'unknown')}")
+                console.print(f"  Auth Type:    {auth_status.get('auth_type', 'unknown')}")
+                if auth_status.get("host"):
+                    console.print(f"  Host:         {auth_status.get('host')}")
+            else:
+                console.print(f"  Status:       [red]✗ Not authenticated[/red]")
+                if auth_status.get("message"):
+                    console.print(f"  Message:      {auth_status.get('message')}")
+        else:
+            console.print("  [yellow]Auth status unavailable[/yellow]")
+        console.print()
+
+
+async def _show_all_async(adapter_name: str, json_output: bool) -> None:
+    """Show all status information."""
+    sessions_dir = SDQCTL_DIR / "sessions"
+    session_count = 0
+    checkpoint_count = 0
+
+    if sessions_dir.exists():
+        session_dirs = list(sessions_dir.iterdir())
+        session_count = len(session_dirs)
+        for session_dir in session_dirs:
+            checkpoint_count += len(list(session_dir.glob("checkpoint-*.json")))
+
+    available_adapters = list_adapters()
+    
+    # Get adapter info
+    cli_status = {}
+    auth_status = {}
+    models = []
+    adapter_info = []
+    
+    for name in available_adapters:
+        try:
+            ai_adapter = get_adapter(name)
+            info = ai_adapter.get_info()
+            adapter_info.append(info)
+            
+            if name == adapter_name:
+                await ai_adapter.start()
+                try:
+                    cli_status = await ai_adapter.get_cli_status()
+                    auth_status = await ai_adapter.get_auth_status()
+                    models = await ai_adapter.list_models()
+                finally:
+                    await ai_adapter.stop()
+        except Exception as e:
+            adapter_info.append({"name": name, "error": str(e)})
+    
+    if json_output:
+        data = {
+            "version": __version__,
+            "sdqctl_dir": str(SDQCTL_DIR),
+            "sessions": session_count,
+            "checkpoints": checkpoint_count,
+            "adapters": adapter_info,
+            "cli_status": cli_status,
+            "auth_status": auth_status,
+            "models": models,
+        }
+        console.print_json(json.dumps(data))
+    else:
+        # Header
+        console.print(f"\n[bold]sdqctl v{__version__}[/bold]")
+        console.print("─" * 35)
+        
+        # CLI status
+        if cli_status:
+            version = cli_status.get("version", "unknown")
+            protocol = cli_status.get("protocol_version", "?")
+            console.print(f"Copilot CLI:    v{version} (protocol v{protocol})")
+        
+        # Auth status
+        if auth_status:
+            if auth_status.get("authenticated"):
+                login = auth_status.get("login", "unknown")
+                auth_type = auth_status.get("auth_type", "?")
+                console.print(f"Auth:           [green]✓[/green] Authenticated as {login} ({auth_type})")
+                if auth_status.get("host"):
+                    console.print(f"Host:           {auth_status.get('host')}")
+            else:
+                console.print(f"Auth:           [red]✗[/red] Not authenticated")
+        
+        console.print(f"Sessions:       {session_count}")
+        console.print(f"Checkpoints:    {checkpoint_count}")
+        console.print()
+        
+        # Adapters
+        console.print("[bold]Adapters:[/bold]")
+        for info in adapter_info:
+            if "error" in info:
+                console.print(f"  {info['name']:14} [red]✗ Error: {info['error']}[/red]")
+            else:
+                name = info.get("name", "unknown")
+                default = " (default)" if name == "copilot" else ""
+                console.print(f"  {name:14} [green]✓[/green] Available{default}")
+        console.print()
+        
+        # Models
+        if models:
+            console.print("[bold]Models:[/bold]")
+            for m in models[:10]:  # Limit display
+                context = f"{m.get('context_window', 0)//1000}K" if m.get('context_window') else "?"
+                vision = "✓" if m.get("vision") else "✗"
+                console.print(f"  {m.get('id', 'unknown'):20} {context:8} vision: {vision}")
+            if len(models) > 10:
+                console.print(f"  ... and {len(models) - 10} more")
+            console.print()
 
 
 def _show_adapters(json_output: bool) -> None:

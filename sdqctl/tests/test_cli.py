@@ -183,16 +183,44 @@ class TestStatusCommand:
 
     def test_status_overview(self, cli_runner):
         """Test status shows system overview."""
-        result = cli_runner.invoke(cli, ["status"])
+        result = cli_runner.invoke(cli, ["status", "-a", "mock"])
         assert result.exit_code == 0
         # Status should show adapter info or overview
-        assert "Adapter" in result.output or "Status" in result.output
+        assert "Adapter" in result.output or "sdqctl" in result.output
 
     def test_status_adapters(self, cli_runner):
         """Test status --adapters lists adapters."""
         result = cli_runner.invoke(cli, ["status", "--adapters"])
         assert result.exit_code == 0
         assert "mock" in result.output.lower()
+
+    def test_status_models(self, cli_runner):
+        """Test status --models shows available models."""
+        result = cli_runner.invoke(cli, ["status", "--models", "-a", "mock"])
+        assert result.exit_code == 0
+        assert "mock-model" in result.output.lower() or "Model" in result.output
+
+    def test_status_auth(self, cli_runner):
+        """Test status --auth shows auth status."""
+        result = cli_runner.invoke(cli, ["status", "--auth", "-a", "mock"])
+        assert result.exit_code == 0
+        assert "Authentication" in result.output or "auth" in result.output.lower()
+
+    def test_status_all(self, cli_runner):
+        """Test status --all shows all info."""
+        result = cli_runner.invoke(cli, ["status", "--all", "-a", "mock"])
+        assert result.exit_code == 0
+        assert "sdqctl" in result.output
+        assert "Adapter" in result.output
+
+    def test_status_json(self, cli_runner):
+        """Test status --json outputs JSON."""
+        result = cli_runner.invoke(cli, ["status", "--json", "-a", "mock"])
+        assert result.exit_code == 0
+        import json as json_module
+        data = json_module.loads(result.output)
+        assert "version" in data
+        assert "sessions" in data
 
 
 class TestValidateCommand:

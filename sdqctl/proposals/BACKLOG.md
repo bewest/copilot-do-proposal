@@ -75,7 +75,7 @@ All 7 proposed tooling commands are **fully implemented**:
 | [ERROR-HANDLING](ERROR-HANDLING.md) | Draft | Phase 0-1 ✅ | `--strict` flag complete, ON-FAILURE pending |
 | [SDK-INFINITE-SESSIONS](SDK-INFINITE-SESSIONS.md) | **New** | ❌ Not started | Native SDK compaction for cycle mode |
 | [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | **New** | ❌ Not started | Resume/list/delete sessions |
-| [SDK-METADATA-APIS](SDK-METADATA-APIS.md) | In Progress | Phase 1 ✅ | Adapter methods done, status cmd pending |
+| [SDK-METADATA-APIS](SDK-METADATA-APIS.md) | Phase 2 Complete | Phase 1-2 ✅ | Adapter methods + status command enhanced |
 
 ---
 
@@ -88,7 +88,7 @@ The Copilot SDK has been updated to Protocol Version 2 with new capabilities. Th
 | Proposal | Feature | Effort | Rationale |
 |----------|---------|--------|-----------|
 | [SDK-INFINITE-SESSIONS](SDK-INFINITE-SESSIONS.md) | Native compaction | Medium | Replace client-side compaction, simpler code |
-| [SDK-METADATA-APIS](SDK-METADATA-APIS.md) | Status/auth/models | Low | Quick win for `sdqctl status` enhancement |
+| [SDK-METADATA-APIS](SDK-METADATA-APIS.md) | Status/auth/models | Low | ✅ Complete - `sdqctl status` enhanced |
 
 ### Priority: P2 (Medium Impact)
 
@@ -956,6 +956,17 @@ sdqctl cycle examples/workflows/proposal-development.conv \
   - Implemented in mock adapter (returns test data)
   - Added 4 tests in `test_adapters.py::TestAdapterMetadataAPIs`
   - Updated SDK-METADATA-APIS.md Phase 1 to Complete
+
+### Session 2026-01-24 (SDK Metadata APIs Phase 2)
+
+- [x] **Enhanced status command** - SDK v2 metadata integration
+  - Added `--models` flag to show available models with context/vision info
+  - Added `--auth` flag to show authentication status details
+  - Added `--all` flag for comprehensive status view
+  - Added `-a/--adapter` option to specify which adapter to query
+  - Implemented async metadata retrieval from adapters
+  - Added 4 new tests in `tests/test_cli.py::TestStatusCommand`
+  - Updated SDK-METADATA-APIS.md Phase 2 to Complete
 
 ---
 
