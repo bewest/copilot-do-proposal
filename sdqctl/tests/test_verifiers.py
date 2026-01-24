@@ -343,6 +343,33 @@ class TestRefsVerifierAliasRefs:
         assert result.passed
         assert result.details["refs_found"] == 0
 
+    def test_edu_domain_skipped(self, tmp_path):
+        """Test that .edu domain refs are not treated as file refs."""
+        source = tmp_path / "license.md"
+        source.write_text("Contact professor@psu.edu or school@lincoln-elementary.edu")
+        
+        verifier = RefsVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["refs_found"] == 0
+
+    def test_placeholder_aliases_skipped(self, tmp_path):
+        """Test that placeholder aliases like project: and extract: are skipped."""
+        source = tmp_path / "docs.md"
+        source.write_text("""Example usage:
+        
+Use `project:path/to/file.ext` for project files.
+Use `extract:glucose_parser.py` for extracted code.
+Use `alias:example/path.md` for examples.
+""")
+        
+        verifier = RefsVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["alias_refs_found"] == 0
+
 
 class TestRootRelativeResolution:
     """Test workspace-root-first resolution for @refs."""

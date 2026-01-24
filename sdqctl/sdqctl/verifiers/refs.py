@@ -69,6 +69,7 @@ class RefsVerifier:
         'http', 'https', 'ftp', 'mailto', 'file', 'data',  # URLs
         'ref', 'refs', 'see', 'type', 'class', 'enum',      # Common prose
         'caregiver',  # App-specific URL schemes
+        'project', 'extract', 'alias',  # Placeholder/example aliases in docs
     }
     
     def verify(
@@ -208,7 +209,7 @@ class RefsVerifier:
                     continue
             
             # Skip if looks like domain name (common TLDs at end)
-            if re.match(r'^[a-zA-Z0-9.-]+\.(com|org|net|io|de|be|co|uk)$', ref_path):
+            if re.match(r'^[a-zA-Z0-9.-]+\.(com|org|net|io|de|be|co|uk|edu|gov)$', ref_path):
                 continue
             
             total_count += 1
