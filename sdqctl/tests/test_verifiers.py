@@ -1651,3 +1651,100 @@ Implements bolus safety.
         
         result = verifier.verify_trace("UCA-BOLUS-003", "SC-BOLUS-003a", tmp_path)
         assert result.passed is True
+
+
+class TestTraceabilityVerifyCoverage:
+    """Tests for verify_coverage() method on TraceabilityVerifier."""
+
+    def test_verify_coverage_report_only(self, tmp_path):
+        """Test verify_coverage in report-only mode."""
+        doc = tmp_path / "artifacts.md"
+        doc.write_text("""
+### UCA-001: First unsafe action
+### UCA-002: Second unsafe action
+
+### SC-001: Safety constraint for UCA-001
+UCA-001 → SC-001
+""")
+        
+        from sdqctl.verifiers import TraceabilityVerifier
+        verifier = TraceabilityVerifier()
+        
+        result = verifier.verify_coverage(tmp_path)
+        
+        # Report mode always passes
+        assert result.passed is True
+        assert "coverage" in result.details
+        assert result.details["coverage"]["total_ucas"] == 2
+        assert result.details["coverage"]["total_scs"] == 1
+
+    def test_verify_coverage_threshold_pass(self, tmp_path):
+        """Test verify_coverage with threshold check that passes."""
+        doc = tmp_path / "artifacts.md"
+        doc.write_text("""
+### UCA-001: First unsafe action
+### UCA-002: Second unsafe action
+
+### SC-001: Safety constraint for UCA-001
+UCA-001 → SC-001
+
+### SC-002: Safety constraint for UCA-002
+UCA-002 → SC-002
+""")
+        
+        from sdqctl.verifiers import TraceabilityVerifier
+        verifier = TraceabilityVerifier()
+        
+        result = verifier.verify_coverage(tmp_path, metric="uca_to_sc", op=">=", threshold=100)
+        
+        assert result.passed is True
+        assert "uca_to_sc" in result.details["coverage"]
+        assert result.details["coverage"]["uca_to_sc"] == 100.0
+
+    def test_verify_coverage_threshold_fail(self, tmp_path):
+        """Test verify_coverage with threshold check that fails."""
+        doc = tmp_path / "artifacts.md"
+        doc.write_text("""
+### UCA-001: First unsafe action
+### UCA-002: Second unsafe action
+
+### SC-001: Safety constraint for UCA-001
+UCA-001 → SC-001
+""")
+        
+        from sdqctl.verifiers import TraceabilityVerifier
+        verifier = TraceabilityVerifier()
+        
+        result = verifier.verify_coverage(tmp_path, metric="uca_to_sc", op=">=", threshold=100)
+        
+        assert result.passed is False
+        assert len(result.errors) == 1
+        assert "50.0%" in result.errors[0].message
+
+    def test_verify_coverage_invalid_metric(self, tmp_path):
+        """Test verify_coverage with invalid metric name."""
+        doc = tmp_path / "artifacts.md"
+        doc.write_text("### UCA-001: First unsafe action")
+        
+        from sdqctl.verifiers import TraceabilityVerifier
+        verifier = TraceabilityVerifier()
+        
+        result = verifier.verify_coverage(tmp_path, metric="invalid_metric", op=">=", threshold=50)
+        
+        assert result.passed is False
+        assert len(result.errors) == 1
+        assert "Unknown coverage metric" in result.errors[0].message
+
+    def test_verify_coverage_empty_docs(self, tmp_path):
+        """Test verify_coverage with no artifacts found."""
+        doc = tmp_path / "empty.md"
+        doc.write_text("# Empty document\nNo artifacts here.")
+        
+        from sdqctl.verifiers import TraceabilityVerifier
+        verifier = TraceabilityVerifier()
+        
+        result = verifier.verify_coverage(tmp_path)
+        
+        # Report mode always passes even with no artifacts
+        assert result.passed is True
+        assert result.details["coverage"]["total_ucas"] == 0

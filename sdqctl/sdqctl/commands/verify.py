@@ -378,6 +378,81 @@ def verify_trace(link: str, json_output: bool, verbose: bool, path: str):
     raise SystemExit(0 if result.passed else 1)
 
 
+@verify.command("coverage")
+@click.argument("check", required=False, default=None)
+@click.option("--json", "json_output", is_flag=True, help="JSON output")
+@click.option("--verbose", "-v", is_flag=True, help="Show details")
+@click.option("--path", "-p", type=click.Path(exists=True), default=".",
+              help="Directory to verify")
+def verify_coverage(check: Optional[str], json_output: bool, verbose: bool, path: str):
+    """Verify traceability coverage metrics.
+    
+    Without arguments, shows a coverage report. With a CHECK argument,
+    verifies that the specified metric meets the threshold.
+    
+    \b
+    CHECK format: METRIC OP THRESHOLD
+    Example: "uca_to_sc >= 80" or "overall >= 50"
+    
+    \b
+    Available metrics:
+      loss_to_haz   - LOSS artifacts linked to HAZ
+      haz_to_uca    - HAZ artifacts linked to UCA
+      uca_to_sc     - UCA artifacts linked to SC
+      req_to_spec   - REQ artifacts linked to SPEC
+      spec_to_test  - SPEC artifacts linked to TEST
+      overall       - Average of all metrics
+    
+    \b
+    Examples:
+      sdqctl verify coverage                # Show coverage report
+      sdqctl verify coverage "uca_to_sc >= 80"    # Check UCA→SC coverage
+      sdqctl verify coverage "overall >= 50"      # Check overall coverage
+    """
+    from ..verifiers.traceability import TraceabilityVerifier
+    
+    verifier = TraceabilityVerifier()
+    
+    if check:
+        # Parse the check expression: metric op threshold
+        import re
+        match = re.match(r'^(\w+)\s*(>=|<=|>|<|==)\s*(\d+(?:\.\d+)?)%?$', check.strip())
+        if not match:
+            console.print(f"[red]Invalid check format: {check}[/red]")
+            console.print("Expected: METRIC OP THRESHOLD (e.g., 'uca_to_sc >= 80')")
+            raise SystemExit(1)
+        
+        metric = match.group(1)
+        op = match.group(2)
+        threshold = float(match.group(3))
+        
+        result = verifier.verify_coverage(Path(path), metric=metric, op=op, threshold=threshold)
+    else:
+        result = verifier.verify_coverage(Path(path))
+    
+    if json_output:
+        import json
+        console.print_json(json.dumps(result.to_json()))
+    else:
+        status = "[green]✓ PASS[/green]" if result.passed else "[red]✗ FAIL[/red]"
+        console.print(f"{status}: {result.summary}")
+        
+        if verbose and result.details.get("coverage"):
+            coverage = result.details["coverage"]
+            console.print("\n[bold]Coverage Metrics:[/bold]")
+            for key, value in sorted(coverage.items()):
+                if "_to_" in key:
+                    console.print(f"  {key}: {value:.1f}%")
+        
+        if not result.passed:
+            for err in result.errors:
+                console.print(f"  [red]ERROR[/red] {err.message}")
+                if err.fix_hint:
+                    console.print(f"        [dim]{err.fix_hint}[/dim]")
+    
+    raise SystemExit(0 if result.passed else 1)
+
+
 @verify.command("terminology")
 @click.option("--json", "json_output", is_flag=True, help="JSON output")
 @click.option("--verbose", "-v", is_flag=True, help="Show all findings")

@@ -19,8 +19,9 @@
 | Coverage reporting | ✅ Complete | `sdqctl verify traceability --coverage` |
 | VERIFY-TRACE directive | ✅ Complete | `VERIFY-TRACE UCA-001 -> SC-001` |
 | `verify trace` CLI | ✅ Complete | `sdqctl verify trace "UCA-001 -> SC-001"` |
+| VERIFY-COVERAGE directive | ✅ Complete | `VERIFY-COVERAGE uca_to_sc >= 80` |
+| `verify coverage` CLI | ✅ Complete | `sdqctl verify coverage "uca_to_sc >= 80"` |
 | STPA template variables | ❌ Future work | Not implemented |
-| VERIFY-COVERAGE directive | ❌ Future work | Not implemented |
 | VERIFY-IMPLEMENTED directive | ❌ Future work | Not implemented |
 | CI JSON output format | ❌ Future work | Not implemented |
 

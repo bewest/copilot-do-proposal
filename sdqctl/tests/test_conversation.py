@@ -1787,3 +1787,90 @@ PROMPT Analyze.
         assert ("UCA-001", "SC-001") in conv.verify_trace_links
         assert ("SC-001", "REQ-001") in conv.verify_trace_links
         assert ("REQ-001", "SPEC-001") in conv.verify_trace_links
+
+
+class TestVerifyCoverageDirective:
+    """Tests for VERIFY-COVERAGE directive parsing."""
+
+    def test_parse_verify_coverage_with_threshold(self):
+        """Test parsing VERIFY-COVERAGE with metric and threshold."""
+        content = """MODEL gpt-4
+VERIFY-COVERAGE uca_to_sc >= 80
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert len(conv.verify_coverage_checks) == 1
+        metric, op, threshold = conv.verify_coverage_checks[0]
+        assert metric == "uca_to_sc"
+        assert op == ">="
+        assert threshold == 80.0
+        
+        # Should also create a verify_coverage step
+        verify_steps = [s for s in conv.steps if s.type == "verify_coverage"]
+        assert len(verify_steps) == 1
+        assert verify_steps[0].verify_options["metric"] == "uca_to_sc"
+        assert verify_steps[0].verify_options["op"] == ">="
+        assert verify_steps[0].verify_options["threshold"] == 80.0
+
+    def test_parse_verify_coverage_report_only(self):
+        """Test parsing VERIFY-COVERAGE without threshold (report only)."""
+        content = """MODEL gpt-4
+VERIFY-COVERAGE
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert len(conv.verify_coverage_checks) == 0
+        
+        # Should create a verify_coverage step with report_only flag
+        verify_steps = [s for s in conv.steps if s.type == "verify_coverage"]
+        assert len(verify_steps) == 1
+        assert verify_steps[0].verify_options.get("report_only") is True
+
+    def test_parse_verify_coverage_overall_metric(self):
+        """Test parsing VERIFY-COVERAGE with overall metric."""
+        content = """MODEL gpt-4
+VERIFY-COVERAGE overall >= 50
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert len(conv.verify_coverage_checks) == 1
+        metric, op, threshold = conv.verify_coverage_checks[0]
+        assert metric == "overall"
+        assert op == ">="
+        assert threshold == 50.0
+
+    def test_parse_verify_coverage_with_percent_sign(self):
+        """Test parsing VERIFY-COVERAGE with % suffix."""
+        content = """MODEL gpt-4
+VERIFY-COVERAGE req_to_spec >= 75%
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert len(conv.verify_coverage_checks) == 1
+        metric, op, threshold = conv.verify_coverage_checks[0]
+        assert metric == "req_to_spec"
+        assert op == ">="
+        assert threshold == 75.0
+
+    def test_parse_verify_coverage_different_operators(self):
+        """Test parsing VERIFY-COVERAGE with different comparison operators."""
+        content = """MODEL gpt-4
+VERIFY-COVERAGE uca_to_sc > 50
+VERIFY-COVERAGE spec_to_test < 90
+VERIFY-COVERAGE loss_to_haz == 100
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert len(conv.verify_coverage_checks) == 3
+        
+        # First check: >
+        assert conv.verify_coverage_checks[0] == ("uca_to_sc", ">", 50.0)
+        # Second check: <
+        assert conv.verify_coverage_checks[1] == ("spec_to_test", "<", 90.0)
+        # Third check: ==
+        assert conv.verify_coverage_checks[2] == ("loss_to_haz", "==", 100.0)

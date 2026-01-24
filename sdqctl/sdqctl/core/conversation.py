@@ -99,6 +99,7 @@ class DirectiveType(Enum):
     VERIFY_OUTPUT = "VERIFY-OUTPUT"  # Output injection: on-error, always, never
     VERIFY_LIMIT = "VERIFY-LIMIT"  # Max output size: 5K, 10K, 50K, none
     VERIFY_TRACE = "VERIFY-TRACE"  # Check trace link: VERIFY-TRACE UCA-001 -> REQ-020
+    VERIFY_COVERAGE = "VERIFY-COVERAGE"  # Check coverage: VERIFY-COVERAGE uca_to_sc >= 80
     # Verification aliases (shortcuts for common VERIFY types)
     CHECK_REFS = "CHECK-REFS"  # Alias for VERIFY refs
     CHECK_LINKS = "CHECK-LINKS"  # Alias for VERIFY links
@@ -319,6 +320,7 @@ class ConversationFile:
     verify_output: str = "on-error"  # on-error, always, never
     verify_limit: Optional[int] = None  # Max output chars (None = unlimited)
     verify_trace_links: list[tuple[str, str]] = field(default_factory=list)  # [(from_id, to_id), ...]
+    verify_coverage_checks: list[tuple[str, str, float]] = field(default_factory=list)  # [(metric, op, threshold), ...]
 
     # REFCAT - Reference Catalog (line-level file excerpts)
     refcat_refs: list[str] = field(default_factory=list)  # @file.py#L10-L50
@@ -1282,6 +1284,36 @@ def _apply_directive(conv: ConversationFile, directive: Directive) -> None:
             else:
                 # Invalid format - will be caught during validation
                 pass
+        case DirectiveType.VERIFY_COVERAGE:
+            # Parse coverage check: "metric >= threshold" or empty for report
+            # Examples: "uca_to_sc >= 80", "overall >= 50", ""
+            import re
+            value = directive.value.strip()
+            if value:
+                # Parse metric comparison: metric op threshold
+                match = re.match(r'^(\w+)\s*(>=|<=|>|<|==)\s*(\d+(?:\.\d+)?)%?$', value)
+                if match:
+                    metric = match.group(1)
+                    op = match.group(2)
+                    threshold = float(match.group(3))
+                    conv.verify_coverage_checks.append((metric, op, threshold))
+                    conv.steps.append(ConversationStep(
+                        type="verify_coverage",
+                        content=value,
+                        verify_type="coverage",
+                        verify_options={"metric": metric, "op": op, "threshold": threshold}
+                    ))
+                else:
+                    # Invalid format - will be caught during validation
+                    pass
+            else:
+                # Empty value = just run coverage report (no threshold check)
+                conv.steps.append(ConversationStep(
+                    type="verify_coverage",
+                    content="coverage report",
+                    verify_type="coverage",
+                    verify_options={"report_only": True}
+                ))
         
         # CHECK-* aliases for common VERIFY types
         case DirectiveType.CHECK_REFS:

@@ -1330,6 +1330,60 @@ Please analyze the error and make necessary fixes. After fixing, the command wil
                             progress(f"  ⚠ Verification warning: {verify_type}")
                         # continue: just proceed
 
+                elif step_type == "verify_trace":
+                    # Run VERIFY-TRACE step (check specific trace link)
+                    from ..verifiers.traceability import TraceabilityVerifier
+                    
+                    verify_options = step.verify_options if hasattr(step, 'verify_options') else step.get('verify_options', {})
+                    from_id = verify_options.get('from', '')
+                    to_id = verify_options.get('to', '')
+                    
+                    logger.info(f"🔍 VERIFY-TRACE: {from_id} -> {to_id}")
+                    progress(f"  🔍 Verifying trace: {from_id} -> {to_id}")
+                    
+                    verify_path = conv.source_path.parent if conv.source_path else Path.cwd()
+                    verifier = TraceabilityVerifier()
+                    result = verifier.verify_trace(from_id, to_id, verify_path)
+                    
+                    if result.passed:
+                        logger.info(f"  ✓ Trace verified: {result.summary}")
+                    else:
+                        logger.warning(f"  ✗ Trace failed: {result.summary}")
+                        if conv.verify_on_error == "fail":
+                            raise RuntimeError(f"VERIFY-TRACE failed: {from_id} -> {to_id}")
+                        elif conv.verify_on_error == "warn":
+                            progress(f"  ⚠ Trace verification warning")
+
+                elif step_type == "verify_coverage":
+                    # Run VERIFY-COVERAGE step (check coverage metrics)
+                    from ..verifiers.traceability import TraceabilityVerifier
+                    
+                    verify_options = step.verify_options if hasattr(step, 'verify_options') else step.get('verify_options', {})
+                    report_only = verify_options.get('report_only', False)
+                    metric = verify_options.get('metric')
+                    op = verify_options.get('op')
+                    threshold = verify_options.get('threshold')
+                    
+                    logger.info(f"🔍 VERIFY-COVERAGE: {'report' if report_only else f'{metric} {op} {threshold}'}")
+                    progress(f"  🔍 Verifying coverage")
+                    
+                    verify_path = conv.source_path.parent if conv.source_path else Path.cwd()
+                    verifier = TraceabilityVerifier()
+                    
+                    if report_only:
+                        result = verifier.verify_coverage(verify_path)
+                    else:
+                        result = verifier.verify_coverage(verify_path, metric=metric, op=op, threshold=threshold)
+                    
+                    if result.passed:
+                        logger.info(f"  ✓ Coverage: {result.summary}")
+                    else:
+                        logger.warning(f"  ✗ Coverage failed: {result.summary}")
+                        if conv.verify_on_error == "fail":
+                            raise RuntimeError(f"VERIFY-COVERAGE failed: {result.summary}")
+                        elif conv.verify_on_error == "warn":
+                            progress(f"  ⚠ Coverage verification warning")
+
             # Mark complete (session cleanup in finally block)
             session.state.status = "completed"
 

@@ -539,3 +539,138 @@ class TraceabilityVerifier:
             summary=f"VERIFY-TRACE {from_id} -> {to_id}: NOT linked",
             details={"from": from_id, "to": to_id, "linked": False},
         )
+    
+    def verify_coverage(
+        self,
+        root: Path,
+        metric: str | None = None,
+        op: str | None = None,
+        threshold: float | None = None,
+        recursive: bool = True,
+        **options: Any
+    ) -> VerificationResult:
+        """Verify traceability coverage meets a threshold.
+        
+        If no metric/threshold specified, returns a coverage report.
+        If metric and threshold specified, checks if the metric meets the threshold.
+        
+        Args:
+            root: Directory to scan for artifacts
+            metric: Coverage metric name (e.g., "uca_to_sc", "overall")
+            op: Comparison operator (>=, <=, >, <, ==)
+            threshold: Threshold percentage (0-100)
+            recursive: Whether to scan subdirectories
+            
+        Returns:
+            VerificationResult with coverage data
+        """
+        root = Path(root)
+        
+        errors: list[VerificationError] = []
+        warnings: list[VerificationError] = []
+        
+        # First, collect all artifacts
+        artifacts: dict[str, TraceArtifact] = {}
+        artifacts_by_type: dict[str, list[str]] = defaultdict(list)
+        files_scanned = 0
+        
+        # Find files to scan
+        if recursive:
+            files = [f for f in root.rglob('*') if f.suffix in self.SCAN_EXTENSIONS and f.is_file()]
+        else:
+            files = [f for f in root.glob('*') if f.suffix in self.SCAN_EXTENSIONS and f.is_file()]
+        
+        for filepath in files:
+            files_scanned += 1
+            try:
+                content = filepath.read_text(errors='replace')
+            except Exception:
+                continue
+            
+            self._extract_artifacts(
+                content, 
+                str(self._relative_path(filepath, root)),
+                artifacts,
+                artifacts_by_type
+            )
+        
+        # Build link graph
+        self._build_link_graph(artifacts)
+        
+        # Calculate coverage
+        coverage = self._calculate_coverage(artifacts, artifacts_by_type)
+        
+        # Valid metric names
+        valid_metrics = {
+            "loss_to_haz", "haz_to_uca", "uca_to_sc", 
+            "req_to_spec", "spec_to_test", "overall"
+        }
+        
+        # If no threshold check, just return coverage report
+        if metric is None or threshold is None:
+            summary_parts = []
+            for key in ["uca_to_sc", "req_to_spec", "spec_to_test", "overall"]:
+                if key in coverage:
+                    summary_parts.append(f"{key}: {coverage[key]:.1f}%")
+            
+            return VerificationResult(
+                passed=True,
+                errors=[],
+                warnings=[],
+                summary=f"Coverage: {', '.join(summary_parts)}",
+                details={"coverage": coverage, "files_scanned": files_scanned},
+            )
+        
+        # Validate metric name
+        if metric not in valid_metrics:
+            errors.append(VerificationError(
+                file=None,
+                line=None,
+                message=f"Unknown coverage metric: {metric}",
+                fix_hint=f"Valid metrics: {', '.join(sorted(valid_metrics))}",
+            ))
+            return VerificationResult(
+                passed=False,
+                errors=errors,
+                warnings=warnings,
+                summary=f"VERIFY-COVERAGE: invalid metric '{metric}'",
+                details={"coverage": coverage, "metric": metric},
+            )
+        
+        # Get the metric value
+        actual = coverage.get(metric, 0)
+        
+        # Compare against threshold
+        comparison_ops = {
+            ">=": lambda a, t: a >= t,
+            "<=": lambda a, t: a <= t,
+            ">": lambda a, t: a > t,
+            "<": lambda a, t: a < t,
+            "==": lambda a, t: abs(a - t) < 0.01,
+        }
+        
+        compare_fn = comparison_ops.get(op, lambda a, t: a >= t)
+        passed = compare_fn(actual, threshold)
+        
+        if passed:
+            return VerificationResult(
+                passed=True,
+                errors=[],
+                warnings=[],
+                summary=f"VERIFY-COVERAGE {metric} {op} {threshold}%: PASS ({actual:.1f}%)",
+                details={"coverage": coverage, "metric": metric, "actual": actual, "threshold": threshold},
+            )
+        else:
+            errors.append(VerificationError(
+                file=None,
+                line=None,
+                message=f"Coverage check failed: {metric} = {actual:.1f}% (expected {op} {threshold}%)",
+                fix_hint=f"Improve traceability by adding links between artifacts",
+            ))
+            return VerificationResult(
+                passed=False,
+                errors=errors,
+                warnings=warnings,
+                summary=f"VERIFY-COVERAGE {metric} {op} {threshold}%: FAIL ({actual:.1f}%)",
+                details={"coverage": coverage, "metric": metric, "actual": actual, "threshold": threshold},
+            )

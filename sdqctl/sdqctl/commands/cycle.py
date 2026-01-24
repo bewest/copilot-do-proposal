@@ -829,6 +829,54 @@ async def _cycle_async(
                             checkpoint = session.create_checkpoint(checkpoint_name)
                             console.print(f"[blue]📌 Checkpoint: {checkpoint.name}[/blue]")
                             progress_print(f"  📌 Checkpoint: {checkpoint.name}")
+                        
+                        elif step_type == "verify_trace":
+                            # Run VERIFY-TRACE step (check specific trace link)
+                            from ..verifiers.traceability import TraceabilityVerifier
+                            
+                            verify_options = step.verify_options if hasattr(step, 'verify_options') else step.get('verify_options', {})
+                            from_id = verify_options.get('from', '')
+                            to_id = verify_options.get('to', '')
+                            
+                            console.print(f"[cyan]🔍 VERIFY-TRACE: {from_id} -> {to_id}[/cyan]")
+                            
+                            verify_path = conv.source_path.parent if conv.source_path else Path.cwd()
+                            verifier = TraceabilityVerifier()
+                            result = verifier.verify_trace(from_id, to_id, verify_path)
+                            
+                            if result.passed:
+                                console.print(f"  [green]✓ Trace verified: {result.summary}[/green]")
+                            else:
+                                console.print(f"  [red]✗ Trace failed: {result.summary}[/red]")
+                                if conv.verify_on_error == "fail":
+                                    raise RuntimeError(f"VERIFY-TRACE failed: {from_id} -> {to_id}")
+                        
+                        elif step_type == "verify_coverage":
+                            # Run VERIFY-COVERAGE step (check coverage metrics)
+                            from ..verifiers.traceability import TraceabilityVerifier
+                            
+                            verify_options = step.verify_options if hasattr(step, 'verify_options') else step.get('verify_options', {})
+                            report_only = verify_options.get('report_only', False)
+                            metric = verify_options.get('metric')
+                            op = verify_options.get('op')
+                            threshold = verify_options.get('threshold')
+                            
+                            console.print(f"[cyan]🔍 VERIFY-COVERAGE[/cyan]")
+                            
+                            verify_path = conv.source_path.parent if conv.source_path else Path.cwd()
+                            verifier = TraceabilityVerifier()
+                            
+                            if report_only:
+                                result = verifier.verify_coverage(verify_path)
+                            else:
+                                result = verifier.verify_coverage(verify_path, metric=metric, op=op, threshold=threshold)
+                            
+                            if result.passed:
+                                console.print(f"  [green]✓ Coverage: {result.summary}[/green]")
+                            else:
+                                console.print(f"  [red]✗ Coverage failed: {result.summary}[/red]")
+                                if conv.verify_on_error == "fail":
+                                    raise RuntimeError(f"VERIFY-COVERAGE failed: {result.summary}")
 
                     progress.update(cycle_task, completed=cycle_num + 1)
 

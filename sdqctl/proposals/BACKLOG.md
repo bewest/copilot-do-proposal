@@ -158,7 +158,8 @@ See [COPILOT-SDK-INTEGRATION.md](../COPILOT-SDK-INTEGRATION.md) for detailed API
 | STPA template variables | Phase 1 | ❌ Not implemented | Future work |
 | `VERIFY-TRACE` directive | Phase 3 | ✅ `conversation.py` | None |
 | `sdqctl verify trace` CLI | Phase 3 | ✅ `commands/verify.py` | None |
-| `VERIFY-COVERAGE` directive | Phase 3 | ❌ Not implemented | Future work |
+| `VERIFY-COVERAGE` directive | Phase 3 | ✅ `conversation.py` | None |
+| `sdqctl verify coverage` CLI | Phase 3 | ✅ `commands/verify.py` | None |
 | `VERIFY-IMPLEMENTED` directive | Phase 3 | ❌ Not implemented | Future work |
 | CI JSON output format | Phase 4 | ❌ Not implemented | Future work |
 
@@ -177,7 +178,7 @@ See [COPILOT-SDK-INTEGRATION.md](../COPILOT-SDK-INTEGRATION.md) for detailed API
 
 ## Directive Candidates Analysis
 
-### Currently Implemented (48 directives)
+### Currently Implemented (50 directives)
 
 **Metadata**: `MODEL`, `ADAPTER`, `MODE`, `MAX-CYCLES`, `CWD`  
 **Context**: `CONTEXT`, `CONTEXT-OPTIONAL`, `CONTEXT-EXCLUDE`, `CONTEXT-LIMIT`, `ON-CONTEXT-LIMIT`, `VALIDATION-MODE`  
@@ -189,7 +190,7 @@ See [COPILOT-SDK-INTEGRATION.md](../COPILOT-SDK-INTEGRATION.md) for detailed API
 **Output**: `OUTPUT`, `OUTPUT-FORMAT`, `OUTPUT-FILE`, `OUTPUT-DIR`  
 **RUN**: `RUN`, `RUN-ON-ERROR`, `RUN-OUTPUT`, `RUN-OUTPUT-LIMIT`, `RUN-ENV`, `RUN-CWD`, `RUN-TIMEOUT`, `ALLOW-SHELL`, `RUN-ASYNC`, `RUN-WAIT`, `RUN-RETRY`  
 **Branching**: `ON-FAILURE`, `ON-SUCCESS`, `END`  
-**Verify**: `VERIFY`, `VERIFY-ON-ERROR`, `VERIFY-OUTPUT`, `VERIFY-LIMIT`, `CHECK-REFS`, `CHECK-LINKS`, `CHECK-TRACEABILITY`  
+**Verify**: `VERIFY`, `VERIFY-ON-ERROR`, `VERIFY-OUTPUT`, `VERIFY-LIMIT`, `VERIFY-TRACE`, `VERIFY-COVERAGE`, `CHECK-REFS`, `CHECK-LINKS`, `CHECK-TRACEABILITY`  
 **Pre-flight**: `REQUIRE`  
 **Inclusion**: `INCLUDE`  
 **Debug**: `DEBUG`, `DEBUG-INTENTS`, `EVENT-LOG`
