@@ -168,3 +168,32 @@ Provide a concise summary that captures all essential information.
             "supports_tools": self.supports_tools(),
             "supports_streaming": self.supports_streaming(),
         }
+
+    # Metadata APIs (optional - adapters may override)
+    
+    async def get_cli_status(self) -> dict:
+        """Get CLI/backend version and protocol info.
+        
+        Returns:
+            Dict with version info, or empty dict if not supported.
+            Example: {"version": "0.0.394", "protocol_version": 2}
+        """
+        return {}
+
+    async def get_auth_status(self) -> dict:
+        """Get authentication status.
+        
+        Returns:
+            Dict with auth info, or empty dict if not supported.
+            Example: {"authenticated": True, "login": "user", "auth_type": "user"}
+        """
+        return {}
+
+    async def list_models(self) -> list[dict]:
+        """List available models with capabilities.
+        
+        Returns:
+            List of model info dicts, or empty list if not supported.
+            Example: [{"id": "gpt-4", "context_window": 128000, "vision": True}]
+        """
+        return []

@@ -99,3 +99,34 @@ class MockAdapter(AdapterBase):
 
     def supports_streaming(self) -> bool:
         return True
+
+    async def get_cli_status(self) -> dict:
+        """Return mock CLI status."""
+        return {
+            "version": "0.0.0-mock",
+            "protocol_version": 2,
+        }
+
+    async def get_auth_status(self) -> dict:
+        """Return mock auth status."""
+        return {
+            "authenticated": True,
+            "auth_type": "mock",
+            "host": "mock.example.com",
+            "login": "mock-user",
+            "message": "Mock authentication (always succeeds)",
+        }
+
+    async def list_models(self) -> list[dict]:
+        """Return mock model list."""
+        return [
+            {
+                "id": "mock-model",
+                "name": "Mock Model",
+                "context_window": 128000,
+                "max_prompt": 64000,
+                "vision": False,
+                "policy_state": "enabled",
+                "billing_multiplier": 0.0,
+            },
+        ]

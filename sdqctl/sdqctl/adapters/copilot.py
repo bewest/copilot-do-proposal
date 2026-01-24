@@ -870,3 +870,66 @@ class CopilotAdapter(AdapterBase):
         info["cli_url"] = self.cli_url
         info["connected"] = self.client is not None
         return info
+
+    async def get_cli_status(self) -> dict:
+        """Get Copilot CLI version and protocol info."""
+        _ensure_copilot_sdk()
+        if not self.client:
+            await self.start()
+        
+        try:
+            status = await self.client.get_status()
+            return {
+                "version": status.get("version", "unknown"),
+                "protocol_version": status.get("protocolVersion", 1),
+            }
+        except Exception as e:
+            logger.warning(f"get_status failed: {e}")
+            return {}
+
+    async def get_auth_status(self) -> dict:
+        """Get Copilot authentication status."""
+        _ensure_copilot_sdk()
+        if not self.client:
+            await self.start()
+        
+        try:
+            auth = await self.client.get_auth_status()
+            return {
+                "authenticated": auth.get("isAuthenticated", False),
+                "auth_type": auth.get("authType"),
+                "host": auth.get("host"),
+                "login": auth.get("login"),
+                "message": auth.get("statusMessage"),
+            }
+        except Exception as e:
+            logger.warning(f"get_auth_status failed: {e}")
+            return {"authenticated": False, "message": str(e)}
+
+    async def list_models(self) -> list[dict]:
+        """List available models with capabilities."""
+        _ensure_copilot_sdk()
+        if not self.client:
+            await self.start()
+        
+        try:
+            models = await self.client.list_models()
+            result = []
+            for m in models:
+                caps = m.get("capabilities", {})
+                limits = caps.get("limits", {})
+                supports = caps.get("supports", {})
+                
+                result.append({
+                    "id": m.get("id", "unknown"),
+                    "name": m.get("name", m.get("id", "unknown")),
+                    "context_window": limits.get("max_context_window_tokens"),
+                    "max_prompt": limits.get("max_prompt_tokens"),
+                    "vision": supports.get("vision", False),
+                    "policy_state": m.get("policy", {}).get("state"),
+                    "billing_multiplier": m.get("billing", {}).get("multiplier"),
+                })
+            return result
+        except Exception as e:
+            logger.warning(f"list_models failed: {e}")
+            return []

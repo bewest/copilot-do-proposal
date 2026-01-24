@@ -75,7 +75,7 @@ All 7 proposed tooling commands are **fully implemented**:
 | [ERROR-HANDLING](ERROR-HANDLING.md) | Draft | Phase 0-1 ✅ | `--strict` flag complete, ON-FAILURE pending |
 | [SDK-INFINITE-SESSIONS](SDK-INFINITE-SESSIONS.md) | **New** | ❌ Not started | Native SDK compaction for cycle mode |
 | [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | **New** | ❌ Not started | Resume/list/delete sessions |
-| [SDK-METADATA-APIS](SDK-METADATA-APIS.md) | **New** | ❌ Not started | Status, auth, models APIs |
+| [SDK-METADATA-APIS](SDK-METADATA-APIS.md) | In Progress | Phase 1 ✅ | Adapter methods done, status cmd pending |
 
 ---
 
@@ -947,6 +947,15 @@ sdqctl cycle examples/workflows/proposal-development.conv \
   - Updated ERROR-HANDLING.md Phase 1 status to Complete
   - Added 4 tests in `test_cli.py::TestVerifyStrict`
   - Documentation: `sdqctl verify all --strict` for CI builds
+
+### Session 2026-01-24 (SDK Metadata APIs Phase 1)
+
+- [x] **Add metadata methods to adapters** - SDK v2 integration
+  - Added `get_cli_status()`, `get_auth_status()`, `list_models()` to base adapter
+  - Implemented in copilot adapter (calls SDK methods)
+  - Implemented in mock adapter (returns test data)
+  - Added 4 tests in `test_adapters.py::TestAdapterMetadataAPIs`
+  - Updated SDK-METADATA-APIS.md Phase 1 to Complete
 
 ---
 

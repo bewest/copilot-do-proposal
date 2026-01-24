@@ -1,6 +1,6 @@
 # SDK Metadata APIs Integration
 
-> **Status**: Draft  
+> **Status**: In Progress - Phase 1 Complete  
 > **Date**: 2026-01-24  
 > **Priority**: P1 (Quick Win)  
 > **Scope**: Status, auth, and model discovery APIs
@@ -140,60 +140,23 @@ sdqctl status --models --filter "context>150000"
 
 ## Implementation
 
-### Phase 1: Adapter Methods
+### Phase 1: Adapter Methods ✅ Complete (2026-01-24)
 
-```python
-# sdqctl/adapters/copilot.py
+Added to `sdqctl/adapters/base.py`:
+- `get_cli_status()` - Returns CLI version info (default: empty dict)
+- `get_auth_status()` - Returns auth status (default: empty dict)
+- `list_models()` - Returns model list (default: empty list)
 
-async def get_cli_status(self) -> dict:
-    """Get CLI version and protocol info."""
-    _ensure_copilot_sdk()
-    if not self._client:
-        await self.start()
-    
-    status = await self._client.get_status()
-    return {
-        "version": status["version"],
-        "protocol_version": status["protocolVersion"],
-    }
+Added to `sdqctl/adapters/copilot.py`:
+- Full implementations calling SDK methods
+- Error handling with logging
 
-async def get_auth_status(self) -> dict:
-    """Get authentication status."""
-    _ensure_copilot_sdk()
-    if not self._client:
-        await self.start()
-    
-    auth = await self._client.get_auth_status()
-    return {
-        "authenticated": auth["isAuthenticated"],
-        "auth_type": auth.get("authType"),
-        "host": auth.get("host"),
-        "login": auth.get("login"),
-        "message": auth.get("statusMessage"),
-    }
+Added to `sdqctl/adapters/mock.py`:
+- Mock implementations for testing
 
-async def list_models(self) -> list[dict]:
-    """List available models with capabilities."""
-    _ensure_copilot_sdk()
-    if not self._client:
-        await self.start()
-    
-    models = await self._client.list_models()
-    return [
-        {
-            "id": m["id"],
-            "name": m["name"],
-            "context_window": m["capabilities"]["limits"].get("max_context_window_tokens"),
-            "max_prompt": m["capabilities"]["limits"].get("max_prompt_tokens"),
-            "vision": m["capabilities"]["supports"]["vision"],
-            "policy_state": m.get("policy", {}).get("state"),
-            "billing_multiplier": m.get("billing", {}).get("multiplier"),
-        }
-        for m in models
-    ]
-```
+Added 4 tests in `tests/test_adapters.py::TestAdapterMetadataAPIs`
 
-### Phase 2: Status Command Enhancement
+### Phase 2: Status Command Enhancement (Pending)
 
 ```python
 # sdqctl/commands/status.py

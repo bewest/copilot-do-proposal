@@ -277,3 +277,62 @@ class TestAdapterBaseCheckpoint:
         restored = await adapter.restore("some-checkpoint-id")
         
         assert restored is None
+
+
+class TestAdapterMetadataAPIs:
+    """Tests for adapter metadata APIs (get_cli_status, get_auth_status, list_models)."""
+
+    @pytest.mark.asyncio
+    async def test_get_cli_status_mock(self):
+        """Test mock adapter returns CLI status."""
+        adapter = MockAdapter()
+        status = await adapter.get_cli_status()
+        
+        assert "version" in status
+        assert "protocol_version" in status
+        assert status["version"] == "0.0.0-mock"
+        assert status["protocol_version"] == 2
+
+    @pytest.mark.asyncio
+    async def test_get_auth_status_mock(self):
+        """Test mock adapter returns auth status."""
+        adapter = MockAdapter()
+        auth = await adapter.get_auth_status()
+        
+        assert auth["authenticated"] is True
+        assert auth["auth_type"] == "mock"
+        assert auth["login"] == "mock-user"
+        assert "message" in auth
+
+    @pytest.mark.asyncio
+    async def test_list_models_mock(self):
+        """Test mock adapter returns model list."""
+        adapter = MockAdapter()
+        models = await adapter.list_models()
+        
+        assert len(models) >= 1
+        model = models[0]
+        assert "id" in model
+        assert "name" in model
+        assert "context_window" in model
+        assert "vision" in model
+        assert model["id"] == "mock-model"
+
+    @pytest.mark.asyncio
+    async def test_base_adapter_metadata_defaults(self):
+        """Test base adapter returns empty defaults."""
+        # Create a minimal concrete adapter
+        class MinimalAdapter(AdapterBase):
+            async def start(self): pass
+            async def stop(self): pass
+            async def create_session(self, config): pass
+            async def destroy_session(self, session): pass
+            async def send(self, session, prompt, **kw): return ""
+            async def get_context_usage(self, session): return (0, 128000)
+        
+        adapter = MinimalAdapter()
+        
+        # Base implementation returns empty/defaults
+        assert await adapter.get_cli_status() == {}
+        assert await adapter.get_auth_status() == {}
+        assert await adapter.list_models() == []
