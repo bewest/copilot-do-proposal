@@ -38,6 +38,7 @@ All 7 proposed tooling commands are **fully implemented**:
 |----------|----------|--------|--------|
 | `traceability` | STPA REQ→SPEC→TEST validation | 4 hours | ✅ Complete |
 | `links` | URL/file link checking | 2 hours | ✅ Complete |
+| `terminology` | Deprecated terms + capitalization | 2 hours | ✅ Complete |
 
 #### P2: Directive Implementation (Deferred)
 
@@ -94,13 +95,13 @@ All 7 proposed tooling commands are **fully implemented**:
 | `VERIFY-OUTPUT` directive | Phase 3-4 | ✅ Implemented | None |
 | `VERIFY-LIMIT` directive | Phase 3-4 | ✅ Implemented | None |
 | `links` verifier | Phase 1 | ✅ `verifiers/links.py` | None |
-| `terminology` verifier | Phase 1 | ❌ Not implemented | Future work |
+| `terminology` verifier | Phase 1 | ✅ `verifiers/terminology.py` | None |
 | `traceability` verifier | Phase 1 | ✅ `verifiers/traceability.py` | None |
 | `assertions` verifier | Phase 1 | ❌ Not implemented | Future work |
 
-**CLI commands available**: `sdqctl verify refs|links|traceability|all`
+**CLI commands available**: `sdqctl verify refs|links|traceability|terminology|all`
 
-**Verifier modules**: `refs`, `links`, `traceability` in `sdqctl/verifiers/`
+**Verifier modules**: `refs`, `links`, `traceability`, `terminology` in `sdqctl/verifiers/`
 
 ### PIPELINE-ARCHITECTURE.md
 
@@ -851,6 +852,13 @@ sdqctl cycle examples/workflows/proposal-development.conv \
   - `--strict` flag treats warnings as errors
   - Coverage report format per ARTIFACT-TAXONOMY.md specification
   - Supports all artifact types: LOSS, HAZ, UCA, SC, REQ, SPEC, TEST, GAP, BUG, PROP, Q, IQ
+- [x] **`sdqctl verify terminology`** - Added terminology consistency verifier
+  - Detects deprecated terms (e.g., "quine" → "synthesis cycle")
+  - Checks capitalization consistency (e.g., "nightscout" → "Nightscout", "stpa" → "STPA")
+  - Auto-detects glossary from docs/GLOSSARY.md
+  - Skips code blocks and CLI contexts
+  - Options: `--glossary`, `--strict`, `--json`, `--verbose`
+  - 12 tests in test_verifiers.py
 - [x] **BACKLOG.md** - Updated verify command table with new CLI entries
 
 ---

@@ -1185,3 +1185,173 @@ class TestTraceabilityVerifierExtendedTypes:
         # HAZ without links should produce error
         assert not result.passed
         assert any("HAZ-001" in err.message for err in result.errors)
+
+
+# ============================================================
+# Terminology Verifier Tests
+# ============================================================
+
+class TestTerminologyVerifier:
+    """Tests for TerminologyVerifier."""
+
+    def test_registry(self):
+        """Test terminology verifier is registered."""
+        from sdqctl.verifiers import VERIFIERS, TerminologyVerifier
+        assert "terminology" in VERIFIERS
+        assert VERIFIERS["terminology"] is TerminologyVerifier
+
+    def test_deprecated_term_quine(self, tmp_path):
+        """Test deprecated term 'quine' is flagged."""
+        source = tmp_path / "doc.md"
+        source.write_text("This is a quine-like pattern.")
+        
+        from sdqctl.verifiers import TerminologyVerifier
+        verifier = TerminologyVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert not result.passed
+        assert result.details["deprecated_terms"] >= 1
+        assert any("quine" in err.message.lower() for err in result.errors)
+
+    def test_deprecated_term_synthesis_ok(self, tmp_path):
+        """Test 'synthesis cycle' is NOT flagged as deprecated."""
+        source = tmp_path / "doc.md"
+        source.write_text("This is a synthesis cycle pattern.")
+        
+        from sdqctl.verifiers import TerminologyVerifier
+        verifier = TerminologyVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["deprecated_terms"] == 0
+
+    def test_capitalization_nightscout(self, tmp_path):
+        """Test capitalization warning for 'nightscout'."""
+        source = tmp_path / "doc.md"
+        source.write_text("The nightscout project is great.")
+        
+        from sdqctl.verifiers import TerminologyVerifier
+        verifier = TerminologyVerifier()
+        result = verifier.verify(tmp_path)
+        
+        # Capitalization issues are warnings, not errors
+        assert result.passed  # Still passes
+        assert result.details["capitalization_issues"] >= 1
+        assert any("Nightscout" in warn.message for warn in result.warnings)
+
+    def test_capitalization_correct_form(self, tmp_path):
+        """Test correct capitalization is not flagged."""
+        source = tmp_path / "doc.md"
+        source.write_text("The Nightscout project is great.")
+        
+        from sdqctl.verifiers import TerminologyVerifier
+        verifier = TerminologyVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["capitalization_issues"] == 0
+
+    def test_capitalization_stpa_acronym(self, tmp_path):
+        """Test STPA acronym capitalization."""
+        source = tmp_path / "doc.md"
+        source.write_text("We use stpa analysis.")
+        
+        from sdqctl.verifiers import TerminologyVerifier
+        verifier = TerminologyVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.details["capitalization_issues"] >= 1
+        assert any("STPA" in warn.message for warn in result.warnings)
+
+    def test_skip_code_blocks(self, tmp_path):
+        """Test that code blocks are skipped."""
+        source = tmp_path / "doc.md"
+        source.write_text("""
+# Example
+```
+This is a quine pattern in a code block.
+```
+        """)
+        
+        from sdqctl.verifiers import TerminologyVerifier
+        verifier = TerminologyVerifier()
+        result = verifier.verify(tmp_path)
+        
+        # Should not detect deprecated term in code block
+        assert result.passed
+
+    def test_skip_backtick_inline_code(self, tmp_path):
+        """Test that inline code is skipped for capitalization."""
+        source = tmp_path / "doc.md"
+        source.write_text("Use `sdqctl` not SDQCTL.")
+        
+        from sdqctl.verifiers import TerminologyVerifier
+        verifier = TerminologyVerifier()
+        result = verifier.verify(tmp_path)
+        
+        # sdqctl in backticks should be skipped
+        assert result.details["capitalization_issues"] == 0
+
+    def test_skip_adapter_context(self, tmp_path):
+        """Test that --adapter copilot is not flagged."""
+        source = tmp_path / "doc.md"
+        source.write_text("Run with --adapter copilot flag.")
+        
+        from sdqctl.verifiers import TerminologyVerifier
+        verifier = TerminologyVerifier()
+        result = verifier.verify(tmp_path)
+        
+        # Should not flag lowercase copilot in CLI context
+        assert result.details["capitalization_issues"] == 0
+
+    def test_glossary_detection(self, tmp_path):
+        """Test glossary file detection."""
+        docs_dir = tmp_path / "docs"
+        docs_dir.mkdir()
+        glossary = docs_dir / "GLOSSARY.md"
+        glossary.write_text("""
+# Glossary
+
+### Synthesis Cycle
+A multi-pass workflow.
+
+### Convergence
+Iterating until done.
+        """)
+        
+        source = tmp_path / "doc.md"
+        source.write_text("Testing glossary detection.")
+        
+        from sdqctl.verifiers import TerminologyVerifier
+        verifier = TerminologyVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.details["glossary_terms"] >= 2
+        assert "docs/GLOSSARY.md" in result.details["glossary_path"]
+
+    def test_no_glossary_ok(self, tmp_path):
+        """Test verification works without glossary."""
+        source = tmp_path / "doc.md"
+        source.write_text("Just a document.")
+        
+        from sdqctl.verifiers import TerminologyVerifier
+        verifier = TerminologyVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["glossary_terms"] == 0
+
+    def test_json_output(self, tmp_path):
+        """Test JSON output format."""
+        source = tmp_path / "doc.md"
+        source.write_text("This uses quine terminology.")
+        
+        from sdqctl.verifiers import TerminologyVerifier
+        verifier = TerminologyVerifier()
+        result = verifier.verify(tmp_path)
+        
+        json_out = result.to_json()
+        assert "passed" in json_out
+        assert "errors" in json_out
+        assert "warnings" in json_out
+        assert json_out["error_count"] >= 1

@@ -290,6 +290,59 @@ def verify_traceability(
     raise SystemExit(0 if result.passed else 1)
 
 
+@verify.command("terminology")
+@click.option("--json", "json_output", is_flag=True, help="JSON output")
+@click.option("--verbose", "-v", is_flag=True, help="Show all findings")
+@click.option("--path", "-p", type=click.Path(exists=True), default=".",
+              help="Directory to verify")
+@click.option("--glossary", "-g", type=click.Path(), default=None,
+              help="Path to glossary file (default: auto-detect docs/GLOSSARY.md)")
+@click.option("--strict", is_flag=True,
+              help="Treat capitalization warnings as errors")
+def verify_terminology(
+    json_output: bool,
+    verbose: bool,
+    path: str,
+    glossary: Optional[str],
+    strict: bool,
+):
+    """Verify terminology consistency against glossary.
+    
+    Scans markdown files for deprecated terms and inconsistent
+    capitalization. Uses docs/GLOSSARY.md as the authoritative
+    source for terminology.
+    
+    \b
+    Checks:
+      Deprecated terms       "quine" → "synthesis cycle"
+      Capitalization         "nightscout" → "Nightscout"
+      Acronyms               "stpa" → "STPA"
+    
+    \b
+    Examples:
+      sdqctl verify terminology                # Verify current directory
+      sdqctl verify terminology -p docs/       # Verify specific directory
+      sdqctl verify terminology --glossary custom.md  # Use custom glossary
+      sdqctl verify terminology --strict       # Fail on capitalization issues
+      sdqctl verify terminology --json         # JSON output for CI
+    """
+    verifier = VERIFIERS["terminology"]()
+    result = verifier.verify(Path(path), glossary=glossary)
+    
+    # In strict mode, promote warnings to errors
+    if strict and result.warnings:
+        from ..verifiers.base import VerificationError as VError, VerificationResult as VResult
+        result = VResult(
+            passed=False,
+            errors=result.errors + result.warnings,
+            warnings=[],
+            summary=result.summary + " (strict mode)",
+            details=result.details,
+        )
+    
+    _output_result(result, json_output, verbose, "terminology")
+
+
 def _add_fix_suggestions(result: VerificationResult, root: Path) -> VerificationResult:
     """Add fix suggestions by searching for moved files."""
     import subprocess
