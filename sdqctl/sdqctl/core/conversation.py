@@ -105,6 +105,9 @@ class DirectiveType(Enum):
     # Flow control
     PAUSE = "PAUSE"
 
+    # Pre-flight checks
+    REQUIRE = "REQUIRE"  # Require file/command exists: REQUIRE @file.py, REQUIRE cmd:git
+
     # Help injection
     HELP = "HELP"  # Inject help topic(s) into prologues: HELP directives workflow
 
@@ -305,6 +308,9 @@ class ConversationFile:
 
     # Help topics injected via HELP directive
     help_topics: list[str] = field(default_factory=list)  # Topics to inject into prologues
+
+    # Pre-flight requirements (files/commands that must exist)
+    requirements: list[str] = field(default_factory=list)  # @file.py, cmd:git
 
     # Flow control
     pause_points: list[tuple[int, str]] = field(default_factory=list)  # (after_prompt_index, message)
@@ -609,6 +615,61 @@ class ConversationFile:
         
         return errors
     
+    def validate_requirements(self, base_path: Optional[Path] = None) -> list[tuple[str, str]]:
+        """Validate that all REQUIRE items exist.
+        
+        Requirements can be:
+        - @file.py or @path/to/file - File must exist
+        - cmd:git or cmd:npm - Command must be available in PATH
+        
+        Args:
+            base_path: Base path for resolving file requirements.
+                       Defaults to workflow directory or CWD.
+        
+        Returns:
+            List of (requirement, error_message) for missing requirements.
+        """
+        import shutil
+        
+        errors = []
+        
+        # Determine base path for file resolution
+        if base_path is None:
+            if self.source_path:
+                base_path = self.source_path.parent
+            else:
+                base_path = Path.cwd()
+        
+        for req in self.requirements:
+            if req.startswith("cmd:"):
+                # Command requirement: check if command exists in PATH
+                cmd_name = req[4:]  # Strip "cmd:" prefix
+                if not shutil.which(cmd_name):
+                    errors.append((req, f"Required command not found: '{cmd_name}'"))
+            elif req.startswith("@"):
+                # File requirement: check if file/pattern exists
+                file_pattern = req[1:]  # Strip "@" prefix
+                resolved = base_path / file_pattern
+                
+                # Check for exact file or glob pattern
+                if "*" in file_pattern or "?" in file_pattern:
+                    # Glob pattern
+                    import glob
+                    matches = list(glob.glob(str(resolved)))
+                    if not matches:
+                        errors.append((req, f"Required file pattern not found: '{file_pattern}'"))
+                else:
+                    # Exact file
+                    if not resolved.exists():
+                        errors.append((req, f"Required file not found: '{file_pattern}'"))
+            else:
+                # Assume it's a file path without @ prefix
+                resolved = base_path / req
+                if not resolved.exists():
+                    errors.append((req, f"Required file not found: '{req}'"))
+        
+        return errors
+    
     def _check_pattern_exists(self, resolved_pattern: Path, glob_module) -> bool:
         """Check if a pattern (file or glob) resolves to existing files."""
         pattern_str = str(resolved_pattern)
@@ -809,6 +870,12 @@ def _apply_directive(conv: ConversationFile, directive: Directive) -> None:
             # HELP can have multiple topics: HELP directives workflow
             topics = directive.value.split()
             conv.help_topics.extend(topics)
+        
+        # Pre-flight requirements
+        case DirectiveType.REQUIRE:
+            # REQUIRE can have multiple items: REQUIRE @file.py cmd:git @other.md
+            items = directive.value.split()
+            conv.requirements.extend(items)
         
         # Prompts - add to both flat list and steps
         case DirectiveType.PROMPT:

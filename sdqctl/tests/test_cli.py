@@ -256,6 +256,31 @@ PROMPT Summarize.
         assert "ELIDE" in result.output
         assert "RUN-RETRY" in result.output
 
+    def test_validate_require_missing_command(self, cli_runner, tmp_path):
+        """Test validation fails when REQUIRE references missing command."""
+        workflow = tmp_path / "missing-require.conv"
+        workflow.write_text("""MODEL gpt-4
+ADAPTER mock
+REQUIRE cmd:nonexistent-command-xyz123
+PROMPT Test.
+""")
+        result = cli_runner.invoke(cli, ["validate", str(workflow)])
+        assert result.exit_code != 0
+        assert "REQUIRE failed" in result.output
+        assert "nonexistent-command-xyz123" in result.output
+
+    def test_validate_require_existing_command(self, cli_runner, tmp_path):
+        """Test validation passes when REQUIRE references existing command."""
+        workflow = tmp_path / "valid-require.conv"
+        workflow.write_text("""MODEL gpt-4
+ADAPTER mock
+REQUIRE cmd:python
+PROMPT Test.
+""")
+        result = cli_runner.invoke(cli, ["validate", str(workflow)])
+        assert result.exit_code == 0
+        assert "Requirements: 1 (all passed)" in result.output
+
 
 class TestVerbosity:
     """Test verbosity flag behavior."""

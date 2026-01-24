@@ -453,6 +453,11 @@ def validate(workflow: str, allow_missing: bool, exclude: tuple, strict: bool, j
         for msg in elide_errors:
             errors.append(f"ELIDE chain invalid: {msg}")
         
+        # Check REQUIRE directives (pre-flight checks)
+        require_errors = conv.validate_requirements()
+        for req, msg in require_errors:
+            errors.append(f"REQUIRE failed: {msg}")
+        
         # JSON output
         if json_output:
             result = {
@@ -465,6 +470,7 @@ def validate(workflow: str, allow_missing: bool, exclude: tuple, strict: bool, j
                 "prompts": len(conv.prompts),
                 "context_patterns": len(conv.context_files) + len(conv.context_files_optional),
                 "context_files_found": session.context.get_status()['files_loaded'],
+                "requirements": len(conv.requirements),
                 "errors": errors,
                 "warnings": warnings,
             }
@@ -494,6 +500,10 @@ def validate(workflow: str, allow_missing: bool, exclude: tuple, strict: bool, j
             validation_mode_str = f"Validation mode: {'lenient' if is_lenient else 'strict'}"
             optional_count = len(conv.context_files_optional)
             exclude_count = len(conv.context_exclude) + len(exclude)
+            req_count = len(conv.requirements)
+            
+            # Build requirements line if any
+            req_line = f"Requirements: {req_count} (all passed)\n" if req_count > 0 else ""
             
             console.print(Panel.fit(
                 f"Model: {conv.model}\n"
@@ -504,6 +514,7 @@ def validate(workflow: str, allow_missing: bool, exclude: tuple, strict: bool, j
                 f"Context patterns: {len(conv.context_files)} required, {optional_count} optional\n"
                 f"Context excludes: {exclude_count}\n"
                 f"Context files found: {session.context.get_status()['files_loaded']}\n"
+                f"{req_line}"
                 f"{validation_mode_str}",
                 title="[green]✓ Valid ConversationFile[/green]"
             ))

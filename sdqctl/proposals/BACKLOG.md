@@ -176,7 +176,7 @@ See [COPILOT-SDK-INTEGRATION.md](../COPILOT-SDK-INTEGRATION.md) for detailed API
 
 ## Directive Candidates Analysis
 
-### Currently Implemented (40 directives)
+### Currently Implemented (41 directives)
 
 **Metadata**: `MODEL`, `ADAPTER`, `MODE`, `MAX-CYCLES`, `CWD`  
 **Context**: `CONTEXT`, `CONTEXT-OPTIONAL`, `CONTEXT-EXCLUDE`, `CONTEXT-LIMIT`, `ON-CONTEXT-LIMIT`, `VALIDATION-MODE`  
@@ -188,6 +188,7 @@ See [COPILOT-SDK-INTEGRATION.md](../COPILOT-SDK-INTEGRATION.md) for detailed API
 **Output**: `OUTPUT`, `OUTPUT-FORMAT`, `OUTPUT-FILE`, `OUTPUT-DIR`  
 **RUN**: `RUN`, `RUN-ON-ERROR`, `RUN-OUTPUT`, `RUN-OUTPUT-LIMIT`, `RUN-ENV`, `RUN-CWD`, `RUN-TIMEOUT`, `ALLOW-SHELL`, `RUN-ASYNC`, `RUN-WAIT`, `RUN-RETRY`  
 **Verify**: `VERIFY`, `VERIFY-ON-ERROR`, `VERIFY-OUTPUT`, `VERIFY-LIMIT`  
+**Pre-flight**: `REQUIRE`  
 **Debug**: `DEBUG`, `DEBUG-INTENTS`, `EVENT-LOG`
 
 ### Proposed but NOT Implemented
@@ -217,7 +218,7 @@ Potential additions based on usage patterns:
 
 | Candidate | Description | Use Case |
 |-----------|-------------|----------|
-| `REQUIRE` | Fail if file/tool missing | Pre-flight checks |
+| ~~`REQUIRE`~~ | ~~Fail if file/tool missing~~ | ✅ Implemented 2026-01-24 - Pre-flight checks |
 | `GATE` | Wait for condition | CI integration |
 | `TIMEOUT` | Global workflow timeout | Long-running protection |
 | `RETRY-LIMIT` | Global retry cap | Token budget control |
@@ -985,6 +986,21 @@ sdqctl cycle examples/workflows/proposal-development.conv \
   - Updated run and cycle commands to use structured error output
   - Added 3 tests in `tests/test_cli.py::TestJsonErrors`
   - Updated ERROR-HANDLING.md Phase 3 to Complete
+
+### Session 2026-01-24 (REQUIRE Directive)
+
+- [x] **`REQUIRE` directive** - Pre-flight checks for files and commands
+  - Added `DirectiveType.REQUIRE` in `conversation.py`
+  - Added `requirements` field to `ConversationFile` dataclass
+  - Supports file requirements: `REQUIRE @pyproject.toml`
+  - Supports command requirements: `REQUIRE cmd:git`
+  - Supports multiple items: `REQUIRE @README.md cmd:python @tests/`
+  - Supports glob patterns: `REQUIRE @*.py`
+  - Added `validate_requirements()` method with file and command checking
+  - Integrated into `sdqctl validate` command
+  - Added 11 tests in `tests/test_conversation.py::TestRequireDirectiveParsing` and `TestRequireDirectiveValidation`
+  - Added 2 CLI tests in `tests/test_cli.py::TestValidateCommand`
+  - Updated directive count: 40 → 41 directives
 
 ---
 

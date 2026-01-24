@@ -1162,3 +1162,163 @@ PROMPT Summarize.
         errors = conv.validate_elide_chains()
         
         assert len(errors) == 0
+
+
+class TestRequireDirectiveParsing:
+    """Tests for REQUIRE directive parsing."""
+
+    def test_parse_single_file_requirement(self):
+        """Test parsing REQUIRE with a single file."""
+        content = """MODEL gpt-4
+ADAPTER mock
+REQUIRE @pyproject.toml
+PROMPT Test.
+"""
+        conv = ConversationFile.parse(content)
+        assert len(conv.requirements) == 1
+        assert "@pyproject.toml" in conv.requirements
+
+    def test_parse_single_command_requirement(self):
+        """Test parsing REQUIRE with a command."""
+        content = """MODEL gpt-4
+ADAPTER mock
+REQUIRE cmd:git
+PROMPT Test.
+"""
+        conv = ConversationFile.parse(content)
+        assert len(conv.requirements) == 1
+        assert "cmd:git" in conv.requirements
+
+    def test_parse_multiple_requirements_one_line(self):
+        """Test parsing REQUIRE with multiple items on one line."""
+        content = """MODEL gpt-4
+ADAPTER mock
+REQUIRE @README.md cmd:python @pyproject.toml
+PROMPT Test.
+"""
+        conv = ConversationFile.parse(content)
+        assert len(conv.requirements) == 3
+        assert "@README.md" in conv.requirements
+        assert "cmd:python" in conv.requirements
+        assert "@pyproject.toml" in conv.requirements
+
+    def test_parse_multiple_require_directives(self):
+        """Test parsing multiple REQUIRE directives."""
+        content = """MODEL gpt-4
+ADAPTER mock
+REQUIRE @README.md
+REQUIRE cmd:git
+REQUIRE @pyproject.toml
+PROMPT Test.
+"""
+        conv = ConversationFile.parse(content)
+        assert len(conv.requirements) == 3
+
+
+class TestRequireDirectiveValidation:
+    """Tests for REQUIRE directive validation."""
+
+    def test_validate_existing_file_passes(self, tmp_path):
+        """Test that requiring an existing file passes validation."""
+        # Create a test file
+        test_file = tmp_path / "test.md"
+        test_file.write_text("# Test")
+        
+        content = f"""MODEL gpt-4
+ADAPTER mock
+REQUIRE @test.md
+PROMPT Test.
+"""
+        conv = ConversationFile.parse(content)
+        errors = conv.validate_requirements(base_path=tmp_path)
+        
+        assert len(errors) == 0
+
+    def test_validate_missing_file_fails(self, tmp_path):
+        """Test that requiring a missing file fails validation."""
+        content = """MODEL gpt-4
+ADAPTER mock
+REQUIRE @nonexistent-file-12345.md
+PROMPT Test.
+"""
+        conv = ConversationFile.parse(content)
+        errors = conv.validate_requirements(base_path=tmp_path)
+        
+        assert len(errors) == 1
+        assert "not found" in errors[0][1]
+        assert "nonexistent-file-12345.md" in errors[0][1]
+
+    def test_validate_existing_command_passes(self):
+        """Test that requiring an existing command passes validation."""
+        content = """MODEL gpt-4
+ADAPTER mock
+REQUIRE cmd:python
+PROMPT Test.
+"""
+        conv = ConversationFile.parse(content)
+        errors = conv.validate_requirements()
+        
+        # python should exist in most environments
+        assert len(errors) == 0
+
+    def test_validate_missing_command_fails(self):
+        """Test that requiring a missing command fails validation."""
+        content = """MODEL gpt-4
+ADAPTER mock
+REQUIRE cmd:nonexistent-command-12345
+PROMPT Test.
+"""
+        conv = ConversationFile.parse(content)
+        errors = conv.validate_requirements()
+        
+        assert len(errors) == 1
+        assert "not found" in errors[0][1]
+        assert "nonexistent-command-12345" in errors[0][1]
+
+    def test_validate_glob_pattern_with_matches(self, tmp_path):
+        """Test that requiring a glob pattern that matches passes."""
+        # Create test files
+        (tmp_path / "test1.py").write_text("# test")
+        (tmp_path / "test2.py").write_text("# test")
+        
+        content = """MODEL gpt-4
+ADAPTER mock
+REQUIRE @*.py
+PROMPT Test.
+"""
+        conv = ConversationFile.parse(content)
+        errors = conv.validate_requirements(base_path=tmp_path)
+        
+        assert len(errors) == 0
+
+    def test_validate_glob_pattern_without_matches_fails(self, tmp_path):
+        """Test that requiring a glob pattern with no matches fails."""
+        content = """MODEL gpt-4
+ADAPTER mock
+REQUIRE @*.nonexistent
+PROMPT Test.
+"""
+        conv = ConversationFile.parse(content)
+        errors = conv.validate_requirements(base_path=tmp_path)
+        
+        assert len(errors) == 1
+        assert "not found" in errors[0][1]
+
+    def test_validate_mixed_requirements(self, tmp_path):
+        """Test validation with mixed file and command requirements."""
+        # Create one test file
+        (tmp_path / "exists.md").write_text("# exists")
+        
+        content = """MODEL gpt-4
+ADAPTER mock
+REQUIRE @exists.md cmd:python @missing.md cmd:nonexistent-cmd-12345
+PROMPT Test.
+"""
+        conv = ConversationFile.parse(content)
+        errors = conv.validate_requirements(base_path=tmp_path)
+        
+        # Should have 2 errors: missing file and missing command
+        assert len(errors) == 2
+        error_messages = [e[1] for e in errors]
+        assert any("missing.md" in msg for msg in error_messages)
+        assert any("nonexistent-cmd-12345" in msg for msg in error_messages)
