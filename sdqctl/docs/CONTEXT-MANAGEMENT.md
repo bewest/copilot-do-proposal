@@ -161,6 +161,89 @@ This is more token-efficient than CONTEXT for large files where you only need sp
 
 ---
 
+## SDK Infinite Sessions (v2)
+
+The Copilot SDK v2 introduces **Infinite Sessions** with native background compaction. When enabled, the SDK automatically manages context window limits without requiring manual `COMPACT` directives.
+
+### How It Works
+
+```
+Context grows during workflow execution
+        │
+        ▼
+At 80% context usage (background_compaction_threshold)
+  → SDK starts background compaction asynchronously
+  → Workflow continues uninterrupted
+        │
+        ▼
+At 95% context usage (buffer_exhaustion_threshold)
+  → SDK blocks until compaction completes
+  → Prevents context overflow
+        │
+        ▼
+After compaction
+  → Context reduced, workflow continues
+  → session.compaction_complete event emitted
+```
+
+### Configuration
+
+```python
+# SDK configuration (via adapter)
+session = await client.create_session({
+    "model": "gpt-5",
+    "infinite_sessions": {
+        "enabled": True,
+        "background_compaction_threshold": 0.80,  # Start at 80%
+        "buffer_exhaustion_threshold": 0.95,      # Block at 95%
+    },
+})
+```
+
+### Proposed sdqctl Integration
+
+When implemented, infinite sessions will be the default for `cycle` mode:
+
+```bash
+# Default: infinite sessions enabled
+sdqctl cycle workflow.conv -n 10
+
+# Disable infinite sessions (use client-side compaction)
+sdqctl cycle workflow.conv -n 10 --no-infinite-sessions
+
+# Custom thresholds
+sdqctl cycle workflow.conv -n 10 \
+    --min-compaction-density 25 \
+    --compaction-threshold 75
+```
+
+### Threshold Behavior
+
+| Threshold | Default | Behavior |
+|-----------|---------|----------|
+| `--min-compaction-density` | 30% | Skip compaction if context below this |
+| `--compaction-threshold` | 80% | Start background compaction |
+| `--max-context` | 95% | Block until compaction complete |
+
+### When to Use Manual COMPACT
+
+Even with infinite sessions enabled, you may still want explicit `COMPACT` directives:
+
+1. **Phase transitions** - Compact before switching from investigation to synthesis
+2. **Context freshness** - Force compaction to get clean slate for new phase
+3. **Preserving specific content** - Use `COMPACT-PRESERVE` for important items
+
+### Current Implementation
+
+Until infinite sessions integration is complete, sdqctl uses **client-side compaction**:
+- Session reset with summary injection
+- Manual `COMPACT` directives required
+- `--min-compaction-density` to skip low-value compactions
+
+See [SDK-INFINITE-SESSIONS proposal](../proposals/SDK-INFINITE-SESSIONS.md) for implementation details.
+
+---
+
 ## Session Modes
 
 ### Fresh Mode
@@ -186,6 +269,8 @@ Context grows across cycles. Use when:
 - Tasks reference prior cycle outputs
 
 **Caveat:** Monitor context percentage; may need manual COMPACT.
+
+**With Infinite Sessions:** When SDK infinite sessions are enabled, accumulate mode benefits from automatic background compaction—no manual intervention needed for long-running workflows.
 
 ### Compact Mode
 

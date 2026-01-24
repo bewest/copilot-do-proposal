@@ -728,3 +728,118 @@ Analyze the authentication module.
 2. **Plan mode** - Quick overview without expensive file expansion
 3. **Better discoverability** - `sdqctl render --help` shows all options
 4. **Backwards compatible** - `--render-only` still works (with deprecation warning)
+
+---
+
+## SDK v2 Capabilities (2026-01-24)
+
+The Copilot SDK has been updated to Protocol Version 2 with significant new features. This section documents the new capabilities and their potential integration into sdqctl.
+
+### New API Overview
+
+| Feature | SDK API | Status | Proposal |
+|---------|---------|--------|----------|
+| **Infinite Sessions** | `infinite_sessions` config | Not integrated | [SDK-INFINITE-SESSIONS](proposals/SDK-INFINITE-SESSIONS.md) |
+| **Session Resume** | `client.resume_session(id)` | Not integrated | [SDK-SESSION-PERSISTENCE](proposals/SDK-SESSION-PERSISTENCE.md) |
+| **Session List** | `client.list_sessions()` | Not integrated | [SDK-SESSION-PERSISTENCE](proposals/SDK-SESSION-PERSISTENCE.md) |
+| **Session Delete** | `client.delete_session(id)` | Not integrated | [SDK-SESSION-PERSISTENCE](proposals/SDK-SESSION-PERSISTENCE.md) |
+| **Get Status** | `client.get_status()` | Not integrated | [SDK-METADATA-APIS](proposals/SDK-METADATA-APIS.md) |
+| **Get Auth Status** | `client.get_auth_status()` | Not integrated | [SDK-METADATA-APIS](proposals/SDK-METADATA-APIS.md) |
+| **List Models** | `client.list_models()` | Not integrated | [SDK-METADATA-APIS](proposals/SDK-METADATA-APIS.md) |
+| **Workspace Path** | `session.workspace_path` | Not captured | [SDK-INFINITE-SESSIONS](proposals/SDK-INFINITE-SESSIONS.md) |
+| **Custom Session IDs** | `session_id="name"` | Not integrated | [SDK-SESSION-PERSISTENCE](proposals/SDK-SESSION-PERSISTENCE.md) |
+
+### Infinite Sessions (Native Compaction)
+
+The SDK now provides **automatic context management** with background compaction:
+
+```python
+session = await client.create_session({
+    "model": "gpt-5",
+    "infinite_sessions": {
+        "enabled": True,
+        "background_compaction_threshold": 0.80,  # Start compacting at 80%
+        "buffer_exhaustion_threshold": 0.95,      # Block at 95%
+    },
+})
+
+# Session workspace for artifacts
+print(session.workspace_path)  # ~/.copilot/session-state/{session_id}/
+```
+
+**Events emitted:**
+- `session.compaction_start` - Background compaction started
+- `session.compaction_complete` - Compaction finished with token counts
+
+**Impact on sdqctl:**
+- Could replace client-side compaction in `cycle` mode
+- Aligns with `--min-compaction-density` (skip if below threshold)
+- Native handling is more efficient than session reset approach
+
+### Session Persistence APIs
+
+```python
+# List all sessions
+sessions = await client.list_sessions()
+# Returns: [{sessionId, startTime, modifiedTime, summary?, isRemote}, ...]
+
+# Resume existing session (conversation history restored)
+session = await client.resume_session("my-analysis")
+
+# Delete session permanently
+await client.delete_session("my-analysis")
+```
+
+**Impact on sdqctl:**
+- `sdqctl status --sessions` could list active sessions
+- `sdqctl resume SESSION_ID` for multi-day workflows
+- Named sessions via `SESSION-NAME` directive
+
+### Metadata APIs
+
+```python
+# CLI version and protocol
+status = await client.get_status()
+# {"version": "0.0.394", "protocolVersion": 2}
+
+# Authentication state
+auth = await client.get_auth_status()
+# {"isAuthenticated": True, "authType": "user", "login": "bewest", ...}
+
+# Available models with capabilities
+models = await client.list_models()
+# [{id, name, capabilities: {supports: {vision}, limits: {max_context_window_tokens}}, ...}]
+```
+
+**Impact on sdqctl:**
+- Enhanced `sdqctl status` with CLI version, auth status
+- Model discovery for `MODEL-REQUIRES` directive
+- Capability-based model selection
+
+### Cookbook Patterns
+
+The SDK now includes a [Python Cookbook](../../copilot-sdk/cookbook/python/) with practical recipes:
+
+| Recipe | Pattern | sdqctl Relevance |
+|--------|---------|------------------|
+| [Error Handling](../../copilot-sdk/cookbook/python/error-handling.md) | try/finally cleanup, timeout context | Adapter robustness |
+| [Multiple Sessions](../../copilot-sdk/cookbook/python/multiple-sessions.md) | Parallel independent sessions | Future: parallel cycles |
+| [Persisting Sessions](../../copilot-sdk/cookbook/python/persisting-sessions.md) | Resume by ID, list, delete | Multi-day workflows |
+| [Managing Local Files](../../copilot-sdk/cookbook/python/managing-local-files.md) | AI-powered file organization | Example patterns |
+| [PR Visualization](../../copilot-sdk/cookbook/python/pr-visualization.md) | MCP server + no custom tools | Tool-free patterns |
+
+### Protocol Version
+
+```python
+# From copilot/sdk_protocol_version.py
+SDK_PROTOCOL_VERSION = 2
+```
+
+The SDK requires Protocol Version 2 for all new features. Ensure Copilot CLI is updated to a compatible version.
+
+### Next Steps
+
+1. **P1: Infinite Sessions** - Integrate for `cycle` mode (see proposal)
+2. **P1: Metadata APIs** - Enhance `sdqctl status` command
+3. **P2: Session Persistence** - Enable resume workflows
+4. **P2: Error Handling** - Adopt cookbook patterns in adapter

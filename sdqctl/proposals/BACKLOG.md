@@ -1,13 +1,14 @@
 # sdqctl Proposal Backlog
 
-> **Last Updated**: 2026-01-23 (Gap Analysis Complete - All 4 Phases)  
+> **Last Updated**: 2026-01-24 (SDK v2 Capabilities Added)  
 > **Purpose**: Track open design questions, implementation work, and future proposals
 
 ---
 
 ## Executive Summary: Tooling Gap Analysis
 
-**Analysis Date**: 2026-01-23 | **Phases Completed**: 4/4
+**Analysis Date**: 2026-01-23 | **Phases Completed**: 4/4  
+**SDK v2 Analysis**: 2026-01-24 | **New Proposals**: 3 (Infinite Sessions, Session Persistence, Metadata APIs)
 
 Note: remember to cross reference and evalute priorities across  roadmaps.
 Let's PRIORITIZE error handling and production hardening (magic constants, invalid inputs).
@@ -71,6 +72,38 @@ All 7 proposed tooling commands are **fully implemented**:
 | [CLI-ERGONOMICS](CLI-ERGONOMICS.md) | Analysis Complete | N/A | Help implemented, no gaps remaining |
 | [MODEL-REQUIREMENTS](MODEL-REQUIREMENTS.md) | Draft | ❌ Open Questions | Abstract model selection by capability |
 | [ARTIFACT-TAXONOMY](ARTIFACT-TAXONOMY.md) | Draft | Phase 0-0.5 ✅ | Taxonomy + enumeration strategies defined |
+| [SDK-INFINITE-SESSIONS](SDK-INFINITE-SESSIONS.md) | **New** | ❌ Not started | Native SDK compaction for cycle mode |
+| [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | **New** | ❌ Not started | Resume/list/delete sessions |
+| [SDK-METADATA-APIS](SDK-METADATA-APIS.md) | **New** | ❌ Not started | Status, auth, models APIs |
+
+---
+
+## SDK v2 Integration (2026-01-24)
+
+The Copilot SDK has been updated to Protocol Version 2 with new capabilities. Three new proposals track their integration:
+
+### Priority: P1 (High Impact)
+
+| Proposal | Feature | Effort | Rationale |
+|----------|---------|--------|-----------|
+| [SDK-INFINITE-SESSIONS](SDK-INFINITE-SESSIONS.md) | Native compaction | Medium | Replace client-side compaction, simpler code |
+| [SDK-METADATA-APIS](SDK-METADATA-APIS.md) | Status/auth/models | Low | Quick win for `sdqctl status` enhancement |
+
+### Priority: P2 (Medium Impact)
+
+| Proposal | Feature | Effort | Rationale |
+|----------|---------|--------|-----------|
+| [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | Session management | Medium | Multi-day workflows, resume capability |
+
+### Key SDK Changes
+
+- **Protocol Version 2** - Required for new features
+- **Infinite Sessions** - Background compaction at 80% context, blocking at 95%
+- **Session APIs** - `list_sessions()`, `resume_session()`, `delete_session()`
+- **Metadata APIs** - `get_status()`, `get_auth_status()`, `list_models()`
+- **Workspace Path** - `session.workspace_path` for session artifacts
+
+See [COPILOT-SDK-INTEGRATION.md](../COPILOT-SDK-INTEGRATION.md) for detailed API documentation.
 
 ---
 
