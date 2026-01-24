@@ -1019,6 +1019,15 @@ sdqctl cycle examples/workflows/proposal-development.conv \
   - Updated RUN-BRANCHING.md status to Implemented
   - Updated ERROR-HANDLING.md Phase 2 to Complete
 
+### Session 2026-01-24 (Backlog Cohesiveness Audit)
+
+- [x] **ARTIFACT-TAXONOMY.md** - Status updated: PROPOSAL → IMPLEMENTED (commit 0b3d463)
+  - All artifact commands verified: `next`, `list`, `rename`, `retire`
+- [x] **BACKLOG.md** - Fixed stale RUN-BRANCHING gap table (commit 35bbb2f)
+  - ON-FAILURE/ON-SUCCESS marked as ✅ implemented
+- [x] **ERROR-HANDLING.md** - Status updated: Draft → Implemented (commit 507a677)
+  - ON-FAILURE/ON-SUCCESS moved to Implemented table
+
 ---
 
 ## References
