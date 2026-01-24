@@ -187,7 +187,7 @@ Potential additions based on usage patterns:
 | `GATE` | Wait for condition | CI integration |
 | `TIMEOUT` | Global workflow timeout | Long-running protection |
 | `RETRY-LIMIT` | Global retry cap | Token budget control |
-| `COMPACT-IF-NEEDED` | Conditional compaction | Skip compaction below threshold (see [Q-012](../docs/QUIRKS.md#q-012-compact-directive-is-unconditional)) |
+| ~~`COMPACT-IF-NEEDED`~~ | ~~Conditional compaction~~ | ✅ Now default behavior - `COMPACT` respects threshold ([Q-012](../docs/QUIRKS.md#q-012-compact-directive-is-unconditional) FIXED) |
 | `INCLUDE-HELP` | Inject help topic into prompt | Agent workflow authoring (see below) |
 
 ### Help System: Agent Accessibility Gap
@@ -260,18 +260,18 @@ Current help is human-optimized (tables, examples). Could add LLM-optimized vari
 
 ### Compaction Policy: Known Gaps
 
-> **See Also:** [QUIRKS.md Q-011](../docs/QUIRKS.md#q-011-compaction-threshold-options-not-fully-wired) (✅ FIXED) and [Q-012](../docs/QUIRKS.md#q-012-compact-directive-is-unconditional)
+> **See Also:** [QUIRKS.md Q-011](../docs/QUIRKS.md#q-011-compaction-threshold-options-not-fully-wired) (✅ FIXED) and [Q-012](../docs/QUIRKS.md#q-012-compact-directive-is-unconditional) (✅ FIXED)
 
-The compaction threshold system has some documented behaviors:
+The compaction threshold system is now fully wired:
 
 | Feature | Expected | Actual | Status |
 |---------|----------|--------|--------|
 | `--min-compaction-density` | Skip compaction if below N% | ✅ **NOW WIRED** | [Q-011](../docs/QUIRKS.md#q-011-compaction-threshold-options-not-fully-wired) ✅ FIXED |
-| `COMPACT` directive | Conditional on threshold | **UNCONDITIONAL** - always triggers | [Q-012](../docs/QUIRKS.md#q-012-compact-directive-is-unconditional) |
+| `COMPACT` directive | Conditional on threshold | ✅ **NOW CONDITIONAL** | [Q-012](../docs/QUIRKS.md#q-012-compact-directive-is-unconditional) ✅ FIXED |
 | `CONTEXT-LIMIT N%` | Compact before any turn exceeding N% | **Cycle boundaries only** | As designed |
 | Two-tier thresholds | Operating + max thresholds | **Single threshold only** | Future consideration |
 
-**Usage:** Use `cycle -n N --min-compaction-density 50` to skip compaction if context < 50% full. Explicit `COMPACT` directives run unconditionally.
+**Usage:** Use `cycle -n N --min-compaction-density 50` to skip compaction if context < 50% full. Both automatic and explicit `COMPACT` directives respect this threshold.
 
 ---
 
@@ -893,6 +893,17 @@ sdqctl cycle examples/workflows/proposal-development.conv \
   - Integrated into `sdqctl validate` command
   - 4 tests in `test_conversation.py::TestElideChainValidation`
   - 1 CLI test in `test_cli.py::TestValidateCommand`
+
+### Session 2026-01-24 (Q-012 Fix)
+
+- [x] **Q-012: COMPACT directive now conditional** - Fix unconditional compaction
+  - Added `session.needs_compaction(min_compaction_density)` check to COMPACT handling
+  - Updated both `run.py` and `cycle.py` to check threshold before compacting
+  - Shows "Skipping COMPACT - context below threshold" when skipped
+  - Updated 2 tests, added `test_compact_executes_with_min_density_zero`
+  - Marked Q-012 as FIXED in QUIRKS.md
+  - **All quirks now resolved** - no active quirks remain
+  - Commit: `d2e58df`
 
 ---
 
