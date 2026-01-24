@@ -463,7 +463,7 @@ sdqctl batch --parallel=4 workflows/*.conv
 
 ---
 
-### 4.2 Delta Detection
+### 4.3 Delta Detection
 
 Identify which UCAs/requirements are affected by code changes:
 ```bash
@@ -474,11 +474,26 @@ sdqctl delta --since=HEAD~5 --scope=stpa
 
 ---
 
-### 4.3 Cross-Project Traceability
+### 4.4 Cross-Project Traceability
 
 UCAs that span multiple projects (e.g., Nightscout ↔ Loop sync issues)
 
 **Use case**: Ecosystem-wide hazard analysis
+
+---
+
+### 4.5 Workflow Authoring Enhancements (from QUIRKS.md)
+
+Ideas moved from QUIRKS.md "Future Considerations":
+
+| Feature | Description | Priority |
+|---------|-------------|----------|
+| Export/import plans as JSON | Allow interpreted conversations to be serialized | P3 |
+| External variable injection | Accept variables from file/stdin/env | P2 |
+| Jsonnet integration | Apply logic for branching on RUN failures | P3 |
+| Environment variables | Deny/accept list for env var access | P3 |
+
+**Note**: Variable injection partially addressed by `--from-json` pipeline mode. Full external variable support would complement this.
 
 ---
 
@@ -628,6 +643,56 @@ case DirectiveType.HELP:
 **Note**: This is NOT `INCLUDE` - it only injects built-in help content from `help.py`, not external files or .conv fragments.
 
 **Decision**: Proceed with implementation - simple, useful, and avoids INCLUDE semantics concerns.
+
+---
+
+### P2: Documentation Reorganization (Human vs AI Consumption)
+
+**Status**: Proposal  
+**Discovered**: 2026-01-24
+
+Current documentation structure mixes human-oriented and AI-oriented content:
+
+#### Current Issues
+
+| Issue | Location | Impact |
+|-------|----------|--------|
+| Duplicate terminology explanations | PHILOSOPHY.md, GLOSSARY.md | Maintenance burden, risk of drift |
+| Future enhancements mixed with quirks | QUIRKS.md (now fixed) | Confusing scope |
+| Design decisions scattered | Multiple docs | Hard to find authoritative source |
+| No clear AI-optimized entry point | - | AI agents must parse verbose prose |
+
+#### Proposed Structure
+
+```
+docs/
+├── reference/           # AI-optimized (structured, concise)
+│   ├── DIRECTIVES.md    # Table-driven directive reference
+│   ├── COMMANDS.md      # CLI command reference
+│   ├── VARIABLES.md     # Template variable reference
+│   └── ERRORS.md        # Error codes and resolutions
+├── guides/              # Human-optimized (narrative, examples)
+│   ├── GETTING-STARTED.md
+│   ├── WORKFLOW-DESIGN.md
+│   ├── SYNTHESIS-CYCLES.md
+│   └── TRACEABILITY-WORKFLOW.md
+├── concepts/            # Shared (both audiences)
+│   ├── PHILOSOPHY.md
+│   └── GLOSSARY.md
+└── maintenance/         # Internal
+    ├── QUIRKS.md
+    └── FEATURE-INTERACTIONS.md
+```
+
+#### Benefits
+
+1. **AI agents**: Can `HELP directives` to get `reference/DIRECTIVES.md` (structured, parseable)
+2. **Humans**: Continue reading narrative guides
+3. **Maintenance**: Clear ownership per doc type
+
+#### Decision
+
+**Deferred** - Current flat structure is workable. Consider if docs exceed 20 files or AI integration issues emerge.
 
 ---
 

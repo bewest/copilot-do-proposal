@@ -311,7 +311,7 @@ Showing key actions at default level (no flags) could be considered, but would r
 
 ### Description
 
-The `{{WORKFLOW_NAME}}` template variable extracts the filename stem (e.g., `progress-tracker` from `implement-improvements.conv`). When this variable is used in prompts, headers, or prologues, **the agent uses the filename words as semantic signals** about its intended role.
+The `{{WORKFLOW_NAME}}` template variable extracts the filename stem (e.g., `implement-improvements` from `implement-improvements.conv`). When this variable is used in prompts, headers, or prologues, **the agent uses the filename words as semantic signals** about its intended role.
 
 ### Example
 
@@ -343,12 +343,12 @@ When the filename contains words like "tracker", "doc", or "report", the agent m
 **1. Choose implementation-oriented filenames:**
 ```bash
 # Instead of:
-implement-improvements.conv
-documentation-sync.conv
+progress-tracker.conv      # "tracker" suggests passive tracking
+documentation-report.conv  # "report" suggests analysis, not editing
 
 # Use:
-implement-improvements.conv
-edit-and-sync.conv
+implement-improvements.conv  # "implement" signals active editing
+edit-and-sync.conv           # "edit" signals file modification
 ```
 
 **2. Add explicit role clarification in PROLOGUE:**
@@ -595,15 +595,10 @@ PROLOGUE This is the {{__WORKFLOW_NAME__}} workflow.
 
 ## Future Considerations
 
-These are documented ideas for future enhancement, not current quirks:
-
-* **Export/import plans as JSON** - Allow interpreted conversations to be serialized
-* **External variable injection** - Accept variables from file/stdin/env
-* **Jsonnet integration** - Apply logic for branching on RUN failures
-* **Environment variables** - Deny/accept list for env var access
-
-> **Note:** The Q-001 fix addresses the concern about pathnames in prompts.
-> Filesystem paths are now excluded by default, with explicit opt-in via `__` prefix.
+> **Moved to [BACKLOG.md §4.5](../proposals/BACKLOG.md#45-workflow-authoring-enhancements-from-quirksmd)**
+>
+> Future enhancement ideas (JSON export, variable injection, etc.) are tracked in the proposal backlog,
+> not in this quirks documentation.
 
 ## Template Variables Reference
 

@@ -375,14 +375,14 @@ PROMPT Select the SINGLE most impactful item.
 
 ❌ Naming a workflow after its output type:
 ```bash
-implement-improvements.conv   # Agent interprets role as "tracking"
-documentation-sync.conv # Agent focuses on docs, not implementation
+progress-tracker.conv         # Agent interprets role as "tracking"
+documentation-report.conv     # Agent focuses on docs, not implementation
 ```
 
 ✅ Name workflows by their action:
 ```bash
-implement-improvements.conv  # Agent understands it should edit files
-edit-and-verify.conv         # Clear implementation intent
+implement-improvements.conv   # Agent understands it should edit files
+edit-and-verify.conv          # Clear implementation intent
 ```
 
 **See [QUIRKS.md](QUIRKS.md#q-001-workflow-filename-influences-agent-behavior)** for full details on this surprising behavior.
