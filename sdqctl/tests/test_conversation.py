@@ -876,6 +876,71 @@ PROMPT Analyze all results.
         assert verify_steps[2].verify_type == "traceability"
 
 
+class TestCheckAliasDirectives:
+    """Tests for CHECK-* alias directives (shortcuts for VERIFY)."""
+
+    def test_parse_check_refs_alias(self):
+        """Test CHECK-REFS is alias for VERIFY refs."""
+        content = """MODEL gpt-4
+CHECK-REFS
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        verify_steps = [s for s in conv.steps if s.type == "verify"]
+        assert len(verify_steps) == 1
+        assert verify_steps[0].verify_type == "refs"
+        assert verify_steps[0].verify_options == {}
+
+    def test_parse_check_links_alias(self):
+        """Test CHECK-LINKS is alias for VERIFY links."""
+        content = """MODEL gpt-4
+CHECK-LINKS
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        verify_steps = [s for s in conv.steps if s.type == "verify"]
+        assert len(verify_steps) == 1
+        assert verify_steps[0].verify_type == "links"
+
+    def test_parse_check_traceability_alias(self):
+        """Test CHECK-TRACEABILITY is alias for VERIFY traceability."""
+        content = """MODEL gpt-4
+CHECK-TRACEABILITY
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        verify_steps = [s for s in conv.steps if s.type == "verify"]
+        assert len(verify_steps) == 1
+        assert verify_steps[0].verify_type == "traceability"
+
+    def test_check_aliases_equivalent_to_verify(self):
+        """Test CHECK-* aliases produce same steps as VERIFY."""
+        alias_content = """MODEL gpt-4
+CHECK-REFS
+CHECK-LINKS
+CHECK-TRACEABILITY
+PROMPT Analyze.
+"""
+        verify_content = """MODEL gpt-4
+VERIFY refs
+VERIFY links
+VERIFY traceability
+PROMPT Analyze.
+"""
+        alias_conv = ConversationFile.parse(alias_content)
+        verify_conv = ConversationFile.parse(verify_content)
+        
+        alias_steps = [s for s in alias_conv.steps if s.type == "verify"]
+        verify_steps = [s for s in verify_conv.steps if s.type == "verify"]
+        
+        assert len(alias_steps) == len(verify_steps) == 3
+        for a, v in zip(alias_steps, verify_steps):
+            assert a.verify_type == v.verify_type
+
+
 class TestRefcatDirectiveParsing:
     """Tests for REFCAT directive parsing."""
 

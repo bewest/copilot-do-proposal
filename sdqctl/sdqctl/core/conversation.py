@@ -98,6 +98,10 @@ class DirectiveType(Enum):
     VERIFY_ON_ERROR = "VERIFY-ON-ERROR"  # Failure behavior: fail, continue, warn
     VERIFY_OUTPUT = "VERIFY-OUTPUT"  # Output injection: on-error, always, never
     VERIFY_LIMIT = "VERIFY-LIMIT"  # Max output size: 5K, 10K, 50K, none
+    # Verification aliases (shortcuts for common VERIFY types)
+    CHECK_REFS = "CHECK-REFS"  # Alias for VERIFY refs
+    CHECK_LINKS = "CHECK-LINKS"  # Alias for VERIFY links
+    CHECK_TRACEABILITY = "CHECK-TRACEABILITY"  # Alias for VERIFY traceability
 
     # REFCAT - Reference Catalog for precise file excerpts
     REFCAT = "REFCAT"  # Line-level file references: REFCAT @file.py#L10-L50
@@ -1113,6 +1117,29 @@ def _apply_directive(conv: ConversationFile, directive: Directive) -> None:
                 conv.verify_limit = int(value[:-1]) * 1000000
             else:
                 conv.verify_limit = int(value)
+        
+        # CHECK-* aliases for common VERIFY types
+        case DirectiveType.CHECK_REFS:
+            # Alias for VERIFY refs
+            conv.steps.append(ConversationStep(
+                type="verify",
+                verify_type="refs",
+                verify_options={}
+            ))
+        case DirectiveType.CHECK_LINKS:
+            # Alias for VERIFY links
+            conv.steps.append(ConversationStep(
+                type="verify",
+                verify_type="links",
+                verify_options={}
+            ))
+        case DirectiveType.CHECK_TRACEABILITY:
+            # Alias for VERIFY traceability
+            conv.steps.append(ConversationStep(
+                type="verify",
+                verify_type="traceability",
+                verify_options={}
+            ))
         
         case DirectiveType.PAUSE:
             # PAUSE after the last prompt added so far

@@ -176,7 +176,7 @@ See [COPILOT-SDK-INTEGRATION.md](../COPILOT-SDK-INTEGRATION.md) for detailed API
 
 ## Directive Candidates Analysis
 
-### Currently Implemented (44 directives)
+### Currently Implemented (47 directives)
 
 **Metadata**: `MODEL`, `ADAPTER`, `MODE`, `MAX-CYCLES`, `CWD`  
 **Context**: `CONTEXT`, `CONTEXT-OPTIONAL`, `CONTEXT-EXCLUDE`, `CONTEXT-LIMIT`, `ON-CONTEXT-LIMIT`, `VALIDATION-MODE`  
@@ -188,7 +188,7 @@ See [COPILOT-SDK-INTEGRATION.md](../COPILOT-SDK-INTEGRATION.md) for detailed API
 **Output**: `OUTPUT`, `OUTPUT-FORMAT`, `OUTPUT-FILE`, `OUTPUT-DIR`  
 **RUN**: `RUN`, `RUN-ON-ERROR`, `RUN-OUTPUT`, `RUN-OUTPUT-LIMIT`, `RUN-ENV`, `RUN-CWD`, `RUN-TIMEOUT`, `ALLOW-SHELL`, `RUN-ASYNC`, `RUN-WAIT`, `RUN-RETRY`  
 **Branching**: `ON-FAILURE`, `ON-SUCCESS`, `END`  
-**Verify**: `VERIFY`, `VERIFY-ON-ERROR`, `VERIFY-OUTPUT`, `VERIFY-LIMIT`  
+**Verify**: `VERIFY`, `VERIFY-ON-ERROR`, `VERIFY-OUTPUT`, `VERIFY-LIMIT`, `CHECK-REFS`, `CHECK-LINKS`, `CHECK-TRACEABILITY`  
 **Pre-flight**: `REQUIRE`  
 **Debug**: `DEBUG`, `DEBUG-INTENTS`, `EVENT-LOG`
 
@@ -200,11 +200,10 @@ See [COPILOT-SDK-INTEGRATION.md](../COPILOT-SDK-INTEGRATION.md) for detailed API
 | `VERIFY-COVERAGE` | STPA-INTEGRATION | P2 | Medium | Check trace coverage % |
 | `VERIFY-IMPLEMENTED` | STPA-INTEGRATION | P2 | Medium | Pattern search in code |
 | `INCLUDE` | STPA-INTEGRATION | P3 | Low | Include other .conv files |
-| `CHECK-REFS` | VERIFICATION-DIRECTIVES | P3 | Low | Alias for `VERIFY refs` |
-| `CHECK-LINKS` | VERIFICATION-DIRECTIVES | P3 | Low | Alias for `VERIFY links` |
-| `CHECK-TRACEABILITY` | VERIFICATION-DIRECTIVES | P3 | Low | Alias for `VERIFY traceability` |
 
 > **Note:** `ON-FAILURE` and `ON-SUCCESS` were implemented 2026-01-24 - see [Session notes](#session-2026-01-24-on-failureon-success-blocks).
+> 
+> **Note:** `CHECK-REFS`, `CHECK-LINKS`, `CHECK-TRACEABILITY` aliases were implemented 2026-01-24.
 
 ### Rejected Directives (per proposals)
 
