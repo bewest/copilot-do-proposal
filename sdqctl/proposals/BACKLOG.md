@@ -115,8 +115,8 @@ See [COPILOT-SDK-INTEGRATION.md](../COPILOT-SDK-INTEGRATION.md) for detailed API
 | Feature | Proposed | Implemented | Gap |
 |---------|----------|-------------|-----|
 | `RUN-RETRY N "prompt"` | Phase 1 | ✅ `conversation.py`, `run.py` | None |
-| `ON-FAILURE` block | Phase 2 | ❌ Not implemented | **Implementation needed** |
-| `ON-SUCCESS` block | Phase 2 | ❌ Not implemented | **Implementation needed** |
+| `ON-FAILURE` block | Phase 2 | ✅ `conversation.py`, `run.py` | None |
+| `ON-SUCCESS` block | Phase 2 | ✅ `conversation.py`, `run.py` | None |
 | ELIDE + branching = parse error | Design | ✅ `validate_elide_chains()` | None |
 
 ### VERIFICATION-DIRECTIVES.md
