@@ -698,6 +698,32 @@ case DirectiveType.HELP:
 - Missing escape hatches for blocker documentation
 - No persistent backlog tracking between iterations
 
+**Terminology Fixes Applied (2026-01-24)**:
+- Fixed `# === Cycle N:` → `# === Phase N:` in 6 conv files
+- Added Terminology comments to implement-improvements, proposal-development, sdk-debug-integration
+
+#### Recommended Next Commands
+
+To continue improving conv file consistency with PHILOSOPHY.md:
+
+```bash
+# Option 1: Use fix-quirks pattern for remaining conv file improvements
+sdqctl cycle examples/workflows/fix-quirks.conv \
+  --prologue docs/PHILOSOPHY.md \
+  --prologue docs/GLOSSARY.md \
+  --adapter copilot -n 3
+
+# Option 2: Documentation sync to catch remaining inconsistencies
+sdqctl run examples/workflows/documentation-sync.conv \
+  --prologue @docs/PHILOSOPHY.md \
+  --adapter copilot
+
+# Option 3: Proposal development for design decisions (run→invoke rename)
+sdqctl cycle examples/workflows/proposal-development.conv \
+  --prologue @proposals/CLI-ERGONOMICS.md \
+  --adapter copilot
+```
+
 ---
 
 ## References
