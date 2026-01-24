@@ -1,0 +1,138 @@
+# refcat-improvement.conv - Iterative workflow for improving refcat and verifiers
+#
+# Usage:
+#   sdqctl cycle examples/workflows/tooling/refcat-improvement.conv -n 3 --session-mode fresh
+#
+# This workflow:
+# 1. Runs verify refs on a target workspace to find false positives
+# 2. Analyzes patterns in false positives
+# 3. Proposes and implements exclusion rules
+# 4. Tests the changes
+# 5. Documents the improvement
+#
+# Use with --prologue to inject a specific target workspace:
+#   sdqctl cycle examples/workflows/tooling/refcat-improvement.conv \
+#     --prologue "Target: externals/rag-nightscout-ecosystem-alignment"
+
+MODEL gpt-4
+ADAPTER copilot
+MODE implement
+MAX-CYCLES 3
+VALIDATION-MODE lenient
+
+# Core implementation files
+CONTEXT @sdqctl/verifiers/refs.py
+CONTEXT @sdqctl/core/refcat.py
+CONTEXT @tests/test_verifiers.py
+CONTEXT @docs/EXTENDING-VERIFIERS.md
+
+CONTEXT-LIMIT 70%
+ON-CONTEXT-LIMIT compact
+COMPACT-PRESERVE refs.py test_verifiers.py
+
+# Tool execution
+RUN-ON-ERROR continue
+RUN-OUTPUT always
+RUN-OUTPUT-LIMIT 20K
+RUN-TIMEOUT 2m
+
+PROLOGUE Session: {{DATE}} | Refcat/Verifier Improvement Cycle
+PROLOGUE Objective: Reduce false positives in verify refs command
+
+# === Cycle 1: Discovery ===
+PROMPT ## Cycle 1: False Positive Discovery
+
+Run verify refs on target workspace and analyze results.
+
+RUN sdqctl verify refs --json 2>&1 | head -100
+
+PROMPT Analyze the verification output:
+
+1. **Categorize broken refs:**
+   - Real broken refs (file actually missing)
+   - False positives (not actually refs)
+   - Short-form refs (need full path)
+
+2. **Identify false positive patterns:**
+   Look for patterns like:
+   - Timestamp formats (HH:mm:ss, mm:ss.SSS)
+   - Placeholder paths (path/to/file)
+   - URL schemes not already excluded
+   - Domain-specific patterns
+   - Code snippets that look like refs
+
+3. **Count and prioritize:**
+   | Pattern | Count | Priority | Exclusion Method |
+   |---------|-------|----------|------------------|
+   | [pattern] | N | High/Med/Low | alias/path/regex |
+
+Output the top 3-5 patterns that should be excluded.
+
+# === Cycle 2: Implementation ===
+PROMPT ## Cycle 2: Implement Exclusions
+
+Based on the patterns identified, implement exclusions.
+
+For each pattern:
+
+1. **Determine exclusion type:**
+   - Alias exclusion → add to ALIAS_FALSE_POSITIVES set
+   - Path exclusion → add path prefix check
+   - Regex exclusion → add pattern to skip
+
+2. **Edit refs.py:**
+   Add the exclusion in the appropriate location.
+
+3. **Add test:**
+   Create test case in test_verifiers.py for the new exclusion.
+
+4. **Run tests:**
+   RUN pytest tests/test_verifiers.py -v --tb=short -k "test_" | tail -20
+
+Document each change with file:line references.
+
+# === Cycle 3: Validation and Documentation ===
+PROMPT ## Cycle 3: Validate and Document
+
+1. **Verify improvement:**
+   RUN sdqctl verify refs 2>&1 | tail -5
+   
+   Compare before/after broken ref counts.
+
+2. **Update documentation:**
+   Add new exclusions to docs/EXTENDING-VERIFIERS.md in the
+   "False Positives Excluded" section.
+
+3. **Commit changes:**
+   If tests pass and false positives reduced:
+   - Stage changes: refs.py, test_verifiers.py, EXTENDING-VERIFIERS.md
+   - Commit with descriptive message
+
+4. **Summary:**
+   | Metric | Before | After | Change |
+   |--------|--------|-------|--------|
+   | Broken refs | X | Y | -Z% |
+   | False positives | X | Y | Eliminated |
+   | Tests | X | X+N | +N new |
+
+EPILOGUE Document this improvement session in progress notes.
+EPILOGUE Include: patterns found, exclusions added, test coverage.
+
+HEADER # Refcat Improvement Report
+HEADER Session: {{DATETIME}}
+HEADER ---
+
+FOOTER ---
+FOOTER ## Next Steps
+FOOTER - Run this workflow again on another target workspace
+FOOTER - Consider short-form resolution (--fuzzy flag)
+FOOTER - Consider whitelist-only mode for strict validation
+
+OUTPUT-FORMAT markdown
+OUTPUT-FILE reports/refcat-improvement-{{DATE}}.md
+
+CHECKPOINT-AFTER 1
+CHECKPOINT-NAME discovery
+
+CHECKPOINT-AFTER 2
+CHECKPOINT-NAME implementation

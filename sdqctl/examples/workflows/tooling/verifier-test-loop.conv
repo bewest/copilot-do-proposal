@@ -1,0 +1,136 @@
+# verifier-test-loop.conv - Test-driven verifier improvement
+#
+# Usage:
+#   sdqctl cycle examples/workflows/tooling/verifier-test-loop.conv -n 5 --session-mode fresh
+#
+# This workflow implements a test-driven improvement loop:
+# 1. Run tests to establish baseline
+# 2. Run verifier on target workspace to find issues
+# 3. Create failing test for the issue
+# 4. Implement fix
+# 5. Verify test passes
+#
+# Follows red-green-refactor pattern for each improvement.
+
+MODEL gpt-4
+ADAPTER copilot
+MODE implement
+MAX-CYCLES 5
+VALIDATION-MODE lenient
+
+# Verifier implementation
+CONTEXT @sdqctl/verifiers/refs.py
+CONTEXT @sdqctl/verifiers/links.py
+CONTEXT @sdqctl/verifiers/traceability.py
+CONTEXT @tests/test_verifiers.py
+
+CONTEXT-LIMIT 60%
+ON-CONTEXT-LIMIT compact
+
+# Tool execution
+RUN-ON-ERROR continue
+RUN-OUTPUT always
+RUN-OUTPUT-LIMIT 15K
+RUN-TIMEOUT 3m
+
+PROLOGUE Session: {{DATE}} | Verifier Test Loop
+PROLOGUE Pattern: Red-Green-Refactor
+
+# === Cycle 1: Baseline ===
+PROMPT ## Cycle 1: Establish Baseline
+
+RUN pytest tests/test_verifiers.py -v --tb=line 2>&1 | tail -30
+
+PROMPT Record baseline:
+1. Total tests: X
+2. Passing: X
+3. Failing: X
+4. Coverage gaps identified
+
+# === Cycle 2: Discover Issue ===
+PROMPT ## Cycle 2: Discover Issue
+
+Run verifiers on target workspace and identify ONE specific issue.
+
+RUN sdqctl verify all 2>&1 | head -50
+
+PROMPT Identify the most impactful issue to fix:
+
+1. **Issue Description:**
+   What pattern is incorrectly flagged or missed?
+
+2. **Root Cause:**
+   Which verifier and which code path?
+
+3. **Test Case:**
+   Write a test that would catch this issue.
+   The test should FAIL with current code.
+
+Output the test function that should be added.
+
+# === Cycle 3: Write Failing Test (RED) ===
+PROMPT ## Cycle 3: Write Failing Test
+
+Add the test identified in Cycle 2 to test_verifiers.py.
+
+1. Write the test function
+2. Add to appropriate test class
+3. Run to confirm it fails:
+   RUN pytest tests/test_verifiers.py::TestNewFeature -v 2>&1
+
+If test doesn't fail as expected, adjust the test.
+
+# === Cycle 4: Implement Fix (GREEN) ===
+PROMPT ## Cycle 4: Implement Fix
+
+Make the minimal change to make the test pass.
+
+1. Edit the verifier code
+2. Keep changes surgical and focused
+3. Run the specific test:
+   RUN pytest tests/test_verifiers.py::TestNewFeature -v 2>&1
+
+4. Run full test suite:
+   RUN pytest tests/test_verifiers.py -v --tb=short 2>&1 | tail -20
+
+All tests must pass before proceeding.
+
+# === Cycle 5: Document and Commit ===
+PROMPT ## Cycle 5: Document and Commit
+
+1. **Verify all tests pass:**
+   RUN pytest tests/test_verifiers.py -v --tb=short 2>&1 | tail -10
+
+2. **Update documentation:**
+   If behavior changed, update docs/EXTENDING-VERIFIERS.md
+
+3. **Commit changes:**
+   - Stage modified files
+   - Commit with message describing the fix
+
+4. **Summary:**
+   | Step | Status |
+   |------|--------|
+   | Issue identified | ✅ |
+   | Failing test written | ✅ |
+   | Fix implemented | ✅ |
+   | All tests pass | ✅ |
+   | Docs updated | ✅ |
+   | Committed | ✅ |
+
+EPILOGUE Record this improvement in progress notes.
+
+HEADER # Verifier Improvement Report
+HEADER Session: {{DATETIME}}
+HEADER Pattern: Test-Driven Development
+HEADER ---
+
+FOOTER ---
+FOOTER ## Next Iteration
+FOOTER Run again to address the next issue:
+FOOTER ```bash
+FOOTER sdqctl cycle examples/workflows/tooling/verifier-test-loop.conv -n 5
+FOOTER ```
+
+OUTPUT-FORMAT markdown
+OUTPUT-FILE reports/verifier-improvement-{{DATE}}.md
