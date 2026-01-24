@@ -734,7 +734,7 @@ docs/
 | ~~Create artifact templates (REQ, GAP, UCA, SPEC)~~ | ~~P3~~ | ~~1 hour~~ | ✅ Done 2026-01-24 - `examples/templates/artifacts/` |
 | ~~`sdqctl artifact next` command~~ | ~~P3~~ | ~~2 hours~~ | ✅ Done 2026-01-24 - includes `list` subcommand |
 | ~~`sdqctl artifact rename` command~~ | ~~P3~~ | ~~2 hours~~ | ✅ Done 2026-01-24 - `--dry-run` and `--json` flags |
-| Nightscout ecosystem conventions doc | P3 | 1 hour | Cross-project patterns |
+| ~~Nightscout ecosystem conventions doc~~ | ~~P3~~ | ~~1 hour~~ | ✅ Done 2026-01-24 - `docs/NIGHTSCOUT-ECOSYSTEM.md` |
 
 ### Session 2026-01-24 (Documentation Philosophy)
 
@@ -859,12 +859,20 @@ sdqctl cycle examples/workflows/proposal-development.conv \
   - Skips code blocks and CLI contexts
   - Options: `--glossary`, `--strict`, `--json`, `--verbose`
   - 12 tests in test_verifiers.py
+- [x] **`docs/NIGHTSCOUT-ECOSYSTEM.md`** - Created ecosystem conventions doc
+  - workspace.lock.json configuration
+  - Cross-project REFCAT reference syntax
+  - Artifact ID ranges by project (loop, aaps, trio, xdrip, ns)
+  - STPA artifact conventions for multi-project analysis
+  - Verification commands and workflow patterns
 - [x] **BACKLOG.md** - Updated verify command table with new CLI entries
 
 ---
 
 ## References
 IMPORTANT: remember to cross reference our generic backlog against other task lists and backlogs.  Some quirk proposals become backlog items!
+
+Additional IDEAS:  LSP support, for refcat and maybe other subcommands.
 
 - [PHILOSOPHY.md](../docs/PHILOSOPHY.md) - Workflow design principles
 - [GLOSSARY.md](../docs/GLOSSARY.md) - Terminology definitions
