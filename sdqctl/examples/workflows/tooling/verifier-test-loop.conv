@@ -36,7 +36,7 @@ RUN-TIMEOUT 3m
 PROLOGUE Session: {{DATE}} | Verifier Test Loop
 PROLOGUE Pattern: Red-Green-Refactor
 
-# === Cycle 1: Baseline ===
+# === Phase 1: Baseline ===
 PROMPT ## Cycle 1: Establish Baseline
 
 RUN pytest tests/test_verifiers.py -v --tb=line 2>&1 | tail -30
@@ -47,7 +47,7 @@ PROMPT Record baseline:
 3. Failing: X
 4. Coverage gaps identified
 
-# === Cycle 2: Discover Issue ===
+# === Phase 2: Discover Issue ===
 PROMPT ## Cycle 2: Discover Issue
 
 Run verifiers on target workspace and identify ONE specific issue.
@@ -68,7 +68,7 @@ PROMPT Identify the most impactful issue to fix:
 
 Output the test function that should be added.
 
-# === Cycle 3: Write Failing Test (RED) ===
+# === Phase 3: Write Failing Test (RED) ===
 PROMPT ## Cycle 3: Write Failing Test
 
 Add the test identified in Cycle 2 to test_verifiers.py.
@@ -80,7 +80,7 @@ Add the test identified in Cycle 2 to test_verifiers.py.
 
 If test doesn't fail as expected, adjust the test.
 
-# === Cycle 4: Implement Fix (GREEN) ===
+# === Phase 4: Implement Fix (GREEN) ===
 PROMPT ## Cycle 4: Implement Fix
 
 Make the minimal change to make the test pass.
@@ -95,7 +95,7 @@ Make the minimal change to make the test pass.
 
 All tests must pass before proceeding.
 
-# === Cycle 5: Document and Commit ===
+# === Phase 5: Document and Commit ===
 PROMPT ## Cycle 5: Document and Commit
 
 1. **Verify all tests pass:**

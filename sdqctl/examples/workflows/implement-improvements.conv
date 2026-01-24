@@ -10,11 +10,15 @@
 #     --prologue reports/test-discovery-2026-01-20.md \
 #     --adapter copilot
 #
+# Terminology:
+#   - ITERATION/CYCLE = one complete pass through all 3 phases
+#   - PHASE = each prompt within an iteration (triage → implement → document)
+#
 # This is a "synthesis cycle" because:
 # 1. It analyzes sdqctl's own codebase
 # 2. It uses sdqctl features (PROLOGUE, RUN, template vars) to do so
 # 3. Its output becomes input for the next iteration (state relay pattern)
-# 4. Each cycle synthesizes improvements and updates the backlog
+# 4. Each iteration synthesizes improvements and updates the backlog
 
 MODEL gpt-4
 ADAPTER copilot
@@ -48,12 +52,12 @@ EPILOGUE - Cite specific file:line references
 RUN-ON-ERROR continue
 RUN-OUTPUT always
 
-# === Cycle 1: Triage and Select ===
+# === Phase 1: Triage and Select ===
 PROMPT ## Task Selection
 
 You have received a test discovery report via --prologue containing prioritized issues.
 
-**Your task:** Select the SINGLE most impactful item to work on this cycle.
+**Your task:** Select the SINGLE most impactful item to work on this iteration.
 
 Selection criteria (in order):
 1. P0 items that block other work
@@ -74,7 +78,7 @@ Selection criteria (in order):
 If P0-3 (no unit tests) was already resolved by the test commit, skip to P1 items.
 Review the RUN output above to see current test file status.
 
-# === Cycle 2: Implementation ===
+# === Phase 2: Implementation ===
 PROMPT ## Implementation
 
 Based on your selected task, implement the fix now.
@@ -90,7 +94,7 @@ Based on your selected task, implement the fix now.
 
 If you encounter blockers that prevent implementation, document them clearly and move on.
 
-# === Cycle 3: Document and Queue ===
+# === Phase 3: Document and Queue ===
 PROMPT ## Progress Documentation
 
 Summarize this work session and queue next priorities.

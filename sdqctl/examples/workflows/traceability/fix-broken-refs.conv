@@ -36,7 +36,7 @@ RUN-TIMEOUT 3m
 PROLOGUE Session: {{DATE}} | Fix Broken References
 PROLOGUE Objective: Update documentation to use correct code paths
 
-# === Cycle 1: Discover and Triage ===
+# === Phase 1: Discover and Triage ===
 PROMPT ## Cycle 1: Discover Broken References
 
 Run verify refs with suggestions to identify what needs fixing.
@@ -69,7 +69,7 @@ Refs where no suggestion is provided - file may be deleted or renamed.
 
 Select 5-10 fixable refs from Category 1 to fix this cycle.
 
-# === Cycle 2: Apply Fixes ===
+# === Phase 2: Apply Fixes ===
 PROMPT ## Cycle 2: Apply Reference Fixes
 
 For each fixable ref identified in Cycle 1:
@@ -97,7 +97,7 @@ Document each fix:
 |------|------|--------|-------|
 | ... | ... | ... | ... |
 
-# === Cycle 3: Verify and Document ===
+# === Phase 3: Verify and Document ===
 PROMPT ## Cycle 3: Verify Fixes
 
 Run verify refs again to confirm the fixes work.

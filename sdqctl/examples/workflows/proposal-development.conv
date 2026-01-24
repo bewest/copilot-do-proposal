@@ -7,6 +7,10 @@
 #   cd /path/to/sdqctl
 #   sdqctl cycle examples/workflows/proposal-development.conv --adapter copilot
 #
+# Terminology:
+#   - ITERATION/CYCLE = one complete pass through all 3 phases
+#   - PHASE = each prompt within an iteration (assess → work → commit)
+#
 # This workflow:
 # 1. Loads current backlog and feature interactions
 # 2. Selects highest-priority open question or task
@@ -14,7 +18,7 @@
 # 4. Updates tracking documents
 # 5. Commits progress and queues next work
 #
-# State relay: BACKLOG.md and FEATURE-INTERACTIONS.md persist across cycles
+# State relay: BACKLOG.md and FEATURE-INTERACTIONS.md persist across iterations
 
 MODEL claude-sonnet-4-20250514
 ADAPTER copilot
@@ -50,7 +54,7 @@ EPILOGUE - Keep proposals internally consistent
 @docs/GLOSSARY.md
 @docs/SYNTHESIS-CYCLES.md
 
-# === Cycle 1: Assess and Select ===
+# === Phase 1: Assess and Select ===
 PROMPT ## Work Selection
 
 Review the BACKLOG.md and FEATURE-INTERACTIONS.md to understand current state.
@@ -80,7 +84,7 @@ Review the BACKLOG.md and FEATURE-INTERACTIONS.md to understand current state.
 **Artifacts to update:** [Which files will change]
 ```
 
-# === Cycle 2: Work the Item ===
+# === Phase 2: Work the Item ===
 PROMPT ## Execute Work
 
 Based on your selected item, do the work now.
@@ -106,7 +110,7 @@ Based on your selected item, do the work now.
 
 **Do the actual work - edit files, don't just describe.**
 
-# === Cycle 3: Commit and Queue ===
+# === Phase 3: Commit and Queue ===
 PROMPT ## Document Progress
 
 **Section 1: Work Completed**

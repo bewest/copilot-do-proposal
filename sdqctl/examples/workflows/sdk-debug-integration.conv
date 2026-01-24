@@ -1,13 +1,17 @@
 # sdk-debug-integration.conv - Quine-like SDK debugging/logging integration workflow
 #
 # Iteratively implements debugging and logging features from COPILOT-SDK-INTEGRATION.md.
-# Each cycle selects a sprint, implements it, tests, and updates the progress tracker.
+# Each iteration selects a sprint, implements it, tests, and updates the progress tracker.
 #
 # Usage:
 #   cd /path/to/sdqctl
 #   sdqctl cycle examples/workflows/sdk-debug-integration.conv \
 #     --prologue reports/sdk-debug-integration-tracker.md \
 #     --adapter copilot
+#
+# Terminology:
+#   - ITERATION/CYCLE = one complete pass through all 3 phases
+#   - PHASE = each prompt within an iteration (select → implement → update)
 #
 # Quine-like behavior:
 # 1. Reads current progress from --prologue (sdk-debug-integration-tracker.md)
@@ -45,7 +49,7 @@ EPILOGUE sdqctl/adapters/copilot.py might be important
 EPILOGUE sdqctl/COPILOT-SDK-INTEGRATION.md might have some additional context if needed
 EPILOGUE sdqctl/core/logging.py logging file might needed
 
-# === Cycle 1: Select Sprint Item ===
+# === Phase 1: Select Sprint Item ===
 PROMPT ## Sprint Selection
 
 You have received the SDK debug integration progress tracker via --prologue.
@@ -69,7 +73,7 @@ Selection criteria (in order):
 
 If all sprints are complete, state that and suggest Phase 2 work.
 
-# === Cycle 2: Implementation ===
+# === Phase 2: Implementation ===
 PROMPT ## Implementation
 
 Based on your selected item, implement it now.
@@ -91,7 +95,7 @@ python -m pytest tests/test_copilot_adapter.py -v --tb=short
 
 Actually edit files - do not just show code.
 
-# === Cycle 3: Update Progress ===
+# === Phase 3: Update Progress ===
 PROMPT ## Progress Update
 
 Update the progress tracker with this session's results.

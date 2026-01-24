@@ -39,7 +39,7 @@ RUN-TIMEOUT 2m
 PROLOGUE Session: {{DATE}} | Refcat/Verifier Improvement Cycle
 PROLOGUE Objective: Reduce false positives in verify refs command
 
-# === Cycle 1: Discovery ===
+# === Phase 1: Discovery ===
 PROMPT ## Cycle 1: False Positive Discovery
 
 Run verify refs on target workspace and analyze results.
@@ -68,7 +68,7 @@ PROMPT Analyze the verification output:
 
 Output the top 3-5 patterns that should be excluded.
 
-# === Cycle 2: Implementation ===
+# === Phase 2: Implementation ===
 PROMPT ## Cycle 2: Implement Exclusions
 
 Based on the patterns identified, implement exclusions.
@@ -91,7 +91,7 @@ For each pattern:
 
 Document each change with file:line references.
 
-# === Cycle 3: Validation and Documentation ===
+# === Phase 3: Validation and Documentation ===
 PROMPT ## Cycle 3: Validate and Document
 
 1. **Verify improvement:**
