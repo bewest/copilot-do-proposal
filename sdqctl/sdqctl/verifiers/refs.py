@@ -71,6 +71,7 @@ class RefsVerifier:
         'caregiver',  # App-specific URL schemes
         'project', 'extract', 'alias',  # Placeholder/example aliases in docs
         'localhost', 'mongo', 'mongodb', 'redis', 'mysql', 'postgres',  # Connection strings
+        'sock', 'unix', 'docker',  # Unix socket paths
     }
     
     def verify(
@@ -270,6 +271,10 @@ class RefsVerifier:
             
             # Skip URL schemes and common false positives
             if alias.lower() in self.ALIAS_FALSE_POSITIVES:
+                continue
+            
+            # Skip Unix socket paths and URL-like patterns (e.g., sock:/var/run/docker.sock)
+            if ref_path.startswith('/'):
                 continue
             
             # Skip ellipsis paths (display shorthand like Sources/.../File.swift)

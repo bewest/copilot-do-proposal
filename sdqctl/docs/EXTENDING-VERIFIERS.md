@@ -300,6 +300,38 @@ The `refs` verifier supports multiple reference types with intelligent resolutio
 - Ellipsis paths: `Sources/.../File.swift` (display-only shorthand)
 - Placeholder aliases: `project:`, `extract:`, `alias:` (example refs in docs)
 - Connection strings: `localhost:port`, `mongo:`, `redis:` (database URIs)
+- Unix socket paths: `sock:/var/run/docker.sock`, `unix:/tmp/mysql.sock`
+
+**How Path Detection Works:**
+
+The verifier skips `alias:path` patterns when:
+1. The alias is in `ALIAS_FALSE_POSITIVES` (e.g., `http`, `mongo`, `sock`)
+2. The path starts with `/` (absolute paths like Unix sockets)
+3. The path contains `...` or `…` (ellipsis shorthand)
+
+### Future: Custom `ref://` Scheme
+
+For stricter validation, consider adopting a custom URL scheme:
+
+```markdown
+# Unambiguous reference that can't conflict with other URL schemes
+See [implementation](ref://loop/Loop/Models/Override.swift#L10-L50)
+
+# Or with sdq:// prefix
+`sdq://trio:Trio/Sources/Network/API.swift`
+```
+
+**Benefits:**
+- Zero false positives (custom scheme is unambiguous)
+- Clickable in editors with custom URI handlers
+- Clear intent - this IS a traceable reference
+
+**Trade-offs:**
+- Requires migration of existing refs
+- More verbose than `alias:path`
+- Editor support varies
+
+This is documented as a future option; current implementation uses heuristic exclusions.
 
 ### Triage Workflow
 

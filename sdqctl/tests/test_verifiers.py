@@ -398,6 +398,25 @@ Use `alias:example/path.md` for examples.
         assert result.details["alias_refs_found"] == 0
 
 
+class TestUnixSocketExclusion:
+    """Test Unix socket and absolute path exclusions."""
+    
+    def test_unix_socket_paths_skipped(self, tmp_path):
+        """Test that Unix socket paths like sock:/var/run are skipped."""
+        source = tmp_path / "docker-compose.yml"
+        source.write_text("""volumes:
+  - sock:/var/run/docker.sock
+  - unix:/tmp/mysql.sock
+  - docker:/var/lib/docker
+""")
+        
+        verifier = RefsVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["alias_refs_found"] == 0
+
+
 class TestRootRelativeResolution:
     """Test workspace-root-first resolution for @refs."""
     
