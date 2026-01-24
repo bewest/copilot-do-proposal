@@ -66,6 +66,7 @@ All 7 proposed tooling commands are **fully implemented**:
 | [STPA-INTEGRATION](STPA-INTEGRATION.md) | Draft | ✅ Core complete | Templates + traceability verifier done |
 | [CLI-ERGONOMICS](CLI-ERGONOMICS.md) | Analysis Complete | N/A | Help implemented, no gaps remaining |
 | [MODEL-REQUIREMENTS](MODEL-REQUIREMENTS.md) | Draft | ❌ Open Questions | Abstract model selection by capability |
+| [ARTIFACT-TAXONOMY](ARTIFACT-TAXONOMY.md) | Draft | Phase 0-0.5 ✅ | Taxonomy + enumeration strategies defined |
 
 ---
 
@@ -636,6 +637,28 @@ case DirectiveType.HELP:
 - [x] **Help topic: validation** - Added `sdqctl help validation` 
 - [x] **README.md** - Added cross-reference to validation workflow docs
 - [x] **BACKLOG.md** - Added open questions section with prioritized items
+
+### Session 2026-01-24 (Artifact Taxonomy)
+
+- [x] **ARTIFACT-TAXONOMY.md** - Created comprehensive proposal with:
+  - All artifact types enumerated (REQ, SPEC, TEST, GAP, UCA, SC, Q, BUG, PROP)
+  - STPA safety artifacts (LOSS, HAZ)
+  - Relationship hierarchy and validation rules
+  - Enumeration strategies (sequential, category-scoped, project-scoped)
+  - ID lifecycle and collision avoidance
+  - Formatting guidelines
+
+**Deferred to future work:**
+
+| Task | Priority | Effort | Notes |
+|------|----------|--------|-------|
+| Add artifact summary to TRACEABILITY-WORKFLOW.md | P2 | 30 min | Link to full proposal |
+| Extend traceability verifier patterns | P2 | 2 hours | Add BUG, PROP, LOSS, HAZ |
+| Add orphan detection for all types | P2 | 1 hour | Extend coverage metrics |
+| Create artifact templates (REQ, GAP, UCA, SPEC) | P3 | 1 hour | Markdown templates |
+| `sdqctl artifact next` command | P3 | 2 hours | Auto-generate next ID |
+| `sdqctl artifact rename` command | P3 | 2 hours | Update all references |
+| Nightscout ecosystem conventions doc | P3 | 1 hour | Cross-project patterns |
 
 ---
 
