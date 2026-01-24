@@ -607,6 +607,12 @@ sdqctl verify links
 # Verify STPA traceability (UCA→SC→REQ→SPEC→TEST)
 sdqctl verify traceability
 
+# Verify terminology consistency (deprecated terms, capitalization)
+sdqctl verify terminology
+
+# Verify assertions have messages and trace IDs
+sdqctl verify assertions
+
 # Run all verifications
 sdqctl verify all
 
@@ -630,6 +636,12 @@ VERIFY links
 
 # Verify STPA traceability chain
 VERIFY traceability
+
+# Verify terminology consistency
+VERIFY terminology
+
+# Verify assertions are documented
+VERIFY assertions
 
 # Control error handling
 VERIFY-ON-ERROR continue

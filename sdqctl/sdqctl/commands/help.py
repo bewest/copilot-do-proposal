@@ -401,6 +401,9 @@ validate → verify → render → run/cycle
 | `validate` | Check .conv syntax | `sdqctl validate workflow.conv` |
 | `verify refs` | Check @-references | `sdqctl verify refs` |
 | `verify links` | Check markdown links | `sdqctl verify links` |
+| `verify traceability` | Check STPA traces | `sdqctl verify traceability` |
+| `verify terminology` | Check term consistency | `sdqctl verify terminology` |
+| `verify assertions` | Check assertion docs | `sdqctl verify assertions` |
 | `verify all` | Run all verifiers | `sdqctl verify all --json` |
 | `show` | Display parsed structure | `sdqctl show workflow.conv` |
 | `render` | Preview prompts | `sdqctl render run workflow.conv` |
@@ -410,6 +413,10 @@ validate → verify → render → run/cycle
 
 - **Syntax/parse issues?** → `sdqctl validate`
 - **Broken references?** → `sdqctl verify refs`
+- **Broken links?** → `sdqctl verify links`
+- **Missing traces?** → `sdqctl verify traceability`
+- **Terminology issues?** → `sdqctl verify terminology`
+- **Assertion docs?** → `sdqctl verify assertions`
 - **See parsed structure?** → `sdqctl show`
 - **Preview prompts?** → `sdqctl render run`
 - **Extract file lines?** → `sdqctl refcat`
@@ -746,8 +753,12 @@ Static verification (no AI calls).
 ## Subcommands
 
 ```bash
-sdqctl verify refs     # Verify @-references resolve
-sdqctl verify all      # Run all verifications
+sdqctl verify refs         # Verify @-references resolve
+sdqctl verify links        # Verify markdown links
+sdqctl verify traceability # Verify STPA traces
+sdqctl verify terminology  # Verify term consistency
+sdqctl verify assertions   # Verify assertion documentation
+sdqctl verify all          # Run all verifications
 ```
 
 ## Key Options
@@ -756,6 +767,7 @@ sdqctl verify all      # Run all verifications
 |--------|-------------|
 | `-p, --path` | Directory to verify |
 | `--json` | JSON output format |
+| `--verbose, -v` | Show all findings |
 
 ## Examples
 
@@ -768,6 +780,12 @@ sdqctl verify refs -p examples/workflows/
 
 # JSON output for CI
 sdqctl verify refs --json
+
+# Check traceability with coverage report
+sdqctl verify traceability --coverage
+
+# Check assertions with strict mode
+sdqctl verify assertions --require-trace
 ```
 
 ## In-Workflow Verification
