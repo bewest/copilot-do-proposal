@@ -299,6 +299,27 @@ PROMPT Step 2: Continue after compaction.
         assert "Compacting" in result.output or "🗜" in result.output
         assert "Completed 1 cycles" in result.output
 
+    def test_compact_with_empty_context(self, cli_runner, tmp_path):
+        """Test COMPACT succeeds when no context files loaded (BUG-001 regression test)."""
+        workflow = tmp_path / "empty-context-compact.conv"
+        workflow.write_text(f"""MODEL gpt-4
+ADAPTER mock
+CWD {tmp_path}
+
+PROMPT Step 1.
+COMPACT
+PROMPT Step 2.
+""")
+        result = cli_runner.invoke(cli, [
+            "cycle", str(workflow),
+            "--max-cycles", "1",
+            "--adapter", "mock"
+        ])
+        assert result.exit_code == 0
+        # Verify COMPACT executed successfully without crash
+        assert "Compacting" in result.output or "🗜" in result.output
+        assert "Completed 1 cycles" in result.output
+
     def test_session_mode_default_is_accumulate(self, cli_runner, workflow_file):
         """Test default session mode is accumulate."""
         result = cli_runner.invoke(cli, [

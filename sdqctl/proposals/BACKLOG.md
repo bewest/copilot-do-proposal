@@ -877,6 +877,15 @@ sdqctl cycle examples/workflows/proposal-development.conv \
   - Verification commands and workflow patterns
 - [x] **BACKLOG.md** - Updated verify command table with new CLI entries
 
+### Session 2026-01-24 (Bug Investigation)
+
+- [x] **BUG-001 investigation** - Compaction fails on empty context
+  - Investigated reproduction steps with mock adapter
+  - Cannot reproduce: empty context + COMPACT works correctly
+  - Root cause: Issue likely specific to historical edge case or already fixed
+  - Added regression test: `test_compact_with_empty_context` in `test_cycle_command.py`
+  - Marked as RESOLVED in ARTIFACT-TAXONOMY.md
+
 ---
 
 ## References
