@@ -1,0 +1,8 @@
+# sdqctl verification exclusions
+# Patterns here are added to the default exclusions (.venv, node_modules, etc.)
+
+# Example workflows with intentionally broken refs
+examples
+
+# Test fixtures
+loop-test-logs

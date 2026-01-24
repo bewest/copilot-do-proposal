@@ -162,6 +162,80 @@ class TestRefsVerifier:
         assert result.passed
 
 
+class TestRefsVerifierExclusions:
+    """Tests for exclude patterns in RefsVerifier."""
+    
+    def test_default_excludes_venv(self, tmp_path):
+        """Test that .venv directory is excluded by default."""
+        venv = tmp_path / ".venv"
+        venv.mkdir()
+        (venv / "test.md").write_text("@nonexistent.txt")
+        
+        # Also add a file in root that passes
+        (tmp_path / "root.md").write_text("# No refs")
+        
+        verifier = RefsVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["files_scanned"] == 1
+        assert result.details["files_excluded"] == 1
+    
+    def test_default_excludes_node_modules(self, tmp_path):
+        """Test that node_modules is excluded by default."""
+        nm = tmp_path / "node_modules"
+        nm.mkdir()
+        (nm / "pkg.md").write_text("@broken.txt")
+        
+        verifier = RefsVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["files_excluded"] == 1
+    
+    def test_custom_exclude_pattern(self, tmp_path):
+        """Test custom exclude patterns."""
+        examples = tmp_path / "examples"
+        examples.mkdir()
+        (examples / "example.md").write_text("@nonexistent.txt")
+        
+        verifier = RefsVerifier()
+        result = verifier.verify(tmp_path, exclude={"examples"})
+        
+        assert result.passed
+        assert result.details["files_excluded"] == 1
+    
+    def test_no_default_excludes(self, tmp_path):
+        """Test disabling default exclusions."""
+        # Use 'venv' not '.venv' since rglob may skip hidden dirs
+        venv = tmp_path / "venv"
+        venv.mkdir()
+        (venv / "test.md").write_text("@nonexistent.txt")
+        
+        verifier = RefsVerifier()
+        result = verifier.verify(tmp_path, no_default_excludes=True)
+        
+        # Now venv should be scanned (it's in DEFAULT_EXCLUDES)
+        assert not result.passed
+        assert result.details["files_scanned"] == 1
+        assert result.details["files_excluded"] == 0
+    
+    def test_sdqctlignore_file(self, tmp_path):
+        """Test .sdqctlignore file is loaded."""
+        custom_dir = tmp_path / "custom"
+        custom_dir.mkdir()
+        (custom_dir / "test.md").write_text("@broken.txt")
+        
+        # Create .sdqctlignore
+        (tmp_path / ".sdqctlignore").write_text("custom\n# comment\n")
+        
+        verifier = RefsVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["files_excluded"] == 1
+
+
 class TestRefsVerifierAliasRefs:
     """Tests for alias:path reference verification."""
     

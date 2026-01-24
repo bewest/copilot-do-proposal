@@ -16,7 +16,13 @@ import re
 from pathlib import Path
 from typing import Any, Optional
 
-from .base import VerificationError, VerificationResult
+from .base import (
+    DEFAULT_EXCLUDES,
+    VerificationError,
+    VerificationResult,
+    load_sdqctlignore,
+    should_exclude,
+)
 
 
 class RefsVerifier:
@@ -81,6 +87,8 @@ class RefsVerifier:
         root: Path, 
         recursive: bool = True,
         extensions: set[str] | None = None,
+        exclude: set[str] | None = None,
+        no_default_excludes: bool = False,
         **options: Any
     ) -> VerificationResult:
         """Verify @-references and alias:refs in files under root.
@@ -89,6 +97,8 @@ class RefsVerifier:
             root: Directory to scan
             recursive: Whether to scan subdirectories
             extensions: File extensions to scan (default: .md, .conv, .txt)
+            exclude: Additional patterns to exclude (glob syntax)
+            no_default_excludes: If True, don't apply default exclusions
             
         Returns:
             VerificationResult with broken reference errors
@@ -96,11 +106,20 @@ class RefsVerifier:
         root = Path(root)
         scan_ext = extensions or self.SCAN_EXTENSIONS
         
+        # Build exclusion patterns
+        exclude_patterns: set[str] = set()
+        if not no_default_excludes:
+            exclude_patterns.update(DEFAULT_EXCLUDES)
+        exclude_patterns.update(load_sdqctlignore(root))
+        if exclude:
+            exclude_patterns.update(exclude)
+        
         errors: list[VerificationError] = []
         warnings: list[VerificationError] = []
         
         # Stats
         files_scanned = 0
+        files_excluded = 0
         refs_found = 0
         refs_valid = 0
         refs_broken = 0
@@ -110,9 +129,17 @@ class RefsVerifier:
         
         # Find files to scan
         if recursive:
-            files = [f for f in root.rglob('*') if f.suffix in scan_ext and f.is_file()]
+            all_files = [f for f in root.rglob('*') if f.suffix in scan_ext and f.is_file()]
         else:
-            files = [f for f in root.glob('*') if f.suffix in scan_ext and f.is_file()]
+            all_files = [f for f in root.glob('*') if f.suffix in scan_ext and f.is_file()]
+        
+        # Filter excluded files
+        files = []
+        for f in all_files:
+            if should_exclude(f, root, exclude_patterns):
+                files_excluded += 1
+            else:
+                files.append(f)
         
         for filepath in files:
             files_scanned += 1
@@ -170,6 +197,7 @@ class RefsVerifier:
                 "alias_refs_found": alias_refs_found,
                 "alias_refs_valid": alias_refs_valid,
                 "alias_refs_broken": alias_refs_broken,
+                "files_excluded": files_excluded,
             },
         )
     

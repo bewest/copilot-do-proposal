@@ -31,7 +31,18 @@ def verify():
               help="Directory to verify")
 @click.option("--suggest-fixes", is_flag=True, 
               help="Search for correct paths for broken refs")
-def verify_refs(json_output: bool, verbose: bool, path: str, suggest_fixes: bool):
+@click.option("--exclude", "-e", multiple=True,
+              help="Exclude pattern (glob syntax, can be repeated)")
+@click.option("--no-default-excludes", is_flag=True,
+              help="Don't apply default exclusions (.venv, node_modules, etc.)")
+def verify_refs(
+    json_output: bool, 
+    verbose: bool, 
+    path: str, 
+    suggest_fixes: bool,
+    exclude: tuple[str, ...],
+    no_default_excludes: bool,
+):
     """Verify that @-references and alias:refs resolve to files.
     
     Scans markdown and workflow files for references and validates
@@ -44,14 +55,24 @@ def verify_refs(json_output: bool, verbose: bool, path: str, suggest_fixes: bool
       loop:Loop/README.md      Example alias reference
     
     \b
+    Default exclusions:
+      .venv, venv, node_modules, __pycache__, .git, lib, lib64, etc.
+      Additional patterns can be added via .sdqctlignore file.
+    
+    \b
     Examples:
       sdqctl verify refs                    # Verify current directory
       sdqctl verify refs -p docs/           # Verify specific directory
       sdqctl verify refs --json             # JSON output for CI
       sdqctl verify refs --suggest-fixes    # Search for correct paths
+      sdqctl verify refs -e "examples/**"   # Exclude examples directory
     """
     verifier = VERIFIERS["refs"]()
-    result = verifier.verify(Path(path))
+    result = verifier.verify(
+        Path(path),
+        exclude=set(exclude) if exclude else None,
+        no_default_excludes=no_default_excludes,
+    )
     
     if suggest_fixes and result.errors:
         result = _add_fix_suggestions(result, Path(path))

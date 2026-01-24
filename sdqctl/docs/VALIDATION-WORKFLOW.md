@@ -308,16 +308,19 @@ sdqctl run workflows/audit.conv --adapter copilot
 ### Pattern 2: Debug Reference Issues
 
 ```bash
-# 1. Check which refs are broken
+# 1. Check which refs are broken (excludes .venv, node_modules by default)
 sdqctl verify refs -v
 
-# 2. Get fix suggestions
+# 2. Exclude additional directories
+sdqctl verify refs -e "examples" -e "tests"
+
+# 3. Get fix suggestions
 sdqctl verify refs --suggest-fixes
 
-# 3. Validate specific file extraction
+# 4. Validate specific file extraction
 sdqctl refcat @path/to/file.py#L10-L50 --validate-only
 
-# 4. See what would be included
+# 5. See what would be included
 sdqctl refcat @path/to/file.py#L10-L50
 ```
 

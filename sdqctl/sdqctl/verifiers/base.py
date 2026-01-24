@@ -6,9 +6,95 @@ various aspects of the codebase: references, links, terminology,
 traceability, and assertions.
 """
 
+import fnmatch
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, Any
+
+
+# Default directories to exclude from verification scans
+DEFAULT_EXCLUDES = {
+    ".venv",
+    "venv",
+    ".env",
+    "node_modules",
+    "__pycache__",
+    ".git",
+    ".tox",
+    ".nox",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    "dist",
+    "build",
+    "*.egg-info",
+    ".eggs",
+    "lib",  # Common virtualenv symlink
+    "lib64",  # Common virtualenv symlink
+}
+
+
+def load_sdqctlignore(root: Path) -> set[str]:
+    """Load exclusion patterns from .sdqctlignore file.
+    
+    Format is similar to .gitignore:
+    - One pattern per line
+    - Lines starting with # are comments
+    - Empty lines are ignored
+    - Patterns use glob syntax
+    
+    Args:
+        root: Directory to search for .sdqctlignore
+        
+    Returns:
+        Set of exclusion patterns
+    """
+    ignore_file = root / ".sdqctlignore"
+    patterns: set[str] = set()
+    
+    if ignore_file.exists():
+        try:
+            for line in ignore_file.read_text().splitlines():
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    patterns.add(line)
+        except Exception:
+            pass
+    
+    return patterns
+
+
+def should_exclude(path: Path, root: Path, exclude_patterns: set[str]) -> bool:
+    """Check if a path should be excluded from verification.
+    
+    Args:
+        path: Path to check
+        root: Root directory for relative path calculation
+        exclude_patterns: Set of glob patterns to exclude
+        
+    Returns:
+        True if path should be excluded
+    """
+    try:
+        rel_path = path.relative_to(root)
+    except ValueError:
+        rel_path = path
+    
+    rel_str = str(rel_path)
+    
+    for pattern in exclude_patterns:
+        # Check each part of the path against the pattern
+        for part in rel_path.parts:
+            if fnmatch.fnmatch(part, pattern):
+                return True
+        # Also check the full relative path
+        if fnmatch.fnmatch(rel_str, pattern):
+            return True
+        # Check with ** prefix for deep matches
+        if fnmatch.fnmatch(rel_str, f"**/{pattern}"):
+            return True
+    
+    return False
 
 
 @dataclass
