@@ -10,7 +10,6 @@ A **synthesis cycle** uses sdqctl to improve a codebase iteratively, where each 
 
 | ⚠️ Issue | ❌ Bad | ✅ Good | Why |
 |----------|--------|---------|-----|
-| **Naming** | `tracker.conv` | `fix-bugs.conv` | Filename affects agent role ([Q-001](QUIRKS.md#q-001-workflow-filename-influences-agent-behavior)) |
 | **Context** | Inject 50KB file | Let agent read on demand | Saves tokens, fresher data |
 | **Scope** | "Fix all 15 issues" | "Select ONE item" | Focus prevents partial work |
 | **Exit** | MAX-CYCLES 100 | MAX-CYCLES 3-5 | Bounded iteration |
@@ -370,22 +369,6 @@ PROMPT Fix all 15 issues in the backlog.
 PROMPT Select the SINGLE most impactful item.
   Complete it fully before moving on.
 ```
-
-### 5. Filename Semantics Influence Agent Behavior
-
-❌ Naming a workflow after its output type:
-```bash
-progress-tracker.conv         # Agent interprets role as "tracking"
-documentation-report.conv     # Agent focuses on docs, not implementation
-```
-
-✅ Name workflows by their action:
-```bash
-implement-improvements.conv   # Agent understands it should edit files
-edit-and-verify.conv          # Clear implementation intent
-```
-
-**See [QUIRKS.md](QUIRKS.md#q-001-workflow-filename-influences-agent-behavior)** for full details on this surprising behavior.
 
 ---
 

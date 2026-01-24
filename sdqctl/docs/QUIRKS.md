@@ -6,16 +6,23 @@ This document catalogs non-obvious behaviors discovered while developing and usi
 
 ## Quick Reference
 
+### Active Quirks
+
 | ID | Quirk | Priority | Status |
 |----|-------|----------|--------|
-| [Q-001](#q-001-workflow-filename-influences-agent-behavior) | Workflow filename influences agent behavior | P0 | ✅ FIXED |
-| [Q-002](#q-002-sdk-abort-events-not-emitted) | SDK abort events not emitted | P1 | ✅ IMPROVED |
-| [Q-003](#q-003-template-variables-in-examples-encourage-problematic-patterns) | Template variables in examples encourage problematic patterns | P2 | ✅ RESOLVED |
-| [Q-004](#q-004-verbose-logging-shows-duplicate-content) | Verbose logging shows duplicate content | P2 | ✅ IMPROVED |
-| [Q-005](#q-005-tool-names-show-unknown-in-verbose-logs) | Tool names show "unknown" in verbose logs | P2 | ✅ FIXED |
-| [Q-010](#q-010-compact-directive-ignored-by-cycle-command) | COMPACT directive ignored by cycle command | P1 | ✅ FIXED |
 | [Q-011](#q-011-compaction-threshold-options-not-fully-wired) | Compaction threshold options not fully wired | P1 | 🔶 KNOWN |
 | [Q-012](#q-012-compact-directive-is-unconditional) | COMPACT directive triggers unconditionally | P2 | 🔶 KNOWN |
+
+### Resolved Quirks
+
+| ID | Quirk | Status | Resolution |
+|----|-------|--------|------------|
+| Q-001 | Workflow filename influences agent behavior | ✅ FIXED | `WORKFLOW_NAME` excluded from prompts by default |
+| Q-002 | SDK abort events not emitted | ✅ IMPROVED | Lowered detection thresholds + stop file mechanism |
+| Q-003 | Template variables encourage problematic patterns | ✅ RESOLVED | Q-001 fix + examples updated |
+| Q-004 | Verbose logging shows duplicate content | ✅ IMPROVED | Delta logging removed |
+| Q-005 | Tool names show "unknown" in verbose logs | ✅ FIXED | Added `_get_tool_name()` helper |
+| Q-010 | COMPACT directive ignored by cycle command | ✅ FIXED | Refactored to iterate `conv.steps` |
 
 ---
 

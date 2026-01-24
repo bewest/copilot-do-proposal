@@ -246,7 +246,6 @@ Run with: `sdqctl apply audit-components.conv --components "lib/*.py"`
 | `CONTEXT @lib/**/*.py` | Injects thousands of lines | Let agent read on demand |
 | `--prologue @50kb-report.md` | Exhausts context | Reference file in prompt |
 | No COMPACT in 5+ cycle workflow | Context overflow | Add COMPACT between phases |
-| Naming file `tracker.conv` | Agent interprets as passive | Use `implement-fixes.conv` |
 | Hardcoded commit messages in RUN | Generic messages | Let agent write commits |
 | 100-line PROMPT blocks | Wasted tokens, unmaintainable | Move to `.md` file |
 
