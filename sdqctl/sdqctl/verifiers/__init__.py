@@ -10,6 +10,7 @@ from .refs import RefsVerifier
 from .links import LinksVerifier
 from .traceability import TraceabilityVerifier
 from .terminology import TerminologyVerifier
+from .assertions import AssertionsVerifier
 
 # Registry of available verifiers
 VERIFIERS: dict[str, type] = {
@@ -17,6 +18,7 @@ VERIFIERS: dict[str, type] = {
     "links": LinksVerifier,
     "traceability": TraceabilityVerifier,
     "terminology": TerminologyVerifier,
+    "assertions": AssertionsVerifier,
 }
 
 __all__ = [
@@ -27,5 +29,6 @@ __all__ = [
     "LinksVerifier",
     "TraceabilityVerifier",
     "TerminologyVerifier",
+    "AssertionsVerifier",
     "VERIFIERS",
 ]

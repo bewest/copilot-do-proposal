@@ -1355,3 +1355,196 @@ Iterating until done.
         assert "errors" in json_out
         assert "warnings" in json_out
         assert json_out["error_count"] >= 1
+
+
+class TestAssertionsVerifier:
+    """Tests for AssertionsVerifier."""
+
+    def test_registry(self):
+        """Test verifier is registered."""
+        assert "assertions" in VERIFIERS
+
+    def test_empty_directory(self, tmp_path):
+        """Test verification of empty directory."""
+        from sdqctl.verifiers import AssertionsVerifier
+        verifier = AssertionsVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["assertions_found"] == 0
+
+    def test_python_assert_detection(self, tmp_path):
+        """Test Python assertion detection."""
+        source = tmp_path / "test.py"
+        source.write_text("""
+def validate(x):
+    assert x > 0
+    assert x < 100, "value must be less than 100"
+""")
+        
+        from sdqctl.verifiers import AssertionsVerifier
+        verifier = AssertionsVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["assertions_found"] == 2
+        assert result.details["assertions_with_message"] == 1
+        assert result.details["by_language"]["python"] == 2
+
+    def test_python_assert_with_trace_id(self, tmp_path):
+        """Test Python assertion with trace ID in message."""
+        source = tmp_path / "test.py"
+        source.write_text("""
+def validate(x):
+    assert x > 0, "REQ-001: value must be positive"
+""")
+        
+        from sdqctl.verifiers import AssertionsVerifier
+        verifier = AssertionsVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.details["assertions_found"] == 1
+        assert result.details["assertions_with_trace"] == 1
+        assert result.details["trace_coverage"] == 100.0
+
+    def test_python_assert_trace_in_comment(self, tmp_path):
+        """Test Python assertion with trace ID in preceding comment."""
+        source = tmp_path / "test.py"
+        source.write_text("""
+def validate(x):
+    # SC-001a: ensure positive values
+    assert x > 0
+""")
+        
+        from sdqctl.verifiers import AssertionsVerifier
+        verifier = AssertionsVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.details["assertions_found"] == 1
+        assert result.details["assertions_with_trace"] == 1
+
+    def test_require_message_flag(self, tmp_path):
+        """Test --require-message makes missing messages an error."""
+        source = tmp_path / "test.py"
+        source.write_text("assert x > 0")
+        
+        from sdqctl.verifiers import AssertionsVerifier
+        verifier = AssertionsVerifier()
+        
+        # Default: warning only
+        result = verifier.verify(tmp_path, require_message=False)
+        assert result.passed
+        assert len(result.warnings) == 1
+        
+        # With flag: error
+        result = verifier.verify(tmp_path, require_message=True)
+        assert not result.passed
+        assert len(result.errors) == 1
+
+    def test_require_trace_flag(self, tmp_path):
+        """Test --require-trace makes missing trace IDs an error."""
+        source = tmp_path / "test.py"
+        source.write_text('assert x > 0, "value check"')
+        
+        from sdqctl.verifiers import AssertionsVerifier
+        verifier = AssertionsVerifier()
+        
+        # Default: no error (trace not required)
+        result = verifier.verify(tmp_path, require_trace=False)
+        assert result.passed
+        
+        # With flag: error
+        result = verifier.verify(tmp_path, require_trace=True)
+        assert not result.passed
+        assert len(result.errors) == 1
+
+    def test_swift_assertions(self, tmp_path):
+        """Test Swift assertion detection."""
+        source = tmp_path / "Test.swift"
+        source.write_text("""
+func validate(_ x: Int) {
+    assert(x > 0)
+    precondition(x < 100, "must be less than 100")
+    guard x != 50 else {
+        fatalError("cannot be 50")
+    }
+}
+""")
+        
+        from sdqctl.verifiers import AssertionsVerifier
+        verifier = AssertionsVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.details["assertions_found"] == 3
+        assert result.details["by_language"]["swift"] == 3
+        # At least 1 has a message (fatalError's message is detected)
+        assert result.details["assertions_with_message"] >= 1
+
+    def test_kotlin_assertions(self, tmp_path):
+        """Test Kotlin assertion detection."""
+        source = tmp_path / "Test.kt"
+        source.write_text("""
+fun validate(x: Int) {
+    assert(x > 0)
+    require(x < 100) { "must be less than 100" }
+    check(x != 50)
+}
+""")
+        
+        from sdqctl.verifiers import AssertionsVerifier
+        verifier = AssertionsVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.details["assertions_found"] == 3
+        assert result.details["by_language"]["kotlin"] == 3
+
+    def test_typescript_assertions(self, tmp_path):
+        """Test TypeScript assertion detection."""
+        source = tmp_path / "test.ts"
+        source.write_text("""
+function validate(x: number) {
+    console.assert(x > 0);
+    console.assert(x < 100, "must be less than 100");
+}
+""")
+        
+        from sdqctl.verifiers import AssertionsVerifier
+        verifier = AssertionsVerifier()
+        result = verifier.verify(tmp_path)
+        
+        # Both console.assert calls are detected
+        assert result.details["assertions_found"] >= 2
+        assert result.details["by_language"]["typescript"] >= 2
+
+    def test_multiple_trace_id_types(self, tmp_path):
+        """Test detection of different trace ID types."""
+        source = tmp_path / "test.py"
+        source.write_text("""
+assert x > 0, "REQ-001: positive"
+# UCA-BOLUS-003: check before bolus
+assert bolus_valid
+# SC-BOLUS-003a: safety constraint
+assert not overdose
+assert tested, "SPEC-042: verified"
+""")
+        
+        from sdqctl.verifiers import AssertionsVerifier
+        verifier = AssertionsVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.details["assertions_found"] == 4
+        assert result.details["assertions_with_trace"] == 4
+
+    def test_json_output(self, tmp_path):
+        """Test JSON output format."""
+        source = tmp_path / "test.py"
+        source.write_text('assert x > 0, "check value"')
+        
+        from sdqctl.verifiers import AssertionsVerifier
+        verifier = AssertionsVerifier()
+        result = verifier.verify(tmp_path)
+        
+        json_out = result.to_json()
+        assert "passed" in json_out
+        assert "details" in json_out
+        assert json_out["details"]["assertions_found"] == 1

@@ -343,6 +343,88 @@ def verify_terminology(
     _output_result(result, json_output, verbose, "terminology")
 
 
+@verify.command("assertions")
+@click.option("--json", "json_output", is_flag=True, help="JSON output")
+@click.option("--verbose", "-v", is_flag=True, help="Show all findings")
+@click.option("--path", "-p", type=click.Path(exists=True), default=".",
+              help="Directory to verify")
+@click.option("--require-message", is_flag=True,
+              help="Error if assertions lack messages (default: warn)")
+@click.option("--require-trace", is_flag=True,
+              help="Error if assertions lack trace IDs (REQ-NNN, SC-NNN)")
+def verify_assertions(
+    json_output: bool,
+    verbose: bool,
+    path: str,
+    require_message: bool,
+    require_trace: bool,
+):
+    """Verify that assertions are documented and traced.
+    
+    Scans source files for assertion statements and checks whether
+    they have meaningful messages and traceability IDs.
+    
+    \b
+    Supported Languages:
+      Python      assert condition, "message"
+      Swift       assert(), precondition(), fatalError()
+      Kotlin      assert(), require(), check()
+      TypeScript  console.assert(), assert()
+    
+    \b
+    Trace IDs in messages or comments:
+      assert x > 0, "REQ-001: value must be positive"
+      # SC-010a: validate input range
+      assert input_valid
+    
+    \b
+    Examples:
+      sdqctl verify assertions                   # Scan current directory
+      sdqctl verify assertions -p src/           # Scan specific directory
+      sdqctl verify assertions --require-message # Error on missing messages
+      sdqctl verify assertions --require-trace   # Error on missing trace IDs
+      sdqctl verify assertions --json            # JSON output for CI
+    """
+    verifier = VERIFIERS["assertions"]()
+    result = verifier.verify(
+        Path(path),
+        require_message=require_message,
+        require_trace=require_trace,
+    )
+    
+    if json_output:
+        console.print_json(json.dumps(result.to_json()))
+    else:
+        status = "[green]✓ PASSED[/green]" if result.passed else "[red]✗ FAILED[/red]"
+        console.print(f"{status}: {result.summary}")
+        
+        # Show language breakdown if verbose
+        if verbose and result.details.get("by_language"):
+            langs = result.details["by_language"]
+            if langs:
+                console.print()
+                console.print("[bold]Assertions by Language[/bold]")
+                for lang, count in sorted(langs.items()):
+                    console.print(f"  {lang}: {count}")
+        
+        # Show errors and warnings
+        if verbose or not result.passed:
+            if result.errors:
+                console.print()
+            for err in result.errors:
+                loc = f"{err.file}:{err.line}" if err.line else err.file
+                console.print(f"  [red]ERROR[/red] {loc}: {err.message}")
+                if err.fix_hint and verbose:
+                    console.print(f"        [dim]{err.fix_hint}[/dim]")
+            
+            if verbose:
+                for warn in result.warnings:
+                    loc = f"{warn.file}:{warn.line}" if warn.line else warn.file
+                    console.print(f"  [yellow]WARN[/yellow] {loc}: {warn.message}")
+    
+    raise SystemExit(0 if result.passed else 1)
+
+
 def _add_fix_suggestions(result: VerificationResult, root: Path) -> VerificationResult:
     """Add fix suggestions by searching for moved files."""
     import subprocess

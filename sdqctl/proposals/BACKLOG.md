@@ -100,11 +100,11 @@ All 7 proposed tooling commands are **fully implemented**:
 | `links` verifier | Phase 1 | ✅ `verifiers/links.py` | None |
 | `terminology` verifier | Phase 1 | ✅ `verifiers/terminology.py` | None |
 | `traceability` verifier | Phase 1 | ✅ `verifiers/traceability.py` | None |
-| `assertions` verifier | Phase 1 | ❌ Not implemented | Future work |
+| `assertions` verifier | Phase 1 | ✅ `verifiers/assertions.py` | None |
 
-**CLI commands available**: `sdqctl verify refs|links|traceability|terminology|all`
+**CLI commands available**: `sdqctl verify refs|links|traceability|terminology|assertions|all`
 
-**Verifier modules**: `refs`, `links`, `traceability`, `terminology` in `sdqctl/verifiers/`
+**Verifier modules**: `refs`, `links`, `traceability`, `terminology`, `assertions` in `sdqctl/verifiers/`
 
 ### PIPELINE-ARCHITECTURE.md
 
@@ -862,6 +862,12 @@ sdqctl cycle examples/workflows/proposal-development.conv \
   - Auto-detects glossary from docs/GLOSSARY.md
   - Skips code blocks and CLI contexts
   - Options: `--glossary`, `--strict`, `--json`, `--verbose`
+  - 12 tests in test_verifiers.py
+- [x] **`sdqctl verify assertions`** - Added assertion tracing verifier
+  - Scans Python, Swift, Kotlin, TypeScript for assertions
+  - Detects trace IDs (REQ-NNN, SC-NNN, UCA-NNN) in messages/comments
+  - `--require-message` and `--require-trace` flags for strict mode
+  - Options: `--json`, `--verbose`, `--path`
   - 12 tests in test_verifiers.py
 - [x] **`docs/NIGHTSCOUT-ECOSYSTEM.md`** - Created ecosystem conventions doc
   - workspace.lock.json configuration
