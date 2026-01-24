@@ -417,6 +417,40 @@ class TestUnixSocketExclusion:
         assert result.details["alias_refs_found"] == 0
 
 
+class TestTimestampAndPlaceholderExclusion:
+    """Test timestamp format and placeholder path exclusions."""
+    
+    def test_timestamp_formats_skipped(self, tmp_path):
+        """Test that timestamp patterns like mm:ss.SSS are skipped."""
+        source = tmp_path / "date-formats.md"
+        source.write_text("""Date format examples:
+dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+Alternative: "yyyy-MM-dd'T'HH:mm:ss'Z'"
+Time only: "HH:mm:ss"
+""")
+        
+        verifier = RefsVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["alias_refs_found"] == 0
+    
+    def test_placeholder_paths_skipped(self, tmp_path):
+        """Test that placeholder paths like path/to/file.ext are skipped."""
+        source = tmp_path / "documentation.md"
+        source.write_text("""Example references:
+- Location: `loop:path/to/file.swift`
+- Location: `aaps:path/to/file.kt`
+- Use `project:path/to/file.ext#L123` for line references
+""")
+        
+        verifier = RefsVerifier()
+        result = verifier.verify(tmp_path)
+        
+        # Should skip 'path' alias patterns
+        assert result.passed
+
+
 class TestRootRelativeResolution:
     """Test workspace-root-first resolution for @refs."""
     

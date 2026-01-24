@@ -299,15 +299,18 @@ The `refs` verifier supports multiple reference types with intelligent resolutio
 - URL schemes: `https://`, `mailto:`
 - Ellipsis paths: `Sources/.../File.swift` (display-only shorthand)
 - Placeholder aliases: `project:`, `extract:`, `alias:` (example refs in docs)
+- Placeholder paths: `loop:path/to/file.swift` (example refs in templates)
 - Connection strings: `localhost:port`, `mongo:`, `redis:` (database URIs)
 - Unix socket paths: `sock:/var/run/docker.sock`, `unix:/tmp/mysql.sock`
+- Timestamp formats: `mm:ss.SSS`, `HH:mm:ss` (date format patterns)
 
 **How Path Detection Works:**
 
 The verifier skips `alias:path` patterns when:
-1. The alias is in `ALIAS_FALSE_POSITIVES` (e.g., `http`, `mongo`, `sock`)
+1. The alias is in `ALIAS_FALSE_POSITIVES` (e.g., `http`, `mongo`, `sock`, `mm`, `path`)
 2. The path starts with `/` (absolute paths like Unix sockets)
 3. The path contains `...` or `…` (ellipsis shorthand)
+4. The path starts with `path/to/` (placeholder examples)
 
 ### Future: Custom `ref://` Scheme
 
@@ -332,6 +335,47 @@ See [implementation](ref://loop/Loop/Models/Override.swift#L10-L50)
 - Editor support varies
 
 This is documented as a future option; current implementation uses heuristic exclusions.
+
+### Roadmap: Eliminating False Positives
+
+The `verify refs` command has evolved through several iterations to reduce false positives:
+
+| Version | Broken Refs | False Positives Eliminated |
+|---------|-------------|----------------------------|
+| Initial | 502 | - |
+| +Root-first resolution | 297 | 205 (workspace @refs) |
+| +TLD exclusions | 271 | 26 (emails, domains) |
+| +Connection strings | 259 | 12 (localhost:, mongo:) |
+| +Unix sockets | 258 | 1 (sock:, unix:) |
+| +Timestamps & placeholders | 251 | 7 (mm:ss, path/to/) |
+
+**Current state:** 251 remaining broken refs are **real documentation issues** (short-form refs needing full paths).
+
+**Remaining work for zero false positives:**
+
+1. **Short-form resolution** (Feature Request)
+   - Pattern: `trio:Preferences.swift` → `trio:**/Preferences.swift`
+   - Status: Not implemented - requires fuzzy file search
+   - Workaround: Use full paths in documentation
+
+2. **Whitelist-only mode** (Future)
+   - Only validate refs with aliases in `workspace.lock.json`
+   - Eliminates unknown alias false positives
+   - Trade-off: Won't catch refs to undefined aliases
+
+3. **Custom `ref://` scheme** (Proposal)
+   - Unambiguous: `ref://trio/Trio/Sources/Models/Preferences.swift`
+   - Zero false positives by design
+   - Trade-off: Migration effort, more verbose
+
+**Current recommendation:** Use full paths from repo root:
+```markdown
+# ✅ Validates correctly
+`trio:Trio/Sources/Models/Preferences.swift#L22`
+
+# ❌ Won't validate (short-form)
+`trio:Preferences.swift`
+```
 
 ### Triage Workflow
 

@@ -72,6 +72,8 @@ class RefsVerifier:
         'project', 'extract', 'alias',  # Placeholder/example aliases in docs
         'localhost', 'mongo', 'mongodb', 'redis', 'mysql', 'postgres',  # Connection strings
         'sock', 'unix', 'docker',  # Unix socket paths
+        'path',  # Placeholder paths like path/to/file.ext
+        'mm', 'ss', 'hh',  # Timestamp format patterns like mm:ss.SSS, HH:mm:ss
     }
     
     def verify(
@@ -279,6 +281,10 @@ class RefsVerifier:
             
             # Skip ellipsis paths (display shorthand like Sources/.../File.swift)
             if '...' in ref_path or '…' in ref_path:
+                continue
+            
+            # Skip placeholder paths like path/to/file.ext (example refs in docs)
+            if ref_path.startswith('path/to/'):
                 continue
             
             total_count += 1
