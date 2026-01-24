@@ -381,6 +381,73 @@ PROMPT Implement approved changes.
 ```
 """,
 
+    "validation": """
+# Validation and Verification Workflow
+
+sdqctl provides static verification commands that run **without AI calls**.
+
+## Command Pipeline
+
+```
+validate → verify → render → run/cycle
+(syntax)   (refs)   (preview)  (execute)
+```
+
+## Quick Reference
+
+| Command | Purpose | Example |
+|---------|---------|---------|
+| `validate` | Check .conv syntax | `sdqctl validate workflow.conv` |
+| `verify refs` | Check @-references | `sdqctl verify refs` |
+| `verify links` | Check markdown links | `sdqctl verify links` |
+| `verify all` | Run all verifiers | `sdqctl verify all --json` |
+| `show` | Display parsed structure | `sdqctl show workflow.conv` |
+| `render` | Preview prompts | `sdqctl render run workflow.conv` |
+| `refcat` | Extract file content | `sdqctl refcat @file.py#L10-L50` |
+
+## Decision Tree
+
+- **Syntax/parse issues?** → `sdqctl validate`
+- **Broken references?** → `sdqctl verify refs`
+- **See parsed structure?** → `sdqctl show`
+- **Preview prompts?** → `sdqctl render run`
+- **Extract file lines?** → `sdqctl refcat`
+
+## VERIFY Directive
+
+Run verification during workflow execution:
+
+```dockerfile
+VERIFY refs
+VERIFY-ON-ERROR continue
+VERIFY-OUTPUT on-error
+```
+
+## CI/CD Pattern
+
+```bash
+# Validate all workflows
+for f in workflows/*.conv; do
+  sdqctl validate "$f" --json || exit 1
+done
+
+# Verify references
+sdqctl verify refs --json
+```
+
+## refcat Syntax
+
+```
+@path/file.py              # Full file
+@path/file.py#L10-L50      # Lines 10-50
+@path/file.py#L10          # Single line
+@path/file.py#L10-         # Line 10 to EOF
+alias:path/file.py#L10     # Cross-repo alias
+```
+
+See `docs/VALIDATION-WORKFLOW.md` for comprehensive guide.
+""",
+
     "ai": """
 # Guidance for AI Workflow Authors
 
@@ -968,6 +1035,7 @@ sdqctl status                        # Check status
 | `variables` | Template variable reference |
 | `context` | Context management guide |
 | `examples` | Example workflows |
+| `validation` | Static verification workflow guide |
 
 ## Getting Help
 
@@ -1050,6 +1118,7 @@ def _list_topics() -> None:
         "context": "Context management guide",
         "examples": "Example workflows",
         "ai": "Workflow authoring guidance for AI agents",
+        "validation": "Static verification workflow guide",
     }
     
     for topic in sorted(TOPICS.keys()):

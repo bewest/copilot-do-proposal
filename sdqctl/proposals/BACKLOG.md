@@ -526,7 +526,98 @@ UCAs that span multiple projects (e.g., Nightscout ↔ Loop sync issues)
 
 ---
 
+## Open Questions / Discussion
+
+> **Session**: 2026-01-24 | **Topic**: Validation/Verification Workflow Documentation
+
+### P0: REFCAT Directive Implementation
+
+**Status**: High Priority  
+**Proposal**: [REFCAT-DESIGN.md](REFCAT-DESIGN.md)
+
+The `sdqctl refcat` CLI command exists for extracting file content with line-level precision. However, the corresponding **REFCAT directive** for use within `.conv` files is not implemented:
+
+```dockerfile
+# Proposed (not yet implemented)
+REFCAT @sdqctl/core/context.py#L182-L194
+REFCAT loop:LoopKit/Sources/Algorithm.swift#L100-L200
+```
+
+**Use case**: Precise context injection in workflows - more targeted than `CONTEXT @file` which includes entire files.
+
+**Implementation sketch**:
+1. Add `REFCAT` to `DirectiveType` enum in `conversation.py`
+2. Parse refs using existing `refcat.py` parsing logic
+3. During rendering, call `extract_content()` and inject into context
+4. Integrate with `ContextFile` dataclass's `is_partial` field
+
+**Decision**: Proceed with implementation - this is a common use case for workflows needing specific code sections.
+
+---
+
+### P1: Semantic Extraction + LSP Integration
+
+**Status**: Future Work  
+**Proposal**: [REFCAT-DESIGN.md §1.3](REFCAT-DESIGN.md)
+
+The REFCAT design includes semantic extractors for language-aware content extraction:
+
+```bash
+# Proposed (not yet implemented)
+sdqctl refcat @file.py#/def my_func/:function   # Extract complete function
+sdqctl refcat @file.py#/class Foo/:class        # Extract complete class
+sdqctl refcat @file.py#/pattern/:block          # Extract indentation block
+```
+
+**Enhancement opportunity**: Integrate with Language Server Protocol (LSP) for:
+- Accurate function/class boundary detection
+- Symbol navigation across files
+- Type information extraction
+- Cross-reference resolution
+
+**Potential LSP integrations**:
+- `pyright` / `pylsp` for Python
+- `typescript-language-server` for TypeScript/JavaScript
+- `gopls` for Go
+- `sourcekit-lsp` for Swift
+
+**Trade-offs**:
+- LSP servers add dependencies and startup time
+- Fallback to regex/indentation when LSP unavailable
+- Consider tree-sitter as lighter-weight alternative
+
+**Decision**: Defer to future work. Document as aspirational in REFCAT-DESIGN.md.
+
+---
+
+### P3: INCLUDE-HELP Directive
+
+**Status**: Deferred - Too Early in Maturity  
+**Proposal**: [BACKLOG.md §Directive Candidates](BACKLOG.md#help-system-agent-accessibility-gap)
+
+A proposed directive to inject help content into workflow prompts:
+
+```dockerfile
+# Proposed (explicitly deferred)
+INCLUDE-HELP directives          # Inject directive reference
+INCLUDE-HELP workflow            # Inject format guide
+```
+
+**Decision**: Not pursuing at this time. The PROLOGUE workaround is adequate, and we should focus on core workflow capabilities before meta-workflow features.
+
+---
+
+### Session 2026-01-24 (Documentation)
+
+- [x] **VALIDATION-WORKFLOW.md** - Created comprehensive validation workflow guide
+- [x] **Help topic: validation** - Added `sdqctl help validation` 
+- [x] **README.md** - Added cross-reference to validation workflow docs
+- [x] **BACKLOG.md** - Added open questions section with prioritized items
+
+---
+
 ## References
 
 - [GLOSSARY.md](../docs/GLOSSARY.md) - Terminology definitions
 - [SYNTHESIS-CYCLES.md](../docs/SYNTHESIS-CYCLES.md) - Iterative workflow patterns
+- [VALIDATION-WORKFLOW.md](../docs/VALIDATION-WORKFLOW.md) - Validation/verification guide

@@ -590,7 +590,9 @@ Status indicators:
 
 ### `sdqctl verify`
 
-Static verification suite for workflows and references:
+Static verification suite for workflows and references. These commands run **without AI calls** and are safe for CI/CD pipelines.
+
+> **📖 See Also**: [docs/VALIDATION-WORKFLOW.md](docs/VALIDATION-WORKFLOW.md) for comprehensive guidance on the validation pipeline (`validate` → `verify` → `render` → `run`).
 
 ```bash
 # Verify @-references resolve to files
