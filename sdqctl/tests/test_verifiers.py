@@ -370,6 +370,33 @@ Use `alias:example/path.md` for examples.
         assert result.passed
         assert result.details["alias_refs_found"] == 0
 
+    def test_case_insensitive_tld_skipped(self, tmp_path):
+        """Test that case-insensitive TLDs like @School.EDU are skipped."""
+        source = tmp_path / "test.md"
+        source.write_text("Contact admin@School.EDU or user@Example.COM")
+        
+        verifier = RefsVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["refs_found"] == 0
+
+    def test_connection_strings_skipped(self, tmp_path):
+        """Test that connection strings like localhost:port are skipped."""
+        source = tmp_path / "config.md"
+        source.write_text("""Database connections:
+- localhost:1337/api/v1/entries.json
+- mongo:27017/nightscout
+- mongodb://localhost:27017
+- redis:6379/cache
+""")
+        
+        verifier = RefsVerifier()
+        result = verifier.verify(tmp_path)
+        
+        assert result.passed
+        assert result.details["alias_refs_found"] == 0
+
 
 class TestRootRelativeResolution:
     """Test workspace-root-first resolution for @refs."""

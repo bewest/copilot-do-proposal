@@ -70,6 +70,7 @@ class RefsVerifier:
         'ref', 'refs', 'see', 'type', 'class', 'enum',      # Common prose
         'caregiver',  # App-specific URL schemes
         'project', 'extract', 'alias',  # Placeholder/example aliases in docs
+        'localhost', 'mongo', 'mongodb', 'redis', 'mysql', 'postgres',  # Connection strings
     }
     
     def verify(
@@ -208,8 +209,8 @@ class RefsVerifier:
                 if re.search(r'[a-zA-Z0-9._%+-]+$', before):
                     continue
             
-            # Skip if looks like domain name (common TLDs at end)
-            if re.match(r'^[a-zA-Z0-9.-]+\.(com|org|net|io|de|be|co|uk|edu|gov)$', ref_path):
+            # Skip if looks like domain name (common TLDs at end, case-insensitive)
+            if re.match(r'^[a-zA-Z0-9.-]+\.(com|org|net|io|de|be|co|uk|edu|gov)$', ref_path, re.IGNORECASE):
                 continue
             
             total_count += 1

@@ -295,10 +295,11 @@ The `refs` verifier supports multiple reference types with intelligent resolutio
 - Python decorators: `@click.option`, `@app.command`
 - JSDoc annotations: `@param`, `@returns`, `@example`
 - Version pins: `@v4.4.3`, `@2.4.0`
-- Email domains: `@gmail.com`, `@example.org`, `@school.edu`
+- Email domains: `@gmail.com`, `@example.org`, `@school.edu` (case-insensitive)
 - URL schemes: `https://`, `mailto:`
 - Ellipsis paths: `Sources/.../File.swift` (display-only shorthand)
 - Placeholder aliases: `project:`, `extract:`, `alias:` (example refs in docs)
+- Connection strings: `localhost:port`, `mongo:`, `redis:` (database URIs)
 
 ### In Workflows
 
