@@ -573,6 +573,42 @@ class ConversationFile:
         
         return errors
     
+    def validate_elide_chains(self) -> list[str]:
+        """Validate that ELIDE chains don't contain incompatible constructs.
+        
+        ELIDE merges steps into a single AI turn. Branching constructs 
+        (RUN-RETRY) require multiple turns and are incompatible.
+        
+        Returns:
+            List of error messages for invalid ELIDE chain usage.
+        """
+        errors = []
+        in_elide_chain = False
+        
+        for i, step in enumerate(self.steps):
+            if step.type == "elide":
+                in_elide_chain = True
+                continue
+            
+            # Check for RUN with retry inside ELIDE chain
+            if in_elide_chain and step.type == "run" and getattr(step, 'retry_count', 0) > 0:
+                errors.append(
+                    f"RUN-RETRY at step {i+1} is inside ELIDE chain. "
+                    "RUN-RETRY requires multiple AI turns and cannot be used with ELIDE. "
+                    "Remove ELIDE or RUN-RETRY."
+                )
+            
+            # Check for other branching constructs (future: ON-FAILURE, ON-SUCCESS)
+            # These will be added when those directives are implemented
+            
+            # Any non-elide step breaks the chain unless next is elide
+            if i + 1 < len(self.steps) and self.steps[i + 1].type == "elide":
+                in_elide_chain = True
+            else:
+                in_elide_chain = False
+        
+        return errors
+    
     def _check_pattern_exists(self, resolved_pattern: Path, glob_module) -> bool:
         """Check if a pattern (file or glob) resolves to existing files."""
         pattern_str = str(resolved_pattern)

@@ -83,7 +83,7 @@ All 7 proposed tooling commands are **fully implemented**:
 | `RUN-RETRY N "prompt"` | Phase 1 | ✅ `conversation.py`, `run.py` | None |
 | `ON-FAILURE` block | Phase 2 | ❌ Not implemented | **Implementation needed** |
 | `ON-SUCCESS` block | Phase 2 | ❌ Not implemented | **Implementation needed** |
-| ELIDE + branching = parse error | Design | ❌ Not enforced | Validation gap |
+| ELIDE + branching = parse error | Design | ✅ `validate_elide_chains()` | None |
 
 ### VERIFICATION-DIRECTIVES.md
 
@@ -885,6 +885,14 @@ sdqctl cycle examples/workflows/proposal-development.conv \
   - Root cause: Issue likely specific to historical edge case or already fixed
   - Added regression test: `test_compact_with_empty_context` in `test_cycle_command.py`
   - Marked as RESOLVED in ARTIFACT-TAXONOMY.md
+
+- [x] **ELIDE + RUN-RETRY validation** - Implement parse error for incompatible constructs
+  - Added `validate_elide_chains()` method in `conversation.py`
+  - Validates that RUN-RETRY cannot be used inside ELIDE chains
+  - ELIDE merges steps into single turn; RUN-RETRY needs multiple turns
+  - Integrated into `sdqctl validate` command
+  - 4 tests in `test_conversation.py::TestElideChainValidation`
+  - 1 CLI test in `test_cli.py::TestValidateCommand`
 
 ---
 

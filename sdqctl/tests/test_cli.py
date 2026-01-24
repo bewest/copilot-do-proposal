@@ -211,6 +211,23 @@ class TestValidateCommand:
         # Should fail with error about file not existing
         assert result.exit_code != 0 or "error" in result.output.lower() or "not found" in result.output.lower()
 
+    def test_validate_elide_chain_with_run_retry(self, cli_runner, tmp_path):
+        """Test validation rejects RUN-RETRY inside ELIDE chain."""
+        workflow = tmp_path / "invalid-elide.conv"
+        workflow.write_text("""MODEL gpt-4
+ADAPTER mock
+PROMPT Analyze.
+ELIDE
+RUN pytest
+RUN-RETRY 3 "Fix tests"
+ELIDE
+PROMPT Summarize.
+""")
+        result = cli_runner.invoke(cli, ["validate", str(workflow)])
+        assert result.exit_code != 0
+        assert "ELIDE" in result.output
+        assert "RUN-RETRY" in result.output
+
 
 class TestVerbosity:
     """Test verbosity flag behavior."""

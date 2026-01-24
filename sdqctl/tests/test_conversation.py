@@ -1097,3 +1097,68 @@ PROMPT Analyze.
         
         assert len(errors) == 1
         assert "invalid_topic" in errors[0][0]
+
+
+class TestElideChainValidation:
+    """Tests for ELIDE chain validation (RUN-RETRY incompatibility)."""
+
+    def test_run_retry_without_elide_is_valid(self):
+        """RUN-RETRY without ELIDE should be valid."""
+        content = """MODEL gpt-4
+ADAPTER mock
+RUN pytest
+RUN-RETRY 3 "Fix tests"
+PROMPT Summarize.
+"""
+        conv = ConversationFile.parse(content)
+        errors = conv.validate_elide_chains()
+        
+        assert len(errors) == 0
+
+    def test_run_retry_inside_elide_chain_is_invalid(self):
+        """RUN-RETRY inside ELIDE chain should be rejected."""
+        content = """MODEL gpt-4
+ADAPTER mock
+PROMPT Analyze.
+ELIDE
+RUN pytest
+RUN-RETRY 3 "Fix tests"
+ELIDE
+PROMPT Summarize.
+"""
+        conv = ConversationFile.parse(content)
+        errors = conv.validate_elide_chains()
+        
+        assert len(errors) == 1
+        assert "RUN-RETRY" in errors[0]
+        assert "ELIDE" in errors[0]
+
+    def test_run_inside_elide_chain_without_retry_is_valid(self):
+        """RUN without retry inside ELIDE chain should be valid."""
+        content = """MODEL gpt-4
+ADAPTER mock
+PROMPT Analyze.
+ELIDE
+RUN pytest -v
+ELIDE
+PROMPT Summarize the results.
+"""
+        conv = ConversationFile.parse(content)
+        errors = conv.validate_elide_chains()
+        
+        assert len(errors) == 0
+
+    def test_elide_after_run_retry_is_valid(self):
+        """ELIDE after RUN-RETRY (not inside chain) should be valid."""
+        content = """MODEL gpt-4
+ADAPTER mock
+RUN pytest
+RUN-RETRY 3 "Fix tests"
+PROMPT Review.
+ELIDE
+PROMPT Summarize.
+"""
+        conv = ConversationFile.parse(content)
+        errors = conv.validate_elide_chains()
+        
+        assert len(errors) == 0

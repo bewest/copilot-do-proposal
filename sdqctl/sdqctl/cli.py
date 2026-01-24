@@ -440,6 +440,11 @@ def validate(workflow: str, allow_missing: bool, exclude: tuple, strict: bool, j
         for topic, msg in help_errors:
             errors.append(f"HELP topic invalid: {msg}")
         
+        # Check ELIDE chain compatibility
+        elide_errors = conv.validate_elide_chains()
+        for msg in elide_errors:
+            errors.append(f"ELIDE chain invalid: {msg}")
+        
         # JSON output
         if json_output:
             result = {
