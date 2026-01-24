@@ -10,7 +10,6 @@ This document catalogs non-obvious behaviors discovered while developing and usi
 
 | ID | Quirk | Priority | Status |
 |----|-------|----------|--------|
-| [Q-011](#q-011-compaction-threshold-options-not-fully-wired) | Compaction threshold options not fully wired | P1 | 🔶 KNOWN |
 | [Q-012](#q-012-compact-directive-is-unconditional) | COMPACT directive triggers unconditionally | P2 | 🔶 KNOWN |
 
 ### Resolved Quirks
@@ -23,6 +22,7 @@ This document catalogs non-obvious behaviors discovered while developing and usi
 | Q-004 | Verbose logging shows duplicate content | ✅ IMPROVED | Delta logging removed |
 | Q-005 | Tool names show "unknown" in verbose logs | ✅ FIXED | Added `_get_tool_name()` helper |
 | Q-010 | COMPACT directive ignored by cycle command | ✅ FIXED | Refactored to iterate `conv.steps` |
+| Q-011 | Compaction threshold options not fully wired | ✅ FIXED | `--min-compaction-density` now wired to `needs_compaction()` |
 
 ---
 
@@ -30,88 +30,45 @@ This document catalogs non-obvious behaviors discovered while developing and usi
 
 **Priority:** P1 - Medium Impact  
 **Discovered:** 2026-01-23  
-**Status:** 🔶 KNOWN - Documented for future implementation
+**Status:** ✅ FIXED (2026-01-24)
 
-### Description
+### Resolution
 
-Several compaction threshold options are **declared but not functionally implemented**:
+The `--min-compaction-density` option is now wired into the compaction logic:
+
+```python
+# session.py - Updated needs_compaction()
+def needs_compaction(self, min_density: float = 0) -> bool:
+    """Check if context window is near limit and above minimum density."""
+    if min_density > 0:
+        min_threshold = min_density / 100 if min_density > 1 else min_density
+        if self.context.window.usage_percent < min_threshold:
+            return False  # Skip compaction - below minimum density
+    return self.context.window.is_near_limit
+
+# cycle.py - Now passes min_compaction_density
+if session.needs_compaction(min_compaction_density):
+    # compact
+```
+
+**What was fixed:**
+- `--min-compaction-density` now controls whether automatic compaction is skipped
+- Setting `--min-compaction-density 50` skips compaction if context < 50% full
+
+**What remains as-designed:**
+- Automatic compaction only at cycle boundaries (not per-turn)
+- `COMPACT` directive is unconditional (see Q-012)
+- Single threshold model (no two-tier operating/max thresholds)
+
+### Original Description (Historical)
+
+Several compaction threshold options were **declared but not functionally implemented**:
 
 | Option | CLI Location | Implementation Status |
 |--------|--------------|----------------------|
-| `--min-compaction-density` | run.py:289, cycle.py:73 | ❌ **NOT WIRED** - parameter captured but never used |
-| `CONTEXT-LIMIT N%` | conversation.py:673 | ✅ Sets threshold, but only checked at cycle boundaries |
+| `--min-compaction-density` | run.py:289, cycle.py:73 | ✅ **NOW WIRED** - skips compaction if below threshold |
+| `CONTEXT-LIMIT N%` | conversation.py:673 | ✅ Sets threshold, checked at cycle boundaries |
 | Automatic compaction | cycle.py:638-650 | ⚠️ **Partial** - only at cycle boundaries, not per-turn |
-
-### Expected Mental Model (NOT how it works)
-
-Users may expect:
-1. **Operating threshold** + **max threshold** (two-tier system)
-2. Compaction triggers **before the next turn** when threshold exceeded
-3. `--min-compaction-density 30` skips compaction if context < 30% full
-4. `COMPACT` directive respects thresholds (conditional)
-5. Setting `CONTEXT-LIMIT 80%` triggers compaction before any turn that would exceed 80%
-
-### Actual Behavior
-
-1. **Single threshold only**: `limit_threshold` (default 80%) set via `CONTEXT-LIMIT`
-2. **Compaction only at cycle boundaries**: Between cycles in `cycle` command, not between prompts
-3. **`--min-compaction-density` is a stub**: Declared, accepted, but never checked:
-   ```python
-   # run.py line 289-290 - DECLARED
-   @click.option("--min-compaction-density", type=int, default=0,
-                 help="Skip compaction if context usage below this % (e.g., 30 = skip if < 30% full)")
-   
-   # BUT: No code checks this value during compaction decisions
-   ```
-4. **`COMPACT` directive is unconditional**: See Q-012
-
-### Code References
-
-**Threshold check location** (`cycle.py:638-650`):
-```python
-# ONLY checked between cycles, not between prompts
-if session_mode == "accumulate" and session.needs_compaction():
-    console.print(f"\n[yellow]Context near limit, compacting...[/yellow]")
-    compact_result = await ai_adapter.compact(...)
-```
-
-**`needs_compaction()` implementation** (`session.py:265-267`):
-```python
-def needs_compaction(self) -> bool:
-    """Check if context window is near limit."""
-    return self.context.window.is_near_limit  # usage_percent >= limit_threshold
-```
-
-**`run` command**: Does NOT have automatic compaction at cycle boundaries (only explicit `COMPACT` directives).
-
-### Impact
-
-- **Workflows setting `--min-compaction-density`** have no effect
-- **Threshold-based policies** only work at cycle boundaries, not per-prompt
-- **No "operating threshold" vs "max threshold"** distinction - single threshold model only
-- **Can't skip compaction** when context is lightly used
-
-### Workaround
-
-1. Use explicit `COMPACT` directives at strategic points in workflows
-2. Use `cycle` command with `-n N` to get automatic compaction at cycle boundaries
-3. Don't rely on `--min-compaction-density` - it has no effect
-
-### Future Implementation
-
-To implement the expected mental model:
-
-1. **Wire `--min-compaction-density`** in compaction decision:
-   ```python
-   if session.needs_compaction() and session.usage_percent >= min_compaction_density:
-       # compact
-   ```
-
-2. **Add per-turn compaction check** (before sending each prompt, not just cycle boundaries)
-
-3. **Optional two-tier thresholds**:
-   - `--compact-at N%` (operating threshold - request compaction)
-   - `--compact-force N%` (max threshold - mandatory compaction)
 
 ---
 

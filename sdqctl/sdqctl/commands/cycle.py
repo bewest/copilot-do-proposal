@@ -212,7 +212,8 @@ def cycle(
         workflow, max_cycles, session_mode, adapter, model, checkpoint_dir,
         prologue, epilogue, header, footer,
         output, event_log, json_output, dry_run, no_stop_file_prologue, stop_file_nonce,
-        verbosity=verbosity, show_prompt=show_prompt_flag
+        verbosity=verbosity, show_prompt=show_prompt_flag,
+        min_compaction_density=min_compaction_density
     ))
 
 
@@ -409,6 +410,7 @@ async def _cycle_async(
     stop_file_nonce: Optional[str] = None,
     verbosity: int = 0,
     show_prompt: bool = False,
+    min_compaction_density: int = 0,
 ) -> None:
     """Execute multi-cycle workflow with session management.
     
@@ -650,7 +652,7 @@ async def _cycle_async(
                         progress_print(f"  🗜  Compacted: {compact_result.tokens_before} → {compact_result.tokens_after} tokens")
 
                     # Check for compaction (accumulate mode, or when context limit reached)
-                    if session_mode == "accumulate" and session.needs_compaction():
+                    if session_mode == "accumulate" and session.needs_compaction(min_compaction_density):
                         console.print(f"\n[yellow]Context near limit, compacting...[/yellow]")
                         progress_print(f"  🗜  Compacting context...")
                         

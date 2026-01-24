@@ -408,6 +408,32 @@ class TestCompaction:
         session.context.window.used_tokens = int(session.context.window.max_tokens * 0.85)
         assert session.needs_compaction() is True
 
+    def test_needs_compaction_min_density(self, sample_conv_content):
+        """Test min_density parameter skips compaction when below threshold."""
+        conv = ConversationFile.parse(sample_conv_content)
+        session = Session(conv)
+        
+        # Simulate 50% usage - above default threshold (80%)
+        session.context.window.used_tokens = int(session.context.window.max_tokens * 0.50)
+        
+        # Without min_density, no compaction needed (below 80%)
+        assert session.needs_compaction() is False
+        
+        # Now simulate 85% usage - above threshold
+        session.context.window.used_tokens = int(session.context.window.max_tokens * 0.85)
+        
+        # Without min_density, needs compaction
+        assert session.needs_compaction() is True
+        
+        # With min_density=90, skip because usage (85%) < min (90%)
+        assert session.needs_compaction(min_density=90) is False
+        
+        # With min_density=80, compact because usage (85%) >= min (80%)
+        assert session.needs_compaction(min_density=80) is True
+        
+        # With min_density=50, compact because usage (85%) >= min (50%)
+        assert session.needs_compaction(min_density=50) is True
+
     def test_get_compaction_prompt_default(self, sample_conv_content):
         """Test compaction prompt generation with defaults."""
         conv = ConversationFile.parse(sample_conv_content)

@@ -260,18 +260,18 @@ Current help is human-optimized (tables, examples). Could add LLM-optimized vari
 
 ### Compaction Policy: Known Gaps
 
-> **See Also:** [QUIRKS.md Q-011](../docs/QUIRKS.md#q-011-compaction-threshold-options-not-fully-wired) and [Q-012](../docs/QUIRKS.md#q-012-compact-directive-is-unconditional)
+> **See Also:** [QUIRKS.md Q-011](../docs/QUIRKS.md#q-011-compaction-threshold-options-not-fully-wired) (✅ FIXED) and [Q-012](../docs/QUIRKS.md#q-012-compact-directive-is-unconditional)
 
-The compaction threshold system has documented gaps between expected and actual behavior:
+The compaction threshold system has some documented behaviors:
 
-| Feature | Expected | Actual | Gap |
-|---------|----------|--------|-----|
-| `--min-compaction-density` | Skip compaction if below N% | **NOT WIRED** - parameter ignored | [Q-011](../docs/QUIRKS.md#q-011-compaction-threshold-options-not-fully-wired) |
+| Feature | Expected | Actual | Status |
+|---------|----------|--------|--------|
+| `--min-compaction-density` | Skip compaction if below N% | ✅ **NOW WIRED** | [Q-011](../docs/QUIRKS.md#q-011-compaction-threshold-options-not-fully-wired) ✅ FIXED |
 | `COMPACT` directive | Conditional on threshold | **UNCONDITIONAL** - always triggers | [Q-012](../docs/QUIRKS.md#q-012-compact-directive-is-unconditional) |
-| `CONTEXT-LIMIT N%` | Compact before any turn exceeding N% | **Cycle boundaries only** | [Q-011](../docs/QUIRKS.md#q-011-compaction-threshold-options-not-fully-wired) |
-| Two-tier thresholds | Operating + max thresholds | **Single threshold only** | [Q-011](../docs/QUIRKS.md#q-011-compaction-threshold-options-not-fully-wired) |
+| `CONTEXT-LIMIT N%` | Compact before any turn exceeding N% | **Cycle boundaries only** | As designed |
+| Two-tier thresholds | Operating + max thresholds | **Single threshold only** | Future consideration |
 
-**Current workaround:** Use `cycle -n N` for automatic conditional compaction at cycle boundaries. Explicit `COMPACT` directives run unconditionally.
+**Usage:** Use `cycle -n N --min-compaction-density 50` to skip compaction if context < 50% full. Explicit `COMPACT` directives run unconditionally.
 
 ---
 

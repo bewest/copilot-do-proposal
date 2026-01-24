@@ -262,8 +262,23 @@ class Session:
 
         return session
 
-    def needs_compaction(self) -> bool:
-        """Check if context window is near limit."""
+    def needs_compaction(self, min_density: float = 0) -> bool:
+        """Check if context window is near limit and above minimum density.
+        
+        Args:
+            min_density: Minimum context usage (0-100%) below which compaction
+                        is skipped. E.g., min_density=30 means skip compaction
+                        if context is less than 30% full.
+                        
+        Returns:
+            True if compaction should occur (near limit AND above min density)
+        """
+        if min_density > 0:
+            # Convert to 0-1 range if given as percentage
+            min_threshold = min_density / 100 if min_density > 1 else min_density
+            current_usage = self.context.window.usage_percent
+            if current_usage < min_threshold:
+                return False
         return self.context.window.is_near_limit
 
     def get_compaction_prompt(self) -> str:
