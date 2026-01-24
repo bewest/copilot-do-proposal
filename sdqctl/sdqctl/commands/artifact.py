@@ -277,3 +277,158 @@ def list_artifacts(type_spec: Optional[str], path: str, show_all: bool, as_json:
             # Sort by number and display
             for id_, num in sorted(found, key=lambda x: x[1]):
                 console.print(id_)
+
+
+def find_all_references(
+    root: Path,
+    artifact_id: str,
+    recursive: bool = True,
+) -> list[tuple[Path, int, str]]:
+    """Find all references to an artifact ID in files.
+    
+    Returns list of (filepath, line_number, line_content) tuples.
+    """
+    references: list[tuple[Path, int, str]] = []
+    
+    # Build a pattern that matches the exact ID with word boundaries
+    pattern = re.compile(rf'\b{re.escape(artifact_id)}\b')
+    
+    # Find files to scan
+    if recursive:
+        files = [f for f in root.rglob('*') if f.suffix in SCAN_EXTENSIONS and f.is_file()]
+    else:
+        files = [f for f in root.glob('*') if f.suffix in SCAN_EXTENSIONS and f.is_file()]
+    
+    for filepath in files:
+        try:
+            lines = filepath.read_text(errors='replace').splitlines()
+        except Exception:
+            continue
+        
+        for line_num, line in enumerate(lines, start=1):
+            if pattern.search(line):
+                references.append((filepath, line_num, line))
+    
+    return references
+
+
+def replace_in_file(filepath: Path, old_id: str, new_id: str) -> int:
+    """Replace all occurrences of old_id with new_id in a file.
+    
+    Returns the number of replacements made.
+    """
+    pattern = re.compile(rf'\b{re.escape(old_id)}\b')
+    
+    try:
+        content = filepath.read_text(errors='replace')
+    except Exception:
+        return 0
+    
+    new_content, count = pattern.subn(new_id, content)
+    
+    if count > 0:
+        filepath.write_text(new_content)
+    
+    return count
+
+
+@artifact.command("rename")
+@click.argument("old_id")
+@click.argument("new_id")
+@click.option("--path", "-p", type=click.Path(exists=True), default=".",
+              help="Directory to search for references")
+@click.option("--dry-run", is_flag=True,
+              help="Show what would be changed without making changes")
+@click.option("--json", "as_json", is_flag=True,
+              help="Output as JSON")
+def rename_artifact(old_id: str, new_id: str, path: str, dry_run: bool, as_json: bool) -> None:
+    """Rename an artifact ID and update all references.
+    
+    Searches for all occurrences of OLD_ID and replaces them with NEW_ID.
+    Use --dry-run to preview changes before applying.
+    
+    \b
+    Examples:
+      sdqctl artifact rename REQ-001 REQ-OVERRIDE-001
+      sdqctl artifact rename UCA-003 UCA-BOLUS-003 --dry-run
+      sdqctl artifact rename GAP-001 GAP-SYNC-001 --path traceability/
+    """
+    root = Path(path)
+    
+    # Find all references to the old ID
+    references = find_all_references(root, old_id)
+    
+    if not references:
+        if as_json:
+            import json
+            console.print(json.dumps({"old_id": old_id, "new_id": new_id, "files_changed": 0, "references": 0}))
+        else:
+            console.print(f"[yellow]No references to {old_id} found[/yellow]")
+        return
+    
+    # Group references by file
+    files_with_refs: dict[Path, list[tuple[int, str]]] = defaultdict(list)
+    for filepath, line_num, line in references:
+        files_with_refs[filepath].append((line_num, line))
+    
+    if dry_run:
+        if as_json:
+            import json
+            result = {
+                "old_id": old_id,
+                "new_id": new_id,
+                "dry_run": True,
+                "files_affected": len(files_with_refs),
+                "total_references": len(references),
+                "files": [
+                    {
+                        "path": str(fp.relative_to(root) if fp.is_relative_to(root) else fp),
+                        "references": [{"line": ln, "content": content} for ln, content in refs],
+                    }
+                    for fp, refs in sorted(files_with_refs.items())
+                ],
+            }
+            console.print(json.dumps(result, indent=2))
+        else:
+            console.print(f"[bold]Dry run:[/bold] Would rename [cyan]{old_id}[/cyan] → [green]{new_id}[/green]")
+            console.print(f"[dim]Found {len(references)} reference(s) in {len(files_with_refs)} file(s):[/dim]\n")
+            
+            for filepath in sorted(files_with_refs.keys()):
+                refs = files_with_refs[filepath]
+                rel_path = filepath.relative_to(root) if filepath.is_relative_to(root) else filepath
+                console.print(f"[bold]{rel_path}[/bold] ({len(refs)} reference(s))")
+                for line_num, line in refs:
+                    # Show a preview with the ID highlighted
+                    preview = line.strip()[:80]
+                    if len(line.strip()) > 80:
+                        preview += "..."
+                    console.print(f"  L{line_num}: {preview}")
+                console.print()
+        return
+    
+    # Perform the rename
+    total_replacements = 0
+    files_changed: list[Path] = []
+    
+    for filepath in files_with_refs.keys():
+        count = replace_in_file(filepath, old_id, new_id)
+        if count > 0:
+            total_replacements += count
+            files_changed.append(filepath)
+    
+    if as_json:
+        import json
+        result = {
+            "old_id": old_id,
+            "new_id": new_id,
+            "files_changed": len(files_changed),
+            "total_replacements": total_replacements,
+            "files": [str(fp.relative_to(root) if fp.is_relative_to(root) else fp) for fp in sorted(files_changed)],
+        }
+        console.print(json.dumps(result, indent=2))
+    else:
+        console.print(f"[green]✓[/green] Renamed [cyan]{old_id}[/cyan] → [green]{new_id}[/green]")
+        console.print(f"  {total_replacements} replacement(s) in {len(files_changed)} file(s):")
+        for filepath in sorted(files_changed):
+            rel_path = filepath.relative_to(root) if filepath.is_relative_to(root) else filepath
+            console.print(f"    {rel_path}")

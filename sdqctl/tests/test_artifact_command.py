@@ -242,3 +242,137 @@ class TestArtifactListCLI:
             result = runner.invoke(cli, ["artifact", "list", "HAZ", "--path", tmpdir])
             assert result.exit_code == 0
             assert "No HAZ artifacts found" in result.output
+
+
+class TestArtifactRenameCLI:
+    """Test sdqctl artifact rename CLI command."""
+    
+    def test_rename_dry_run(self):
+        runner = CliRunner()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "reqs.md"
+            test_file.write_text("## REQ-001: Original requirement\nSee REQ-001 for details.\n")
+            
+            result = runner.invoke(cli, [
+                "artifact", "rename", "REQ-001", "REQ-OVERRIDE-001",
+                "--path", tmpdir, "--dry-run"
+            ])
+            assert result.exit_code == 0
+            assert "Dry run" in result.output
+            assert "REQ-001" in result.output
+            assert "REQ-OVERRIDE-001" in result.output
+            assert "2 reference" in result.output
+            
+            # Verify file was NOT changed
+            content = test_file.read_text()
+            assert "REQ-001" in content
+            assert "REQ-OVERRIDE-001" not in content
+    
+    def test_rename_applies_changes(self):
+        runner = CliRunner()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "reqs.md"
+            test_file.write_text("## REQ-001: Original requirement\nSee REQ-001 for details.\n")
+            
+            result = runner.invoke(cli, [
+                "artifact", "rename", "REQ-001", "REQ-OVERRIDE-001",
+                "--path", tmpdir
+            ])
+            assert result.exit_code == 0
+            assert "Renamed" in result.output
+            assert "2 replacement" in result.output
+            
+            # Verify file WAS changed
+            content = test_file.read_text()
+            assert "REQ-001" not in content
+            assert "REQ-OVERRIDE-001" in content
+    
+    def test_rename_multiple_files(self):
+        runner = CliRunner()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            file1 = Path(tmpdir) / "file1.md"
+            file2 = Path(tmpdir) / "file2.md"
+            file1.write_text("Uses UCA-003 from analysis.\n")
+            file2.write_text("## UCA-003: Control action\nReferences UCA-003.\n")
+            
+            result = runner.invoke(cli, [
+                "artifact", "rename", "UCA-003", "UCA-BOLUS-003",
+                "--path", tmpdir
+            ])
+            assert result.exit_code == 0
+            assert "3 replacement" in result.output
+            assert "2 file" in result.output
+            
+            # Verify both files changed
+            assert "UCA-BOLUS-003" in file1.read_text()
+            assert "UCA-BOLUS-003" in file2.read_text()
+    
+    def test_rename_no_matches(self):
+        runner = CliRunner()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "empty.md"
+            test_file.write_text("No artifacts here.\n")
+            
+            result = runner.invoke(cli, [
+                "artifact", "rename", "NONEXISTENT-001", "NEW-001",
+                "--path", tmpdir
+            ])
+            assert result.exit_code == 0
+            assert "No references" in result.output
+    
+    def test_rename_json_output(self):
+        runner = CliRunner()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "test.md"
+            test_file.write_text("## GAP-001: A gap\n")
+            
+            result = runner.invoke(cli, [
+                "artifact", "rename", "GAP-001", "GAP-SYNC-001",
+                "--path", tmpdir, "--json"
+            ])
+            assert result.exit_code == 0
+            data = json.loads(result.output)
+            assert data["old_id"] == "GAP-001"
+            assert data["new_id"] == "GAP-SYNC-001"
+            assert data["total_replacements"] == 1
+            assert data["files_changed"] == 1
+    
+    def test_rename_dry_run_json(self):
+        runner = CliRunner()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "test.md"
+            test_file.write_text("## SPEC-005: A spec\nSee SPEC-005.\n")
+            
+            result = runner.invoke(cli, [
+                "artifact", "rename", "SPEC-005", "SPEC-CGM-005",
+                "--path", tmpdir, "--dry-run", "--json"
+            ])
+            assert result.exit_code == 0
+            data = json.loads(result.output)
+            assert data["dry_run"] is True
+            assert data["total_references"] == 2
+            assert data["files_affected"] == 1
+            
+            # Verify file NOT changed
+            content = test_file.read_text()
+            assert "SPEC-005" in content
+            assert "SPEC-CGM-005" not in content
+    
+    def test_rename_word_boundary(self):
+        """Ensure rename only matches whole words, not substrings."""
+        runner = CliRunner()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "test.md"
+            # REQ-001 should match, but REQ-0012 and XREQ-001 should not
+            test_file.write_text("REQ-001 and REQ-0012 and XREQ-001\n")
+            
+            result = runner.invoke(cli, [
+                "artifact", "rename", "REQ-001", "REQ-NEW-001",
+                "--path", tmpdir
+            ])
+            assert result.exit_code == 0
+            
+            content = test_file.read_text()
+            assert "REQ-NEW-001" in content  # Changed
+            assert "REQ-0012" in content     # Unchanged (different number)
+            assert "XREQ-001" in content     # Unchanged (prefix)

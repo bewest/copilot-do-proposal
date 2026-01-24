@@ -728,7 +728,7 @@ docs/
 | ~~Add artifact summary to TRACEABILITY-WORKFLOW.md~~ | ~~P2~~ | ~~30 min~~ | ✅ Done 2026-01-24 |
 | ~~Create artifact templates (REQ, GAP, UCA, SPEC)~~ | ~~P3~~ | ~~1 hour~~ | ✅ Done 2026-01-24 - `examples/templates/artifacts/` |
 | ~~`sdqctl artifact next` command~~ | ~~P3~~ | ~~2 hours~~ | ✅ Done 2026-01-24 - includes `list` subcommand |
-| `sdqctl artifact rename` command | P3 | 2 hours | Update all references |
+| ~~`sdqctl artifact rename` command~~ | ~~P3~~ | ~~2 hours~~ | ✅ Done 2026-01-24 - `--dry-run` and `--json` flags |
 | Nightscout ecosystem conventions doc | P3 | 1 hour | Cross-project patterns |
 
 ### Session 2026-01-24 (Documentation Philosophy)
