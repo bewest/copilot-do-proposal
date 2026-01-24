@@ -467,6 +467,7 @@ PROMPT Review the focus document at reports/auth-improvements.md.
 
 ## Next Steps
 
+- **[Workflow Design](WORKFLOW-DESIGN.md)** — Core principle: specs in docs, orchestration in .conv
 - **[Glossary](GLOSSARY.md)** — Terminology definitions
 - **[Context Management](CONTEXT-MANAGEMENT.md)** — Optimal context window strategies
 - **[Traceability Workflows](TRACEABILITY-WORKFLOW.md)** — Requirements → specs → tests → code

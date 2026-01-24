@@ -379,6 +379,117 @@ PAUSE "Approve remediation plan"
 
 PROMPT Implement approved changes.
 ```
+""",
+
+    "ai": """
+# Guidance for AI Workflow Authors
+
+When authoring sdqctl workflows, follow these principles.
+
+## 1. Context Window Mental Model
+
+Think of conversation files as **describing how context windows fit over workflow steps**,
+not as containers for detailed specifications.
+
+The .conv file orchestrates the *flow* of work. Documentation files hold the *details*.
+
+❌ **Anti-pattern**: Embedding specifications in the .conv file
+```dockerfile
+PROMPT ## Phase 1: Implement Feature X
+  The feature should:
+  - Support format A with fields x, y, z
+  - Handle error cases: E1, E2, E3
+  - Follow pattern from lib/similar.py lines 45-120
+  ... 50 more lines of spec ...
+```
+
+✅ **Pattern**: Reference documentation deliverables
+```dockerfile
+# Small, critical file - OK to inject
+CONTEXT @proposals/FEATURE-X.md
+
+# Let agent read details on demand
+PROMPT Implement Feature X according to the design in proposals/FEATURE-X.md
+```
+
+## 2. Documentation Reading Order
+
+**For workflow authoring:**
+1. `sdqctl help workflow` - Basic structure
+2. `sdqctl help directives` - All directives
+3. `sdqctl help examples` - Common patterns
+
+**For advanced patterns:**
+- `docs/SYNTHESIS-CYCLES.md` - Iterative refinement workflows
+- `docs/CONTEXT-MANAGEMENT.md` - Token efficiency strategies
+- `docs/QUIRKS.md` - Surprising behaviors to avoid
+- `docs/WORKFLOW-DESIGN.md` - Deep dive on conversation file design
+
+## 3. Key Design Principles
+
+| Principle | Rationale |
+|-----------|-----------|
+| **Hint, don't inject** | Agent reads files on demand, saving tokens |
+| **Name for action** | Filename influences agent role (use verbs) |
+| **Specs in docs** | Put details in .md files, reference from .conv |
+| **ELIDE for efficiency** | Merge RUN output with prompts in one turn |
+| **Fresh mode for edits** | Agent sees file changes between cycles |
+| **COMPACT between phases** | Free context before synthesis |
+
+## 4. Workflow Structure Template
+
+```dockerfile
+# [action-verb]-[noun].conv - Brief description
+MODEL gpt-4
+ADAPTER copilot
+MODE implement    # or: audit, read-only
+MAX-CYCLES 3
+
+# Role clarification (prevents passive interpretation)
+PROLOGUE You are an implementation assistant. Edit files directly.
+PROLOGUE Session: {{DATE}} | Branch: {{GIT_BRANCH}}
+
+# Small critical context only
+CONTEXT @proposals/DESIGN.md
+
+# Cycle 1: Analyze
+PROMPT Review the design and select one task to implement.
+
+# Cycle 2: Implement
+PROMPT Implement the selected task. Run tests to verify.
+
+COMPACT
+
+# Cycle 3: Document
+PROMPT Summarize changes and update docs.
+
+OUTPUT-FILE reports/{{DATE}}-progress.md
+```
+
+## 5. Common Mistakes
+
+| Mistake | Fix |
+|---------|-----|
+| Using `CONTEXT @lib/**/*.py` | Hint at paths, let agent read |
+| Naming file `tracker.conv` | Use `implement-fixes.conv` |
+| 50-line PROMPT blocks | Move specs to .md files |
+| No COMPACT in long workflows | Add between phases |
+| Hardcoded commit messages | Let agent write them |
+
+## 6. Getting Templates
+
+```bash
+# Show workflow examples
+sdqctl help examples
+
+# Render existing workflow as template
+sdqctl render run examples/workflows/security-audit.conv
+
+# Preview what would be sent to AI
+sdqctl render cycle workflow.conv -n 3
+```
+
+See also: `sdqctl help workflow`, `docs/GETTING-STARTED.md`
 """
 }
 
@@ -850,6 +961,7 @@ sdqctl status                        # Check status
 
 | Topic | Description |
 |-------|-------------|
+| `ai` | Workflow authoring guidance for AI agents |
 | `directives` | ConversationFile directive reference |
 | `adapters` | AI provider configuration |
 | `workflow` | ConversationFile format guide |
@@ -937,6 +1049,7 @@ def _list_topics() -> None:
         "variables": "Template variable reference",
         "context": "Context management guide",
         "examples": "Example workflows",
+        "ai": "Workflow authoring guidance for AI agents",
     }
     
     for topic in sorted(TOPICS.keys()):

@@ -417,6 +417,17 @@ OUTPUT-FILE reports/{{WORKFLOW_NAME}}-{{DATE}}.md
 2. **Add explicit role clarification in PROLOGUE**
 3. **Avoid using `{{WORKFLOW_NAME}}` in prompts**
 
+### Known Deviation: progress-tracker.conv
+
+The flagship synthesis cycle workflow `examples/workflows/progress-tracker.conv` uses a passive name that contradicts this guidance. This is an **acknowledged historical deviation**:
+
+- The file is heavily referenced in documentation and examples
+- Renaming would be a breaking change for users following tutorials
+- The PROLOGUE contains explicit role clarification that mitigates the issue
+- The fix in 2026-01-22 (excluding WORKFLOW_NAME from prompts) reduces the impact
+
+**Recommendation:** When creating new synthesis workflows, prefer action-oriented names like `implement-improvements.conv` or `fix-and-iterate.conv`.
+
 ---
 
 ## Q-002: SDK Abort Events Not Emitted

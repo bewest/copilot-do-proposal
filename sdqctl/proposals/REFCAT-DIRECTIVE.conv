@@ -2,6 +2,10 @@
 # Created: 2026-01-23
 # Context: Identified during Nightscout ecosystem evaluation
 # Run: sdqctl cycle proposals/REFCAT-DIRECTIVE.conv --adapter copilot --max-cycles 4
+#
+# Design Principle: This workflow references proposals/REFCAT-DESIGN.md for specs.
+# The .conv file orchestrates work phases; the .md file holds the details.
+# See docs/WORKFLOW-DESIGN.md for rationale.
 
 MODEL gpt-4o
 ADAPTER copilot
@@ -10,21 +14,20 @@ MAX-CYCLES 4
 VALIDATION-MODE lenient
 CWD {{CWD}}
 
-# Phase 1 context: Understand existing patterns
-CONTEXT @sdqctl/core/context.py
-CONTEXT @sdqctl/core/renderer.py
-CONTEXT @sdqctl/verifiers/refs.py
-CONTEXT-OPTIONAL @docs/DIRECTIVES.md
+# Design spec - the source of truth for REFCAT requirements
+CONTEXT @proposals/REFCAT-DESIGN.md
+
+# Phase 1 context: Existing code to understand
+CONTEXT-OPTIONAL @sdqctl/core/context.py
+CONTEXT-OPTIONAL @sdqctl/core/renderer.py
+CONTEXT-OPTIONAL @sdqctl/verifiers/refs.py
 
 PROLOGUE |
   Session: {{DATE}} | REFCAT Implementation
   Branch: {{GIT_BRANCH}}
   Phase: Multi-phase implementation (research → design → implement → test)
   
-  CRITICAL: When injecting file content into context, ensure the agent can identify:
-  1. Which file the content came from (relative to CWD)
-  2. Which lines (if partial extraction)
-  3. Clear delimiters between excerpts
+  Reference: proposals/REFCAT-DESIGN.md contains the full specification.
 
 # ============================================================================
 # PHASE 1: Research existing design space
@@ -33,38 +36,16 @@ PROLOGUE |
 PROMPT |
   ## Phase 1: Research Design Space
   
+  Review the REFCAT design in proposals/REFCAT-DESIGN.md.
+  
   Analyze the existing context injection pattern in `context.py` and `renderer.py`.
   
-  ### Key Questions
+  Key questions:
+  1. How are files currently labeled when injected?
+  2. How are @paths resolved relative to CWD vs workflow dir?
+  3. Where should REFCAT hook into the existing context system?
   
-  1. **Current format**: How are files labeled when injected? (line 194 of context.py)
-  2. **Path resolution**: How are @paths resolved relative to CWD vs workflow dir?
-  3. **Gaps**: Does current format provide enough info for agent to know origin?
-  
-  ### New Requirements for REFCAT
-  
-  | Feature | Use Case | Priority |
-  |---------|----------|----------|
-  | Line ranges `#L10-L50` | Extract specific function | P0 |
-  | Relative ranges `-1..5` | Context around a match | P1 |
-  | Pattern search `/regex/` | Find and extract matches | P2 |
-  | Alias resolution `loop:path` | Cross-repo refs | P1 |
-  
-  ### Output Format Requirements
-  
-  When extracting content, the output MUST include:
-  ```
-  ## From: path/to/file.py (lines 10-50, relative to /home/user/project)
-  ```python
-  def example():
-      ...
-  ```
-  ```
-  
-  Analyze the existing code and propose:
-  1. Where to hook REFCAT into the existing context system
-  2. How to extend the format to include line information
-  3. Whether REFCAT should be a directive, command, or both
+  Propose integration points for REFCAT.
 
 ELIDE
 
@@ -86,75 +67,16 @@ COMPACT
 COMPACT-SUMMARY Phase 1 complete. Researched context injection patterns.
 
 PROMPT |
-  ## Phase 2: Design Specification
+  ## Phase 2: Review and Refine Design
   
-  Create a detailed design for REFCAT covering:
+  The REFCAT design specification is in proposals/REFCAT-DESIGN.md.
   
-  ### 2.1 Ref Syntax Specification
+  Review the existing design and:
+  1. Verify the ref syntax specification covers all use cases
+  2. Confirm error handling semantics are correct
+  3. Propose any refinements based on your Phase 1 analysis
   
-  Support these formats:
-  
-  ```
-  # Basic line range
-  @path/file.py#L10-L50          # Lines 10 to 50
-  @path/file.py#L10              # Single line 10
-  @path/file.py#L-5..+10         # 5 lines before to 10 lines after cursor
-  
-  # Pattern-based extraction
-  @path/file.py#/def my_func/    # Find pattern, extract function
-  @path/file.py#/class Foo/+50   # Pattern + next 50 lines
-  
-  # Ecosystem-compatible
-  loop:path/file.swift#L10-L50   # Alias:path format
-  ```
-  
-  ### 2.2 Context Injection Format
-  
-  Propose enhanced format that includes:
-  - Absolute or relative path (configurable)
-  - Line numbers if partial extraction
-  - CWD reference for disambiguation
-  
-  Example:
-  ```markdown
-  ## From: sdqctl/core/context.py:182-194 (relative to /home/bewest/src/copilot-do-proposal/sdqctl)
-  ```python
-  182 |     def get_context_content(self) -> str:
-  183 |         """Get formatted context content for inclusion in prompts."""
-  ...
-  194 |             parts.append(f"### {rel_path}\n```\n{ctx_file.content}\n```\n")
-  ```
-  ```
-  
-  ### 2.3 Error Handling
-  
-  **CRITICAL: Fail-fast semantics**
-  
-  REFCAT refs MUST be validated before the session starts (during `sdqctl validate`).
-  If any REFCAT ref cannot resolve, the workflow should NOT start.
-  
-  | Condition | Validate Phase | Runtime Phase |
-  |-----------|----------------|---------------|
-  | File not found | ❌ Fail validation | ❌ Quit session |
-  | Lines out of range | ⚠️ Warning | Clamp to file bounds, add note |
-  | Pattern not found | N/A (runtime only) | ❌ Quit session |
-  | Alias unknown | ❌ Fail validation | ❌ Quit session |
-  
-  **Rationale**: Like CONTEXT, missing REFCAT files indicate a broken workflow.
-  Unlike CONTEXT-OPTIONAL, REFCAT has no optional variant - if you specify a ref,
-  you need it. Use CONTEXT-OPTIONAL for truly optional file inclusion.
-  
-  **Validation integration**:
-  ```bash
-  # sdqctl validate should check REFCAT refs
-  sdqctl validate workflow.conv
-  # Error: REFCAT ref not found: @missing/file.py#L10-L50
-  
-  # --allow-missing skips REFCAT validation (for cross-repo workflows)
-  sdqctl validate workflow.conv --allow-missing
-  ```
-  
-  Write the design to `proposals/REFCAT-DESIGN.md`.
+  If refinements are needed, update proposals/REFCAT-DESIGN.md.
 
 RUN-ON-ERROR continue
 RUN mkdir -p proposals 2>/dev/null || true
@@ -168,7 +90,7 @@ ELIDE
 RUN git --no-pager diff --stat proposals/
 
 PROMPT |
-  If REFCAT-DESIGN.md was created, commit it now:
+  If REFCAT-DESIGN.md was updated, commit it now:
   ```bash
   git add proposals/REFCAT-DESIGN.md
   git commit -m "docs: REFCAT design specification - <brief summary of key decisions>"
@@ -179,50 +101,19 @@ PROMPT |
 # ============================================================================
 
 COMPACT
-COMPACT-SUMMARY Phase 2 complete. Design written to REFCAT-DESIGN.md and committed.
+COMPACT-SUMMARY Phase 2 complete. Design reviewed and committed.
 
 PROMPT |
   ## Phase 3: Implementation
   
-  Implement REFCAT in these components:
+  Implement REFCAT following the architecture in Section 4 of proposals/REFCAT-DESIGN.md.
   
-  ### 3.1 Core: `sdqctl/core/refcat.py` (new file)
+  Create these components:
+  1. Core module: `sdqctl/core/refcat.py`
+  2. CLI command: `sdqctl/commands/refcat.py`
+  3. Update `conversation.py` with REFCAT directive type
   
-  ```python
-  @dataclass
-  class RefSpec:
-      """Parsed reference specification."""
-      path: Path
-      alias: Optional[str]  # None for @path, "loop" for loop:path
-      lines: Optional[tuple[int, int]]  # (start, end) 1-based
-      pattern: Optional[str]  # regex pattern for search
-      relative_range: Optional[tuple[int, int]]  # (-5, +10) for cursor context
-  
-  def parse_ref(ref: str) -> RefSpec:
-      """Parse ref string into components."""
-      ...
-  
-  def extract_content(spec: RefSpec, cwd: Path) -> ExtractedContent:
-      """Extract content according to spec."""
-      ...
-  
-  def format_for_context(extracted: ExtractedContent) -> str:
-      """Format extracted content for context injection."""
-      ...
-  ```
-  
-  ### 3.2 Command: `sdqctl/commands/refcat.py` (new file)
-  
-  CLI command that:
-  - Takes ref(s) as arguments
-  - Outputs content or JSON
-  - Supports `--json`, `--no-line-numbers`, `--relative-to CWD`
-  
-  ### 3.3 Directive: Update `conversation.py`
-  
-  Add REFCAT directive type that calls refcat.extract_content during rendering.
-  
-  Implement these files now. Start with `refcat.py` core module.
+  Start with the core module. Follow the dataclass and function signatures in the design doc.
 
 RUN-ON-ERROR continue
 
@@ -260,29 +151,21 @@ COMPACT-SUMMARY Phase 3 complete. Core implementation committed as WIP.
 PROMPT |
   ## Phase 4: Testing and Documentation
   
-  ### 4.1 Add Tests
+  Following Section 5 of proposals/REFCAT-DESIGN.md:
   
-  Create `tests/test_refcat.py` with tests for:
-  - `parse_ref()` with various formats
-  - `extract_content()` with line ranges, patterns
-  - Error cases (missing file, out of range, bad pattern)
-  - Context format output
-  
-  ### 4.2 Run Tests
+  1. Create `tests/test_refcat.py` with tests for parsing, extraction, and errors
+  2. Run tests and fix any failures
+  3. Update docs (README.md, DIRECTIVES.md if it exists) with REFCAT usage
 
 RUN python -m pytest tests/test_refcat.py -v 2>&1 | head -50
 
 RUN-RETRY 3 "Fix any failing tests based on the error output"
 
 PROMPT |
-  ### 4.3 Update Documentation
-  
-  Update `README.md` and `docs/DIRECTIVES.md` to document:
-  - REFCAT directive syntax
-  - `sdqctl refcat` command
-  - Examples with line ranges and patterns
-  
-  ### 4.4 Final Commit
+  Final steps:
+  1. Stage all relevant files
+  2. Write a descriptive commit message
+  3. Verify no regressions with full test suite
 
 ELIDE
 
