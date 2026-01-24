@@ -48,9 +48,9 @@ All 7 proposed tooling commands are **fully implemented**:
 
 | Directive | Proposal | Complexity | Recommendation |
 |-----------|----------|------------|----------------|
-| `ON-FAILURE` | RUN-BRANCHING | High | Defer - synthesis cycles cover 80% of use cases |
-| `ON-SUCCESS` | RUN-BRANCHING | High | Defer - pairs with ON-FAILURE |
-| `VERIFY-TRACE` | STPA-INTEGRATION | N/A | ✅ Use `VERIFY traceability` instead |
+| `ON-FAILURE` | RUN-BRANCHING | High | ✅ Implemented 2026-01-24 |
+| `ON-SUCCESS` | RUN-BRANCHING | High | ✅ Implemented 2026-01-24 |
+| `VERIFY-TRACE` | STPA-INTEGRATION | Medium | ✅ Implemented 2026-01-24 |
 
 ### Key Findings
 
@@ -197,7 +197,6 @@ See [COPILOT-SDK-INTEGRATION.md](../COPILOT-SDK-INTEGRATION.md) for detailed API
 
 | Directive | Source Proposal | Priority | Complexity | Notes |
 |-----------|-----------------|----------|------------|-------|
-| `VERIFY-TRACE` | STPA-INTEGRATION | P2 | Medium | `VERIFY-TRACE UCA-001 -> REQ-020` |
 | `VERIFY-COVERAGE` | STPA-INTEGRATION | P2 | Medium | Check trace coverage % |
 | `VERIFY-IMPLEMENTED` | STPA-INTEGRATION | P2 | Medium | Pattern search in code |
 
@@ -206,6 +205,8 @@ See [COPILOT-SDK-INTEGRATION.md](../COPILOT-SDK-INTEGRATION.md) for detailed API
 > **Note:** `CHECK-REFS`, `CHECK-LINKS`, `CHECK-TRACEABILITY` aliases were implemented 2026-01-24.
 >
 > **Note:** `INCLUDE` directive implemented 2026-01-24 - see [Session notes](#session-2026-01-24-include-directive).
+>
+> **Note:** `VERIFY-TRACE` directive implemented 2026-01-24 - see [Session notes](#session-2026-01-24-verify-trace-directive).
 
 ### Rejected Directives (per proposals)
 
@@ -1035,6 +1036,40 @@ INCLUDE verification/stpa-checks.conv
 - Reusable workflow fragments (common prologues, verification steps)
 - Modular STPA workflow templates
 - Shared context definitions across projects
+
+### Session 2026-01-24 (VERIFY-TRACE Directive)
+
+- [x] **`VERIFY-TRACE` directive** - Check specific trace links between artifacts
+  - Added `DirectiveType.VERIFY_TRACE` in `conversation.py`
+  - Added `verify_trace_links` field to `ConversationFile` dataclass
+  - Parses `VERIFY-TRACE FROM_ID -> TO_ID` syntax (supports both `->` and `→`)
+  - Added `verify_trace()` method to `TraceabilityVerifier`:
+    - Checks if both artifacts exist in documentation
+    - Detects direct links (same line with arrow)
+    - Detects indirect links via BFS through trace chain
+  - Added `sdqctl verify trace "FROM -> TO"` CLI command
+  - Added 4 tests in `TestVerifyTraceDirective`
+  - Added 5 tests in `TestTraceabilityVerifyTrace`
+  - Updated directive count 48 → 49
+  - All 887 tests pass
+
+**Syntax:**
+```dockerfile
+# Check that UCA has safety constraint
+VERIFY-TRACE UCA-001 -> SC-001
+
+# Check scoped artifact links
+VERIFY-TRACE UCA-BOLUS-003 → REQ-020
+```
+
+**CLI:**
+```bash
+# Verify specific trace link
+sdqctl verify trace "UCA-001 -> SC-001"
+
+# JSON output
+sdqctl verify trace "SC-001 -> REQ-001" --json
+```
 
 ---
 

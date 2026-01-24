@@ -1729,3 +1729,61 @@ PROMPT Analyze.
         assert "security" in conv.prologues[1]
         assert len(conv.epilogues) == 1
         assert "markdown" in conv.epilogues[0]
+
+
+class TestVerifyTraceDirective:
+    """Tests for VERIFY-TRACE directive parsing."""
+
+    def test_parse_verify_trace_with_arrow(self):
+        """Test parsing VERIFY-TRACE with -> arrow."""
+        content = """MODEL gpt-4
+VERIFY-TRACE UCA-001 -> SC-001
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert len(conv.verify_trace_links) == 1
+        assert conv.verify_trace_links[0] == ("UCA-001", "SC-001")
+        
+        # Should also create a verify step
+        verify_steps = [s for s in conv.steps if s.type == "verify_trace"]
+        assert len(verify_steps) == 1
+        assert verify_steps[0].verify_options["from"] == "UCA-001"
+        assert verify_steps[0].verify_options["to"] == "SC-001"
+
+    def test_parse_verify_trace_with_unicode_arrow(self):
+        """Test parsing VERIFY-TRACE with → unicode arrow."""
+        content = """MODEL gpt-4
+VERIFY-TRACE UCA-BOLUS-003 → REQ-020
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert len(conv.verify_trace_links) == 1
+        assert conv.verify_trace_links[0] == ("UCA-BOLUS-003", "REQ-020")
+
+    def test_parse_verify_trace_scoped_ids(self):
+        """Test parsing VERIFY-TRACE with scoped artifact IDs."""
+        content = """MODEL gpt-4
+VERIFY-TRACE SC-BOLUS-003a -> REQ-CGM-010
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert len(conv.verify_trace_links) == 1
+        assert conv.verify_trace_links[0] == ("SC-BOLUS-003a", "REQ-CGM-010")
+
+    def test_parse_multiple_verify_trace(self):
+        """Test parsing multiple VERIFY-TRACE directives."""
+        content = """MODEL gpt-4
+VERIFY-TRACE UCA-001 -> SC-001
+VERIFY-TRACE SC-001 -> REQ-001
+VERIFY-TRACE REQ-001 -> SPEC-001
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        
+        assert len(conv.verify_trace_links) == 3
+        assert ("UCA-001", "SC-001") in conv.verify_trace_links
+        assert ("SC-001", "REQ-001") in conv.verify_trace_links
+        assert ("REQ-001", "SPEC-001") in conv.verify_trace_links

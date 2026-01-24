@@ -329,6 +329,55 @@ def verify_traceability(
     raise SystemExit(0 if result.passed else 1)
 
 
+@verify.command("trace")
+@click.argument("link", required=True)
+@click.option("--json", "json_output", is_flag=True, help="JSON output")
+@click.option("--verbose", "-v", is_flag=True, help="Show details")
+@click.option("--path", "-p", type=click.Path(exists=True), default=".",
+              help="Directory to verify")
+def verify_trace(link: str, json_output: bool, verbose: bool, path: str):
+    """Verify a specific trace link between artifacts.
+    
+    Check if a trace relationship exists between two artifacts.
+    The link format is: FROM_ID -> TO_ID
+    
+    \b
+    Examples:
+      sdqctl verify trace "UCA-001 -> SC-001"        # Check UCA → SC link
+      sdqctl verify trace "UCA-BOLUS-003 -> REQ-020" # Check specific link
+      sdqctl verify trace "SC-001 -> REQ-001"        # Check SC → REQ link
+    """
+    import re
+    
+    # Parse the link argument
+    match = re.match(r'^([A-Z]+-[A-Z0-9-]+[a-z]?)\s*(?:->|→)\s*([A-Z]+-[A-Z0-9-]+[a-z]?)$', link.strip())
+    if not match:
+        console.print(f"[red]Invalid link format:[/red] {link}")
+        console.print("Expected format: FROM_ID -> TO_ID (e.g., UCA-001 -> SC-001)")
+        raise SystemExit(1)
+    
+    from_id = match.group(1)
+    to_id = match.group(2)
+    
+    verifier = VERIFIERS["traceability"]()
+    result = verifier.verify_trace(from_id, to_id, Path(path))
+    
+    if json_output:
+        import json
+        console.print_json(json.dumps(result.to_json()))
+    else:
+        status = "[green]✓ LINKED[/green]" if result.passed else "[red]✗ NOT LINKED[/red]"
+        console.print(f"{status}: {result.summary}")
+        
+        if verbose or not result.passed:
+            for err in result.errors:
+                console.print(f"  [red]ERROR[/red] {err.message}")
+                if err.fix_hint:
+                    console.print(f"        [dim]{err.fix_hint}[/dim]")
+    
+    raise SystemExit(0 if result.passed else 1)
+
+
 @verify.command("terminology")
 @click.option("--json", "json_output", is_flag=True, help="JSON output")
 @click.option("--verbose", "-v", is_flag=True, help="Show all findings")

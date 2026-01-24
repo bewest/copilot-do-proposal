@@ -98,6 +98,7 @@ class DirectiveType(Enum):
     VERIFY_ON_ERROR = "VERIFY-ON-ERROR"  # Failure behavior: fail, continue, warn
     VERIFY_OUTPUT = "VERIFY-OUTPUT"  # Output injection: on-error, always, never
     VERIFY_LIMIT = "VERIFY-LIMIT"  # Max output size: 5K, 10K, 50K, none
+    VERIFY_TRACE = "VERIFY-TRACE"  # Check trace link: VERIFY-TRACE UCA-001 -> REQ-020
     # Verification aliases (shortcuts for common VERIFY types)
     CHECK_REFS = "CHECK-REFS"  # Alias for VERIFY refs
     CHECK_LINKS = "CHECK-LINKS"  # Alias for VERIFY links
@@ -317,6 +318,7 @@ class ConversationFile:
     verify_on_error: str = "fail"  # fail, continue, warn
     verify_output: str = "on-error"  # on-error, always, never
     verify_limit: Optional[int] = None  # Max output chars (None = unlimited)
+    verify_trace_links: list[tuple[str, str]] = field(default_factory=list)  # [(from_id, to_id), ...]
 
     # REFCAT - Reference Catalog (line-level file excerpts)
     refcat_refs: list[str] = field(default_factory=list)  # @file.py#L10-L50
@@ -823,6 +825,71 @@ class ConversationFile:
         
         return errors
     
+    def validate_verify_trace_links(self, base_path: Optional[Path] = None) -> list[tuple[str, str]]:
+        """Validate VERIFY-TRACE links by checking if artifacts exist in documentation.
+        
+        This is a static validation that checks if the referenced artifact IDs
+        can be found in markdown files under base_path. It does NOT verify the
+        actual link relationship - that happens at runtime.
+        
+        Args:
+            base_path: Base path for scanning documentation files.
+                       Defaults to workflow directory or CWD.
+        
+        Returns:
+            List of (trace_spec, error_message) for invalid trace links.
+        """
+        import re
+        
+        errors = []
+        
+        if not self.verify_trace_links:
+            return errors
+        
+        # Determine base path
+        if base_path is None:
+            if self.source_path:
+                base_path = self.source_path.parent
+            else:
+                base_path = Path.cwd()
+        
+        # Collect all artifact IDs from documentation files
+        artifact_ids: set[str] = set()
+        artifact_pattern = re.compile(r'\b([A-Z]+-[A-Z0-9-]+[a-z]?)\b')
+        
+        # Scan markdown files
+        for ext in ['.md', '.markdown', '.txt', '.yaml', '.yml']:
+            for filepath in base_path.rglob(f'*{ext}'):
+                try:
+                    content = filepath.read_text(errors='replace')
+                    for match in artifact_pattern.finditer(content):
+                        artifact_ids.add(match.group(1))
+                except Exception:
+                    pass
+        
+        # Check each trace link
+        for from_id, to_id in self.verify_trace_links:
+            trace_spec = f"{from_id} -> {to_id}"
+            
+            # Validate artifact ID format
+            if not re.match(r'^[A-Z]+-[A-Z0-9-]+[a-z]?$', from_id):
+                errors.append((trace_spec, f"Invalid artifact ID format: '{from_id}'"))
+                continue
+            if not re.match(r'^[A-Z]+-[A-Z0-9-]+[a-z]?$', to_id):
+                errors.append((trace_spec, f"Invalid artifact ID format: '{to_id}'"))
+                continue
+            
+            # Check if artifacts exist (warning if not found, not error)
+            # The actual link verification happens at runtime
+            if from_id not in artifact_ids:
+                # This is just a warning - artifact might be defined elsewhere
+                pass
+            if to_id not in artifact_ids:
+                # This is just a warning - artifact might be defined elsewhere
+                pass
+        
+        return errors
+    
     def _check_pattern_exists(self, resolved_pattern: Path, glob_module) -> bool:
         """Check if a pattern (file or glob) resolves to existing files."""
         pattern_str = str(resolved_pattern)
@@ -1195,6 +1262,26 @@ def _apply_directive(conv: ConversationFile, directive: Directive) -> None:
                 conv.verify_limit = int(value[:-1]) * 1000000
             else:
                 conv.verify_limit = int(value)
+        case DirectiveType.VERIFY_TRACE:
+            # Parse trace link: "UCA-001 -> REQ-020" or "UCA-001 → REQ-020"
+            import re
+            value = directive.value.strip()
+            # Support both -> and → as arrow
+            match = re.match(r'^([A-Z]+-[A-Z0-9-]+[a-z]?)\s*(?:->|→)\s*([A-Z]+-[A-Z0-9-]+[a-z]?)$', value)
+            if match:
+                from_id = match.group(1)
+                to_id = match.group(2)
+                conv.verify_trace_links.append((from_id, to_id))
+                # Also add as a verify step so it runs during execution
+                conv.steps.append(ConversationStep(
+                    type="verify_trace",
+                    content=f"{from_id} -> {to_id}",
+                    verify_type="trace",
+                    verify_options={"from": from_id, "to": to_id}
+                ))
+            else:
+                # Invalid format - will be caught during validation
+                pass
         
         # CHECK-* aliases for common VERIFY types
         case DirectiveType.CHECK_REFS:

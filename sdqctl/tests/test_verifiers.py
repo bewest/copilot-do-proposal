@@ -1548,3 +1548,106 @@ assert tested, "SPEC-042: verified"
         assert "passed" in json_out
         assert "details" in json_out
         assert json_out["details"]["assertions_found"] == 1
+
+
+class TestTraceabilityVerifyTrace:
+    """Tests for verify_trace method that checks specific trace links."""
+
+    def test_verify_trace_direct_link(self, tmp_path):
+        """Test detecting a direct trace link between artifacts."""
+        doc = tmp_path / "trace.md"
+        doc.write_text("""
+# Safety Analysis
+
+### UCA-001: Unsafe action
+**Leads to:** HAZ-001
+**Mitigates:** SC-001 → UCA-001
+
+### SC-001: Safety constraint
+**Implements:** REQ-001
+SC-001 -> REQ-001
+""")
+        
+        from sdqctl.verifiers import TraceabilityVerifier
+        verifier = TraceabilityVerifier()
+        
+        # Direct link exists
+        result = verifier.verify_trace("SC-001", "REQ-001", tmp_path)
+        assert result.passed is True
+        assert "linked" in result.summary.lower()
+        assert result.details["linked"] is True
+
+    def test_verify_trace_not_linked(self, tmp_path):
+        """Test detecting missing trace link."""
+        doc = tmp_path / "trace.md"
+        doc.write_text("""
+### UCA-001: Unsafe action
+Not linked to anything.
+
+### REQ-001: Requirement
+Also standalone.
+""")
+        
+        from sdqctl.verifiers import TraceabilityVerifier
+        verifier = TraceabilityVerifier()
+        
+        result = verifier.verify_trace("UCA-001", "REQ-001", tmp_path)
+        assert result.passed is False
+        assert "not linked" in result.summary.lower()
+        assert result.details["linked"] is False
+
+    def test_verify_trace_artifact_not_found(self, tmp_path):
+        """Test error when artifact doesn't exist."""
+        doc = tmp_path / "trace.md"
+        doc.write_text("""
+### UCA-001: Unsafe action
+This exists.
+""")
+        
+        from sdqctl.verifiers import TraceabilityVerifier
+        verifier = TraceabilityVerifier()
+        
+        result = verifier.verify_trace("UCA-001", "MISSING-001", tmp_path)
+        assert result.passed is False
+        assert len(result.errors) > 0
+        assert "not found" in result.errors[0].message.lower()
+
+    def test_verify_trace_indirect_link(self, tmp_path):
+        """Test detecting indirect trace link through chain."""
+        doc = tmp_path / "trace.md"
+        doc.write_text("""
+### UCA-001: Unsafe action
+UCA-001 → SC-001
+
+### SC-001: Safety constraint
+SC-001 → REQ-001
+
+### REQ-001: Requirement
+Requirement text.
+""")
+        
+        from sdqctl.verifiers import TraceabilityVerifier
+        verifier = TraceabilityVerifier()
+        
+        # UCA-001 → SC-001 → REQ-001 (indirect link)
+        result = verifier.verify_trace("UCA-001", "REQ-001", tmp_path)
+        assert result.passed is True
+        assert result.details["linked"] is True
+        assert result.details.get("direct") is False
+
+    def test_verify_trace_scoped_ids(self, tmp_path):
+        """Test verify_trace with scoped artifact IDs."""
+        doc = tmp_path / "trace.md"
+        doc.write_text("""
+### UCA-BOLUS-003: Bolus unsafe action
+UCA-BOLUS-003 → SC-BOLUS-003a
+
+### SC-BOLUS-003a: Bolus safety constraint
+Implements bolus safety.
+""")
+        
+        from sdqctl.verifiers import TraceabilityVerifier
+        verifier = TraceabilityVerifier()
+        
+        result = verifier.verify_trace("UCA-BOLUS-003", "SC-BOLUS-003a", tmp_path)
+        assert result.passed is True

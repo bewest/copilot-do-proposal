@@ -407,3 +407,135 @@ class TraceabilityVerifier:
             return path.relative_to(root)
         except ValueError:
             return path
+    
+    def verify_trace(
+        self,
+        from_id: str,
+        to_id: str,
+        root: Path,
+        recursive: bool = True,
+        **options: Any
+    ) -> VerificationResult:
+        """Verify that a specific trace link exists between two artifacts.
+        
+        A trace link exists if:
+        1. Both artifacts are defined in the documentation
+        2. There is a direct link from from_id to to_id, OR
+        3. There is a path through the trace chain from from_id to to_id
+        
+        Args:
+            from_id: Source artifact ID (e.g., "UCA-001")
+            to_id: Target artifact ID (e.g., "REQ-020")
+            root: Directory to scan for artifacts
+            recursive: Whether to scan subdirectories
+            
+        Returns:
+            VerificationResult with pass/fail and details
+        """
+        root = Path(root)
+        
+        errors: list[VerificationError] = []
+        warnings: list[VerificationError] = []
+        
+        # First, collect all artifacts
+        artifacts: dict[str, TraceArtifact] = {}
+        artifacts_by_type: dict[str, list[str]] = defaultdict(list)
+        files_scanned = 0
+        
+        # Find files to scan
+        if recursive:
+            files = [f for f in root.rglob('*') if f.suffix in self.SCAN_EXTENSIONS and f.is_file()]
+        else:
+            files = [f for f in root.glob('*') if f.suffix in self.SCAN_EXTENSIONS and f.is_file()]
+        
+        for filepath in files:
+            files_scanned += 1
+            try:
+                content = filepath.read_text(errors='replace')
+            except Exception:
+                continue
+            
+            self._extract_artifacts(
+                content, 
+                str(self._relative_path(filepath, root)),
+                artifacts,
+                artifacts_by_type
+            )
+        
+        # Build link graph
+        self._build_link_graph(artifacts)
+        
+        # Check if both artifacts exist
+        if from_id not in artifacts:
+            errors.append(VerificationError(
+                file=None,
+                line=None,
+                message=f"Source artifact not found: {from_id}",
+                fix_hint=f"Define {from_id} in documentation",
+            ))
+        
+        if to_id not in artifacts:
+            errors.append(VerificationError(
+                file=None,
+                line=None,
+                message=f"Target artifact not found: {to_id}",
+                fix_hint=f"Define {to_id} in documentation",
+            ))
+        
+        if errors:
+            return VerificationResult(
+                passed=False,
+                errors=errors,
+                warnings=warnings,
+                summary=f"VERIFY-TRACE {from_id} -> {to_id}: artifacts not found",
+                details={"from": from_id, "to": to_id, "linked": False},
+            )
+        
+        # Check for direct link
+        from_artifact = artifacts[from_id]
+        if to_id in from_artifact.links_to or to_id in from_artifact.linked_from:
+            return VerificationResult(
+                passed=True,
+                errors=[],
+                warnings=[],
+                summary=f"VERIFY-TRACE {from_id} -> {to_id}: linked ✓",
+                details={"from": from_id, "to": to_id, "linked": True, "direct": True},
+            )
+        
+        # Check for indirect link (BFS through trace chain)
+        visited = set()
+        queue = [from_id]
+        
+        while queue:
+            current = queue.pop(0)
+            if current in visited:
+                continue
+            visited.add(current)
+            
+            if current == to_id:
+                return VerificationResult(
+                    passed=True,
+                    errors=[],
+                    warnings=[],
+                    summary=f"VERIFY-TRACE {from_id} -> {to_id}: linked (indirect) ✓",
+                    details={"from": from_id, "to": to_id, "linked": True, "direct": False},
+                )
+            
+            if current in artifacts:
+                queue.extend(artifacts[current].links_to)
+        
+        # No link found
+        errors.append(VerificationError(
+            file=from_artifact.file,
+            line=from_artifact.line,
+            message=f"No trace link found: {from_id} -> {to_id}",
+            fix_hint=f"Add link from {from_id} to {to_id} in documentation",
+        ))
+        
+        return VerificationResult(
+            passed=False,
+            errors=errors,
+            warnings=warnings,
+            summary=f"VERIFY-TRACE {from_id} -> {to_id}: NOT linked",
+            details={"from": from_id, "to": to_id, "linked": False},
+        )
