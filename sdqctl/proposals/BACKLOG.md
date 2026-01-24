@@ -213,27 +213,29 @@ You are implementing an sdqctl workflow. Available directives:
 """
 ```
 
-#### Proposed Enhancement: `INCLUDE-HELP` Directive
+#### Proposed Enhancement: `HELP` Directive
 
 ```dockerfile
 # Proposed - automatic injection
-INCLUDE-HELP directives          # Inject full directive reference
-INCLUDE-HELP workflow            # Inject format guide
-INCLUDE-HELP variables context   # Inject multiple topics
+HELP directives              # Inject full directive reference
+HELP workflow                # Inject format guide
+HELP variables context       # Inject multiple topics
 ```
 
 **Implementation sketch:**
 ```python
 # In conversation.py DirectiveType enum:
-INCLUDE_HELP = "INCLUDE-HELP"
+HELP = "HELP"
 
 # In parser:
-case DirectiveType.INCLUDE_HELP:
+case DirectiveType.HELP:
     topics = directive.value.split()
     for topic in topics:
         if topic in TOPICS:
             conv.prologues.append(TOPICS[topic])
 ```
+
+**Note**: This is simpler than `INCLUDE` - it only injects built-in help content, not external files.
 
 #### Alternative: Agent-Optimized Help Format
 
@@ -245,7 +247,7 @@ Current help is human-optimized (tables, examples). Could add LLM-optimized vari
 
 #### Priority
 
-**P3 (Low)** - PROLOGUE workaround is adequate. Consider when building meta-workflows that synthesize other workflows.
+**P1 (Medium)** - Simple implementation, useful for meta-workflows that synthesize other workflows. See [Open Questions §HELP Directive](#p1-help-directive).
 
 ### Compaction Policy: Known Gaps
 
@@ -590,20 +592,41 @@ sdqctl refcat @file.py#/pattern/:block          # Extract indentation block
 
 ---
 
-### P3: INCLUDE-HELP Directive
+### P1: HELP Directive
 
-**Status**: Deferred - Too Early in Maturity  
-**Proposal**: [BACKLOG.md §Directive Candidates](BACKLOG.md#help-system-agent-accessibility-gap)
+**Status**: Ready for Implementation  
+**Proposal**: [BACKLOG.md §Help System Gap](BACKLOG.md#help-system-agent-accessibility-gap)
 
-A proposed directive to inject help content into workflow prompts:
+A simple directive to inject built-in help content into workflow prompts:
 
 ```dockerfile
-# Proposed (explicitly deferred)
-INCLUDE-HELP directives          # Inject directive reference
-INCLUDE-HELP workflow            # Inject format guide
+# Inject single topic
+HELP directives              # Inject directive reference
+
+# Inject multiple topics
+HELP workflow validation     # Inject both topics
 ```
 
-**Decision**: Not pursuing at this time. The PROLOGUE workaround is adequate, and we should focus on core workflow capabilities before meta-workflow features.
+**Use case**: AI agents authoring .conv workflows need to know directive syntax. Currently requires manual PROLOGUE copy/paste.
+
+**Implementation**:
+```python
+# In conversation.py DirectiveType enum:
+HELP = "HELP"
+
+# In parser:
+case DirectiveType.HELP:
+    topics = directive.value.split()
+    for topic in topics:
+        if topic in TOPICS:
+            conv.prologues.append(TOPICS[topic])
+        else:
+            raise ValueError(f"Unknown help topic: {topic}")
+```
+
+**Note**: This is NOT `INCLUDE` - it only injects built-in help content from `help.py`, not external files or .conv fragments.
+
+**Decision**: Proceed with implementation - simple, useful, and avoids INCLUDE semantics concerns.
 
 ---
 
