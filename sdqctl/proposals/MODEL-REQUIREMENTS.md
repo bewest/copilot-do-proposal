@@ -1,7 +1,7 @@
 # Proposal: Model Requirements - Abstract Model Selection
 
 **Date:** 2026-01-23  
-**Status:** Partial (Phase 2 Complete)  
+**Status:** Implemented (Phase 1-4 Complete)  
 **Author:** Generated via sdqctl planning session  
 **Related:** Metadata directives (MODEL, ADAPTER)
 
@@ -373,11 +373,13 @@ MODEL @reasoning @100k-context
 - [x] Fallback to sdqctl registry if adapter doesn't provide
 - [x] Tests: 3 adapter integration tests added
 
-### Phase 4: Operator Configuration
+### Phase 4: Operator Configuration ✅ (2026-01-25)
 
-- [ ] `~/.config/sdqctl/models.yaml` support
-- [ ] Environment variable overrides
-- [ ] Documentation for operators
+- [x] `~/.config/sdqctl/models.yaml` support
+- [x] Environment variable overrides (`SDQCTL_MODEL_DEFAULT`, `SDQCTL_MODEL_ALIAS_*`)
+- [x] `get_operator_default_model()`, `resolve_model_alias()`, `get_operator_models()`
+- [x] `get_effective_capabilities()` merges built-in + operator models
+- [x] Tests: 7 new operator config tests (36 total model tests)
 
 ---
 

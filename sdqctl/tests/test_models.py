@@ -12,6 +12,11 @@ from sdqctl.core.models import (
     CapabilityClass,
     resolve_model,
     _parse_context_size,
+    get_operator_default_model,
+    resolve_model_alias,
+    get_operator_models,
+    get_effective_capabilities,
+    reset_operator_config,
 )
 
 
@@ -354,3 +359,115 @@ class TestAdapterModelResolution:
         reqs.add_preference("vendor:anthropic")
         result = adapter.resolve_model_requirements(reqs)
         assert result == "claude-opus-4"  # Premium tier, Anthropic preferred
+
+
+class TestOperatorConfig:
+    """Tests for operator configuration."""
+    
+    def setup_method(self):
+        """Reset config before each test."""
+        reset_operator_config()
+    
+    def teardown_method(self):
+        """Reset config after each test."""
+        reset_operator_config()
+    
+    def test_env_default_model(self, monkeypatch):
+        """Test SDQCTL_MODEL_DEFAULT environment variable."""
+        monkeypatch.setenv("SDQCTL_MODEL_DEFAULT", "claude-opus-4")
+        reset_operator_config()
+        
+        result = get_operator_default_model()
+        assert result == "claude-opus-4"
+    
+    def test_env_alias(self, monkeypatch):
+        """Test SDQCTL_MODEL_ALIAS_* environment variable."""
+        monkeypatch.setenv("SDQCTL_MODEL_ALIAS_FAST", "gpt-4o-mini")
+        reset_operator_config()
+        
+        result = resolve_model_alias("fast")
+        assert result == "gpt-4o-mini"
+    
+    def test_alias_passthrough(self):
+        """Test non-alias passes through unchanged."""
+        result = resolve_model_alias("gpt-4")
+        assert result == "gpt-4"
+    
+    def test_resolve_uses_alias(self, monkeypatch):
+        """Test resolve_model uses aliases for fallback."""
+        monkeypatch.setenv("SDQCTL_MODEL_ALIAS_DEFAULT", "claude-sonnet-4")
+        reset_operator_config()
+        
+        reqs = ModelRequirements()
+        result = resolve_model(reqs, fallback="default")
+        assert result == "claude-sonnet-4"
+    
+    def test_operator_default_policy(self, monkeypatch):
+        """Test MODEL-POLICY operator-default uses operator config."""
+        monkeypatch.setenv("SDQCTL_MODEL_DEFAULT", "gpt-4o")
+        reset_operator_config()
+        
+        reqs = ModelRequirements()
+        reqs.add_requirement("context:10k")  # Non-empty to avoid early return
+        reqs.set_policy("operator-default")
+        
+        result = resolve_model(reqs)
+        assert result == "gpt-4o"
+    
+    def test_config_file(self, monkeypatch, tmp_path):
+        """Test loading from config file."""
+        config_dir = tmp_path / ".config" / "sdqctl"
+        config_dir.mkdir(parents=True)
+        config_file = config_dir / "models.yaml"
+        config_file.write_text("""
+default_model: claude-opus-4
+aliases:
+  cheap: gpt-4o-mini
+  smart: claude-opus-4
+models:
+  my-model:
+    context: 50000
+    tier: standard
+    speed: fast
+""")
+        monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
+        reset_operator_config()
+        
+        # Check default
+        assert get_operator_default_model() == "claude-opus-4"
+        
+        # Check aliases
+        assert resolve_model_alias("cheap") == "gpt-4o-mini"
+        assert resolve_model_alias("smart") == "claude-opus-4"
+        
+        # Check custom models
+        custom = get_operator_models()
+        assert "my-model" in custom
+        assert custom["my-model"]["context"] == 50000
+    
+    def test_effective_capabilities_includes_operator(self, monkeypatch, tmp_path):
+        """Test get_effective_capabilities merges operator models."""
+        config_dir = tmp_path / ".config" / "sdqctl"
+        config_dir.mkdir(parents=True)
+        config_file = config_dir / "models.yaml"
+        config_file.write_text("""
+models:
+  operator-custom:
+    context: 200000
+    tier: premium
+    speed: deliberate
+    capability: reasoning
+""")
+        monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
+        reset_operator_config()
+        
+        caps = get_effective_capabilities()
+        
+        # Should have both built-in and operator models
+        assert "gpt-4" in caps
+        assert "claude-sonnet-4" in caps
+        assert "operator-custom" in caps
+        
+        # Operator model should have correct caps
+        assert caps["operator-custom"]["context"] == 200000
+        assert caps["operator-custom"]["tier"] == CostTier.PREMIUM
