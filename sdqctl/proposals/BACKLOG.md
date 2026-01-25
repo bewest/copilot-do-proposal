@@ -1,6 +1,6 @@
 # sdqctl Proposal Backlog
 
-> **Last Updated**: 2026-01-25 (CONSULT workflow example added, backlog hygiene)  
+> **Last Updated**: 2026-01-25 (Documentation deep dive: 3 new doc gaps identified)  
 > **Purpose**: Track open design questions, implementation work, and future proposals  
 > **Archive**: Completed session logs and design decisions → [`archive/`](../archive/)
 
@@ -14,7 +14,7 @@
 **Q-014/Q-015 Fix**: 2026-01-25 | Event handler leak fixed, accumulate mode stable
 **Q-016/Q-017 Fix**: 2026-01-25 | 5 F821 bugs fixed, 1,797 linting issues auto-fixed
 **Security Docs**: 2026-01-25 | `docs/SECURITY-MODEL.md` created with cross-refs
-**Deep Dive Review**: 2026-01-25 | All QUIRKS.md items resolved; no new doc gaps identified
+**Deep Dive Review**: 2026-01-25 | All QUIRKS.md items resolved; 3 new P3 doc gaps added
 
 Note: remember to cross reference and evaluate priorities across roadmaps.
 SDK-SESSION-PERSISTENCE complete (2026-01-25): Phase 1-4 all implemented.
@@ -123,6 +123,9 @@ Handler uses session-level `_send_*` state that resets each `send()` call.
 | **P3** | ELIDE chains example | Documentation |
 | **P3** | Default verbosity key actions | Feature |
 | **P3** | Test quality improvements | Testing |
+| **P3** | Troubleshooting guide | Documentation |
+| ~~**P3**~~ | ~~Session modes comparison table~~ | ~~Documentation~~ | ✅ 2026-01-25 |
+| **P3** | Verbose logging quick reference | Documentation |
 
 ---
 
@@ -746,6 +749,14 @@ The security model for shell execution and file handling is now documented.
 | ELIDE chains example | P3 | Multi-ELIDE optimized workflows example in examples/workflows | 🔲 Open |
 | Default verbosity key actions | P3 | Q-004 notes: show key actions at default level (careful selection) | 🔲 Open |
 | Test quality improvements | P3 | Add error path tests, parametrization, markers, fixtures | 🔲 Open |
+
+### Gaps Added (2026-01-25 Second Deep Dive)
+
+| Gap | Priority | Notes | Status |
+|-----|----------|-------|--------|
+| Troubleshooting guide | P3 | Common errors + fixes; currently scattered across QUIRKS.md | 🔲 Open |
+| ~~Session modes comparison table~~ | ~~P3~~ | ~~`accumulate` vs `compact` vs `fresh` decision guide with use cases~~ | ✅ 2026-01-25 |
+| Verbose logging quick reference | P3 | One-page reference for `-v` through `-vvv` with what each shows | 🔲 Open |
 
 ---
 

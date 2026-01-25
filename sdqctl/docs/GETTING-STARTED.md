@@ -205,6 +205,24 @@ sdqctl cycle workflow.conv -n 5 --session-mode accumulate # Context grows (defau
 sdqctl cycle workflow.conv -n 10 --session-mode compact   # Summarize between cycles
 ```
 
+#### Session Modes Comparison
+
+| Mode | Context Behavior | Token Usage | Best For |
+|------|------------------|-------------|----------|
+| **accumulate** (default) | Grows across cycles; compacts only at limit | Medium-High | Iterative refinement where each cycle builds on previous |
+| **compact** | Summarizes after each cycle | Low | Long workflows (10+ cycles), token economy |
+| **fresh** | New session each cycle, reloads files | High (no reuse) | Autonomous file editing where agent must see its changes |
+
+**Decision Guide:**
+
+```
+What's your workflow doing?
+├── Building on previous analysis → accumulate
+├── Editing files agent needs to see → fresh
+├── 10+ cycles or limited budget → compact
+└── Unsure → start with accumulate (default)
+```
+
 **`apply`** — Iterate over components, good for:
 - Auditing multiple files
 - Batch transformations
