@@ -10,13 +10,13 @@ This document catalogs non-obvious behaviors discovered while developing and usi
 
 | ID | Quirk | Priority | Status |
 |----|-------|----------|--------|
-| Q-016 | 5 undefined name bugs (F821) in run.py, copilot.py | P0 | ✅ FIXED |
-| Q-017 | 1994 linting issues (mostly whitespace) | P3 | 🟡 Backlog |
+| Q-017 | 197 remaining linting issues (line length, unused vars) | P3 | 🟡 Backlog |
 
 ### Resolved Quirks
 
 | ID | Quirk | Status | Resolution |
 |----|-------|--------|------------|
+| Q-016 | 5 undefined name bugs (F821) | ✅ FIXED | Variables corrected, TYPE_CHECKING import added (2026-01-25) |
 | Q-013 | Tool name shows "unknown" in completion logs | ✅ FIXED | Root cause was Q-014; handler fix resolves (2026-01-25) |
 | Q-014 | Event handler multiplexing in accumulate mode | ✅ FIXED | Handler registered once per session (2026-01-25) |
 | Q-015 | Duplicate tool calls at session termination | ✅ FIXED | Fixed by Q-014 (event handler cleanup) |

@@ -1,6 +1,6 @@
 # sdqctl Proposal Backlog
 
-> **Last Updated**: 2026-01-25 (P2 security documentation complete, cross-refs added)  
+> **Last Updated**: 2026-01-25 (Q-016 P0 bugs fixed, Q-017 linting 90% complete)  
 > **Purpose**: Track open design questions, implementation work, and future proposals  
 > **Archive**: Completed session logs and design decisions → [`archive/`](../archive/)
 
@@ -12,6 +12,7 @@
 **SDK v2 Analysis**: 2026-01-24 | **New Proposals**: 3 (**Infinite Sessions** ✅, **Session Persistence** ✅, Metadata APIs ✅)
 **MODEL-REQUIREMENTS**: 2026-01-25 | All 4 phases complete (Registry → CLI → Adapter → Operator config)
 **Q-014/Q-015 Fix**: 2026-01-25 | Event handler leak fixed, accumulate mode stable
+**Q-016/Q-017 Fix**: 2026-01-25 | 5 F821 bugs fixed, 1,797 linting issues auto-fixed
 **Security Docs**: 2026-01-25 | `docs/SECURITY-MODEL.md` created with cross-refs
 
 Note: remember to cross reference and evaluate priorities across roadmaps.
@@ -718,34 +719,32 @@ The security model for shell execution and file handling is now documented.
 
 > **Added**: 2026-01-25 | **Purpose**: Track code quality issues for future iterations
 
-### Critical: Undefined Name Bugs (F821)
+### ✅ Critical: Undefined Name Bugs (F821) - FIXED
 
-**5 bugs found** - variables used before definition or missing imports:
+**5 bugs fixed** (2026-01-25) - See [QUIRKS.md Q-016](../docs/QUIRKS.md#q-016-undefined-name-bugs-f821):
 
-| Location | Variable | Root Cause | Fix |
-|----------|----------|------------|-----|
-| `run.py:568` | `quiet` | Not passed to function scope | Add parameter or use context variable |
-| `run.py:1172` | `restrictions` | Not defined in RUN-RETRY block | Pass from outer scope |
-| `run.py:1173` | `show_streaming` | Not defined in RUN-RETRY block | Pass from outer scope |
-| `run.py:1376` | `pending_context` | Not defined in VERIFY step handler | Define or remove usage |
-| `copilot.py:1001` | `ModelRequirements` | Forward ref string but no import | Add `from sdqctl.core.models import ModelRequirements` in TYPE_CHECKING |
+| Location | Variable | Fix Applied |
+|----------|----------|-------------|
+| `run.py:568` | `quiet` | Changed to `verbosity > 0` |
+| `run.py:1172` | `restrictions` | Changed to `conv.file_restrictions` |
+| `run.py:1173` | `show_streaming` | Changed to `True` |
+| `run.py:1376` | `pending_context` | Removed dead code |
+| `copilot.py:1001` | `ModelRequirements` | Added TYPE_CHECKING import |
 
-**Priority**: P0 - These are runtime bugs that will cause NameError exceptions.
+### ✅ High: Linting Issues - 90% Fixed
 
-### High: Linting Issues (1994 total)
+**Before**: 1,994 issues | **After**: 197 issues | **Fixed**: 1,797 (90%)
 
-| Category | Count | Auto-fixable | Priority |
-|----------|-------|--------------|----------|
-| W293 (whitespace in blank lines) | 1,617 | ✅ Yes | P3 |
-| E501 (line too long >100) | 193 | ⚠️ Manual | P3 |
-| W291 (trailing whitespace) | 63 | ✅ Yes | P3 |
-| F541 (f-string no placeholders) | 41 | ✅ Yes | P2 |
-| F401 (unused imports) | 35 | ✅ Yes | P2 |
-| I001 (unsorted imports) | 34 | ✅ Yes | P3 |
-| F841 (unused variables) | 5 | ⚠️ Review | P2 |
-| F811 (redefinition) | 1 | ⚠️ Review | P2 |
-
-**Quick fix**: `ruff check sdqctl/ --fix` resolves 1,450 issues automatically.
+| Category | Before | After | Status |
+|----------|--------|-------|--------|
+| W293 (whitespace in blank lines) | 1,617 | 0 | ✅ Fixed |
+| W291 (trailing whitespace) | 63 | 0 | ✅ Fixed |
+| F541 (f-string no placeholders) | 41 | 0 | ✅ Fixed |
+| F401 (unused imports) | 35 | 0 | ✅ Fixed |
+| I001 (unsorted imports) | 34 | 0 | ✅ Fixed |
+| F811 (redefinition) | 1 | 0 | ✅ Fixed |
+| E501 (line too long >100) | 193 | 192 | 🟡 Manual refactor needed |
+| F841 (unused variables) | 5 | 5 | 🟡 Needs review |
 
 ### High: Code Complexity
 
