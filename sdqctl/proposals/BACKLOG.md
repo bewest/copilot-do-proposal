@@ -67,7 +67,7 @@ All 8 proposed tooling commands are **fully implemented**:
 
 | Priority | Item | Effort | Notes |
 |----------|------|--------|-------|
-| ~~P2~~ | ~~SDK-SESSION-PERSISTENCE Phase 3-4~~ | ~~Medium~~ | ✅ Complete (2026-01-25) |
+| P2 | [CONSULT-DIRECTIVE](CONSULT-DIRECTIVE.md) | Medium | Human consultation workflow |
 | P2 | MODEL-REQUIREMENTS | Medium | Blocked by open questions |
 | P3 | STPA template variables | Low | Future work |
 
@@ -83,6 +83,7 @@ All 8 proposed tooling commands are **fully implemented**:
 | [STPA-INTEGRATION](STPA-INTEGRATION.md) | Partial | ✅ Core complete | Templates + traceability verifier done |
 | [CLI-ERGONOMICS](CLI-ERGONOMICS.md) | Implemented | N/A | Help implemented, no gaps remaining |
 | [MODEL-REQUIREMENTS](MODEL-REQUIREMENTS.md) | Draft | ❌ Open Questions | Abstract model selection by capability |
+| [CONSULT-DIRECTIVE](CONSULT-DIRECTIVE.md) | Draft | ❌ Not started | PAUSE + proactive question presentation |
 | [ARTIFACT-TAXONOMY](ARTIFACT-TAXONOMY.md) | Implemented | ✅ Complete | Taxonomy, enumeration, `artifact` CLI commands |
 | [ERROR-HANDLING](ERROR-HANDLING.md) | Implemented | Phase 0-3 ✅ | `--strict`, `--json-errors`, ON-FAILURE complete |
 | [SDK-INFINITE-SESSIONS](SDK-INFINITE-SESSIONS.md) | Implemented | ✅ Phase 1-4 | Native SDK compaction + directives |
@@ -109,10 +110,13 @@ The Copilot SDK has been updated to Protocol Version 2 with new capabilities. Th
 
 | Proposal | Feature | Effort | Rationale |
 |----------|---------|--------|-----------|
-| [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | Session management | Medium | ✅ Complete - `sessions resume` + `SESSION-NAME` |
+| [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | Session management | Medium | ✅ Open questions resolved (2026-01-25) |
+| [CONSULT-DIRECTIVE](CONSULT-DIRECTIVE.md) | Human consultation | Medium | Proactive question presentation on resume |
 
-> **Note**: Session persistence enables consultation workflows where sdqctl can prepare a session
-> that a human operator can join via GitHub Copilot to clarify open questions.
+> **Consultation Workflow (2026-01-25):** The CONSULT directive extends PAUSE to enable workflows where 
+> sdqctl runs analysis, identifies open questions, pauses, and when human resumes with `copilot --resume`, 
+> the agent proactively presents the questions using `ask_user` style menus. 
+> See [CONSULT-DIRECTIVE.md](CONSULT-DIRECTIVE.md) for full proposal.
 
 ### Key SDK Changes
 
