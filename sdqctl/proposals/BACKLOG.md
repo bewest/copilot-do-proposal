@@ -1,6 +1,6 @@
 # sdqctl Proposal Backlog
 
-> **Last Updated**: 2026-01-25 (Documentation deep dive: 3 new doc gaps identified)  
+> **Last Updated**: 2026-01-25 (Session modes comparison added; 2 P3 doc gaps remain)  
 > **Purpose**: Track open design questions, implementation work, and future proposals  
 > **Archive**: Completed session logs and design decisions → [`archive/`](../archive/)
 
@@ -14,7 +14,7 @@
 **Q-014/Q-015 Fix**: 2026-01-25 | Event handler leak fixed, accumulate mode stable
 **Q-016/Q-017 Fix**: 2026-01-25 | 5 F821 bugs fixed, 1,797 linting issues auto-fixed
 **Security Docs**: 2026-01-25 | `docs/SECURITY-MODEL.md` created with cross-refs
-**Deep Dive Review**: 2026-01-25 | All QUIRKS.md items resolved; 3 new P3 doc gaps added
+**Doc Deep Dive**: 2026-01-25 | Session modes comparison ✅; cross-refs added to CONTEXT-MANAGEMENT.md
 
 Note: remember to cross reference and evaluate priorities across roadmaps.
 SDK-SESSION-PERSISTENCE complete (2026-01-25): Phase 1-4 all implemented.
