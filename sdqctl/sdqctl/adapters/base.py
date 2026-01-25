@@ -6,7 +6,10 @@ All adapters must implement this interface to be used with sdqctl.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator, Callable, Optional
+from typing import TYPE_CHECKING, Any, AsyncIterator, Callable, Optional
+
+if TYPE_CHECKING:
+    from sdqctl.core.models import ModelRequirements
 
 
 @dataclass
@@ -219,3 +222,36 @@ Provide a concise summary that captures all essential information.
             Example: [{"id": "gpt-4", "context_window": 128000, "vision": True}]
         """
         return []
+
+    def get_available_models(self) -> list[str]:
+        """Get list of available model identifiers.
+        
+        Returns:
+            List of model IDs available through this adapter.
+            Default implementation returns empty list (use sdqctl registry).
+        """
+        return []
+
+    def resolve_model_requirements(
+        self,
+        requirements: "ModelRequirements",
+        fallback: str | None = None,
+    ) -> str | None:
+        """Resolve abstract model requirements to a concrete model.
+        
+        This allows adapters to use their own model availability and
+        capabilities data for resolution. Default implementation defers
+        to sdqctl's built-in registry.
+        
+        Args:
+            requirements: ModelRequirements with constraints and preferences
+            fallback: Fallback model if no match found
+            
+        Returns:
+            Model name that satisfies requirements, or fallback/None
+        """
+        # Import here to avoid circular imports
+        from sdqctl.core.models import resolve_model
+        
+        available = self.get_available_models() or None
+        return resolve_model(requirements, available_models=available, fallback=fallback)

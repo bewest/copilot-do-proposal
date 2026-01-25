@@ -129,4 +129,20 @@ class MockAdapter(AdapterBase):
                 "policy_state": "enabled",
                 "billing_multiplier": 0.0,
             },
+            {
+                "id": "gpt-4",
+                "name": "GPT-4 (Mock)",
+                "context_window": 128000,
+                "vision": False,
+            },
+            {
+                "id": "claude-sonnet-4",
+                "name": "Claude Sonnet 4 (Mock)",
+                "context_window": 200000,
+                "vision": False,
+            },
         ]
+
+    def get_available_models(self) -> list[str]:
+        """Get list of mock available model identifiers."""
+        return ["mock-model", "gpt-4", "gpt-4o", "claude-sonnet-4", "claude-haiku-3"]

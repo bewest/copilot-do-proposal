@@ -294,3 +294,63 @@ PROMPT Test.
         
         assert result.exit_code == 0
         assert "Model requirements: 1" in result.output
+
+
+class TestAdapterModelResolution:
+    """Tests for adapter model resolution integration (Phase 3)."""
+
+    def test_mock_adapter_get_available_models(self):
+        """Test MockAdapter.get_available_models() returns model list."""
+        from sdqctl.adapters.mock import MockAdapter
+        
+        adapter = MockAdapter()
+        models = adapter.get_available_models()
+        
+        assert isinstance(models, list)
+        assert len(models) > 0
+        assert "gpt-4" in models
+        assert "claude-sonnet-4" in models
+
+    def test_mock_adapter_resolve_model_requirements(self):
+        """Test MockAdapter.resolve_model_requirements() works."""
+        from sdqctl.adapters.mock import MockAdapter
+        
+        adapter = MockAdapter()
+        
+        # Create requirements
+        reqs = ModelRequirements()
+        reqs.add_requirement("context:50k")
+        reqs.add_requirement("tier:standard")
+        
+        result = adapter.resolve_model_requirements(reqs, fallback="gpt-4")
+        
+        # Should resolve to a model with 50k+ context and standard tier
+        assert result is not None
+        assert result in ["gpt-4", "claude-sonnet-4", "gpt-4o"]
+
+    def test_base_adapter_resolve_defers_to_registry(self):
+        """Test AdapterBase.resolve_model_requirements() uses registry."""
+        from sdqctl.adapters.base import AdapterBase
+        
+        # Create a minimal concrete adapter for testing
+        class TestAdapter(AdapterBase):
+            name = "test"
+            async def start(self): pass
+            async def stop(self): pass
+            async def create_session(self, config): pass
+            async def destroy_session(self, session): pass
+            async def send(self, session, prompt, on_chunk=None, on_reasoning=None): return ""
+            async def get_context_usage(self, session): return (0, 128000)
+        
+        adapter = TestAdapter()
+        
+        # Empty requirements should return fallback
+        reqs = ModelRequirements()
+        result = adapter.resolve_model_requirements(reqs, fallback="gpt-4")
+        assert result == "gpt-4"
+        
+        # With requirements, should use registry
+        reqs.add_requirement("tier:premium")
+        reqs.add_preference("vendor:anthropic")
+        result = adapter.resolve_model_requirements(reqs)
+        assert result == "claude-opus-4"  # Premium tier, Anthropic preferred

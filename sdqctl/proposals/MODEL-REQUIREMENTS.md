@@ -366,11 +366,12 @@ MODEL @reasoning @100k-context
 - [x] Resolved model appears in validate output
 - [x] Tests: 2 CLI integration tests added
 
-### Phase 3: Adapter Integration
+### Phase 3: Adapter Integration ✅ (2026-01-25)
 
-- [ ] Define adapter `get_available_models()` protocol
-- [ ] Adapter-specific capability data
-- [ ] Fallback to sdqctl registry if adapter doesn't provide
+- [x] Define adapter `get_available_models()` protocol
+- [x] Adapter-specific capability data
+- [x] Fallback to sdqctl registry if adapter doesn't provide
+- [x] Tests: 3 adapter integration tests added
 
 ### Phase 4: Operator Configuration
 

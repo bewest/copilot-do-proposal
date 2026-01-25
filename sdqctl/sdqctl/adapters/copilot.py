@@ -959,6 +959,43 @@ class CopilotAdapter(AdapterBase):
             logger.warning(f"list_models failed: {e}")
             return []
 
+    def get_available_models(self) -> list[str]:
+        """Get list of available model identifiers.
+        
+        Uses cached models from the last list_models() call, or runs
+        synchronously if no cache available.
+        
+        Returns:
+            List of model IDs available through Copilot.
+        """
+        # Use cached data if available from a previous list_models() call
+        if hasattr(self, "_cached_model_ids") and self._cached_model_ids:
+            return self._cached_model_ids
+        
+        # Return default models if we can't query
+        return ["gpt-4", "gpt-4o", "gpt-4-turbo", "claude-sonnet-4"]
+
+    def resolve_model_requirements(
+        self,
+        requirements: "ModelRequirements",
+        fallback: str | None = None,
+    ) -> str | None:
+        """Resolve abstract model requirements to a concrete model.
+        
+        Uses Copilot's available models and the sdqctl capability registry.
+        
+        Args:
+            requirements: ModelRequirements with constraints and preferences
+            fallback: Fallback model if no match found
+            
+        Returns:
+            Model name that satisfies requirements, or fallback/None
+        """
+        from sdqctl.core.models import resolve_model
+        
+        available = self.get_available_models()
+        return resolve_model(requirements, available_models=available, fallback=fallback)
+
     # ========================================
     # Session Persistence APIs (SDK v2)
     # ========================================
