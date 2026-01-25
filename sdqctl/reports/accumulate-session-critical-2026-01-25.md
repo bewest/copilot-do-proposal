@@ -274,9 +274,9 @@ Agent correctly used STOPAUTOMATION mechanism when it determined Phase 4 of CONS
 
 ## References
 
-- [QUIRKS.md - Q-014](../docs/QUIRKS.md#q-014-event-handler-multiplexing-in-accumulate-mode)
-- [QUIRKS.md - Q-015](../docs/QUIRKS.md#q-015-duplicate-tool-calls-at-session-termination)
-- [QUIRKS.md - Q-013](../docs/QUIRKS.md#q-013-tool-name-shows-unknown-in-completion-logs)
+- [Archived Quirks - Q-014](../archive/quirks/2026-01-resolved-quirks.md#q-014-event-handler-multiplexing-in-accumulate-mode)
+- [Archived Quirks - Q-015](../archive/quirks/2026-01-resolved-quirks.md#q-015-duplicate-tool-calls-at-session-termination)
+- [Archived Quirks - Q-013](../archive/quirks/2026-01-resolved-quirks.md#q-013-tool-name-shows-unknown-in-completion-logs)
 - [BACKLOG.md - Research Items](../proposals/BACKLOG.md#research-items-2026-01-25)
 - Previous session: [extended-backlog-session-2026-01-25.md](extended-backlog-session-2026-01-25.md)
 - Log file: `../longer-workflow-again.log`

@@ -105,7 +105,7 @@ If the test still fails after retries, document the issue:
 
 ## SDK Abort Event Gap
 
-> **Reference**: [QUIRKS.md Q-002](../docs/QUIRKS.md#q-002-sdk-abort-events-not-emitted)
+> **Reference**: [SDK-LEARNINGS.md](../docs/SDK-LEARNINGS.md#2-sdk-abort-events-are-not-emitted-q-002) | [Archived Q-002](../archive/quirks/2026-01-resolved-quirks.md#q-002-sdk-abort-events-not-emitted)
 
 The Copilot SDK does not reliably emit abort events. Current workarounds:
 

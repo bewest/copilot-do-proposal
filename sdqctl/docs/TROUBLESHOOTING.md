@@ -237,7 +237,7 @@ Error: Session 'abc123' not found
    PROLOGUE Do not describe changes - use the edit tool to make them.
    ```
 
-See [QUIRKS.md Q-001](QUIRKS.md#q-001-workflow-filename-influences-agent-behavior) for filename influence.
+See [SDK-LEARNINGS.md](SDK-LEARNINGS.md#1-filename-semantics-influence-agent-role-q-001) for filename influence.
 
 ---
 

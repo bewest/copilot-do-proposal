@@ -236,7 +236,7 @@ Available in PROLOGUE, EPILOGUE, HEADER, FOOTER, PROMPT, and OUTPUT paths:
 
 > **Note:** `WORKFLOW_NAME` and `WORKFLOW_PATH` are excluded from prompts by default
 > to avoid influencing agent behavior. Use `__WORKFLOW_NAME__` for explicit opt-in.
-> See [docs/QUIRKS.md](docs/QUIRKS.md#q-001-workflow-filename-influences-agent-behavior) for details.
+> See [SDK-LEARNINGS.md](docs/SDK-LEARNINGS.md#1-filename-semantics-influence-agent-role-q-001) for details.
 >
 > **Stop File (Enabled by Default):** Stop file instructions are automatically injected
 > on the first prompt. The agent can create `{{STOP_FILE}}` to request human review.
