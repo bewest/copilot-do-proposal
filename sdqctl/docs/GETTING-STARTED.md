@@ -527,6 +527,76 @@ See [TRACEABILITY-WORKFLOW.md](TRACEABILITY-WORKFLOW.md) for full traceability p
 
 ---
 
+## Validation & CI/CD
+
+Use `validate` to check workflows before execution:
+
+### Basic Validation
+
+```bash
+# Check syntax and references
+sdqctl validate workflow.conv
+
+# Allow missing context files (warn instead of fail)
+sdqctl validate workflow.conv --allow-missing
+
+# Exclude patterns from validation
+sdqctl validate workflow.conv --exclude "conformance/**/*.yaml"
+
+# JSON output for CI parsing
+sdqctl validate workflow.conv --json
+```
+
+### CI/CD Integration
+
+Add to your GitHub Actions workflow:
+
+```yaml
+# .github/workflows/validate-workflows.yml
+name: Validate Workflows
+on: [push, pull_request]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install sdqctl
+      - name: Validate all workflows
+        run: |
+          for f in workflows/*.conv; do
+            sdqctl validate "$f" --strict
+          done
+      - name: Run static verification
+        run: sdqctl verify all --json > verification-report.json
+```
+
+### Strict Mode
+
+Use `--strict` to fail on any issue (overrides `VALIDATION-MODE` directive):
+
+```bash
+# CI should use strict mode
+sdqctl validate workflow.conv --strict
+
+# Also check model requirements can be resolved
+sdqctl validate workflow.conv --strict --check-model
+```
+
+### Pre-commit Hook
+
+```bash
+#!/bin/bash
+# .git/hooks/pre-commit
+for file in $(git diff --cached --name-only | grep '\.conv$'); do
+  sdqctl validate "$file" --strict || exit 1
+done
+```
+
+---
+
 ## Next Steps
 
 Once comfortable with `run`, explore:

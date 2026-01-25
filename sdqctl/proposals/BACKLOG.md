@@ -74,7 +74,7 @@ All 8 proposed tooling commands are **fully implemented**:
 | P2 | [CONSULT-DIRECTIVE Phase 4](CONSULT-DIRECTIVE.md) | Low | Refinements (timeout, partial save) - needs design review |
 | ~~P3~~ | ~~HELP directive examples~~ | ~~Low~~ | ✅ Added section with syntax and workflow-assistant example |
 | ~~P3~~ | ~~ON-FAILURE/ON-SUCCESS tutorial~~ | ~~Low~~ | ✅ Added "Error Handling & Branching" section |
-| P3 | `validate` command tutorial | Low | CI/CD integration section |
+| ~~P3~~ | ~~`validate` command tutorial~~ | ~~Low~~ | ✅ Added "Validation & CI/CD" section with GitHub Actions example |
 | P3 | Copilot skill files docs | Low | Explain purpose of init-created skills |
 
 **Completed this session (2026-01-25):**
@@ -91,6 +91,7 @@ All 8 proposed tooling commands are **fully implemented**:
 - ~~Q-013: Unknown tool names regression~~ ✅ 2026-01-25 (Root cause was Q-014)
 - ~~ON-FAILURE/ON-SUCCESS tutorial~~ ✅ Added to docs/GETTING-STARTED.md
 - ~~HELP directive examples~~ ✅ Added section with syntax, topics, workflow-assistant example
+- ~~`validate` command tutorial~~ ✅ Added "Validation & CI/CD" section with GitHub Actions, pre-commit hook
 
 ### Research Items (2026-01-25)
 
@@ -627,7 +628,7 @@ All 12 design decisions are documented in [`archive/DECISIONS.md`](../archive/DE
 | ~~DEBUG directives not documented~~ | README.md | DEBUG, DEBUG-INTENTS, EVENT-LOG now in directive table | ✅ 2026-01-25 |
 | ~~HELP directive examples~~ | docs/GETTING-STARTED.md | Added HELP Directive section with syntax, topics, example | ✅ 2026-01-25 |
 | ~~ON-FAILURE/ON-SUCCESS examples~~ | docs/GETTING-STARTED.md | Added "Error Handling & Branching" section with patterns | ✅ 2026-01-25 |
-| `validate` command tutorial | docs/GETTING-STARTED.md | Referenced in CI/CD but no hands-on section | 🔲 Open |
+| ~~`validate` command tutorial~~ | docs/GETTING-STARTED.md | Added "Validation & CI/CD" section with GH Actions, pre-commit | ✅ 2026-01-25 |
 | Copilot skill files explained | docs/GETTING-STARTED.md | `sdqctl init` creates skills but purpose unclear | 🔲 Open |
 
 ### P3: Workflow Examples Gap
