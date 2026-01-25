@@ -1,6 +1,6 @@
 # Feature Interaction Matrix
 
-> **Status**: Draft  
+> **Status**: Complete  
 > **Purpose**: Define how sdqctl features compose when used together  
 > **Related**: [BACKLOG.md](../proposals/BACKLOG.md)
 

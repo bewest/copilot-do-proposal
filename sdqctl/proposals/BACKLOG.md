@@ -1,6 +1,6 @@
 # sdqctl Proposal Backlog
 
-> **Last Updated**: 2026-01-25 (Q-016 P0 bugs fixed, Q-017 linting 90% complete)  
+> **Last Updated**: 2026-01-25 (Documentation deep dive: 6 new gaps added)  
 > **Purpose**: Track open design questions, implementation work, and future proposals  
 > **Archive**: Completed session logs and design decisions → [`archive/`](../archive/)
 
@@ -14,6 +14,7 @@
 **Q-014/Q-015 Fix**: 2026-01-25 | Event handler leak fixed, accumulate mode stable
 **Q-016/Q-017 Fix**: 2026-01-25 | 5 F821 bugs fixed, 1,797 linting issues auto-fixed
 **Security Docs**: 2026-01-25 | `docs/SECURITY-MODEL.md` created with cross-refs
+**Deep Dive Review**: 2026-01-25 | FEATURE-INTERACTIONS.md → Complete, 6 new backlog items added
 
 Note: remember to cross reference and evaluate priorities across roadmaps.
 SDK-SESSION-PERSISTENCE complete (2026-01-25): Phase 1-4 all implemented.
@@ -725,6 +726,11 @@ The security model for shell execution and file handling is now documented.
 | Circular import renderer→help | P2 | Move TOPICS to core/constants | 🔲 Open |
 | CONSULT workflow example | P3 | Show human-in-loop consultation pattern | 🔲 Open |
 | CI/CD integration examples | P3 | GitHub Actions / GitLab CI using verify + render | 🔲 Open |
+| FEATURE-INTERACTIONS.md status | P3 | Says "Draft" but content is complete; update to "Complete" | 🔲 Open |
+| claude/openai adapter stubs | P2 | ADAPTERS.md documents as "Planned" - either implement or clarify scope | 🔲 Open |
+| ELIDE chains example | P3 | Multi-ELIDE optimized workflows example in examples/workflows | 🔲 Open |
+| Default verbosity key actions | P3 | Q-004 notes: show key actions at default level (careful selection) | 🔲 Open |
+| Test quality improvements | P3 | Add error path tests, parametrization, markers, fixtures | 🔲 Open |
 
 ---
 
