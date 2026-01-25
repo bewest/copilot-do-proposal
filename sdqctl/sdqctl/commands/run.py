@@ -1052,7 +1052,7 @@ async def _run_async(
                         progress(f"  Writing to {output_path}")
 
                     # Save session checkpoint
-                    checkpoint = session.create_checkpoint(checkpoint_name)
+                    session.create_checkpoint(checkpoint_name)
 
                     # Commit to git
                     output_path = Path(conv.output_file) if conv.output_file else None
@@ -1077,6 +1077,10 @@ async def _run_async(
 
                         response = await ai_adapter.send(adapter_session, compact_prompt)
                         session.add_message("system", f"[Compaction summary]\n{response}")
+
+                        # Sync local context tracking with SDK's actual token count
+                        tokens_after, _ = await ai_adapter.get_context_usage(adapter_session)
+                        session.context.window.used_tokens = tokens_after
 
                         logger.debug("Conversation compacted")
                         progress("  🗜  Compaction complete")

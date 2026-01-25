@@ -904,6 +904,10 @@ async def _cycle_async(
                                 compact_response = await ai_adapter.send(adapter_session, compact_prompt)
                                 session.add_message("system", f"[Compaction summary]\n{compact_response}")
 
+                                # Sync local context tracking with SDK's actual token count
+                                tokens_after, _ = await ai_adapter.get_context_usage(adapter_session)
+                                session.context.window.used_tokens = tokens_after
+
                                 console.print("[green]🗜  Compaction complete[/green]")
                                 progress_print("  🗜  Compaction complete")
                             else:

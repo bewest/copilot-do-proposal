@@ -10,12 +10,14 @@ This document catalogs non-obvious behaviors discovered while developing and usi
 
 | ID | Quirk | Priority | Status |
 |----|-------|----------|--------|
+| Q-019 | Progress messages lack timestamps after compaction | P3 | 🟡 Open |
 | Q-017 | 197 remaining linting issues (line length, unused vars) | P3 | 🟡 Backlog |
 
 ### Resolved Quirks
 
 | ID | Quirk | Status | Resolution |
 |----|-------|--------|------------|
+| Q-019B | Context percentage diverges after compaction | ✅ FIXED | Sync tokens from SDK after compaction (2026-01-25) |
 | Q-018 | Session ID mismatch between checkpoint and SDK | ✅ FIXED | Store SDK session UUID in checkpoint (2026-01-25) |
 | Q-016 | 5 undefined name bugs (F821) | ✅ FIXED | Variables corrected, TYPE_CHECKING import added (2026-01-25) |
 | Q-013 | Tool name shows "unknown" in completion logs | ✅ FIXED | Root cause was Q-014; handler fix resolves (2026-01-25) |
@@ -143,6 +145,91 @@ To resume: sdqctl sessions resume 9859f571-b938-4b72-a8d0-472c4c3304e3  # Works
 ```
 
 ---
+
+## Q-019: Compaction Display Issues
+
+**Priority:** P3 (cosmetic - Issue A remaining)  
+**Discovered:** 2026-01-25  
+**Status:** 🟡 Partially Fixed - Issue B fixed (2026-01-25)
+
+### Description
+
+Two related issues with compaction logging and progress display:
+
+#### Issue A: Progress messages lack timestamps (P3 - Cosmetic)
+
+Progress messages appear interleaved with logger output but lack timestamps:
+
+```
+15:28:04 [INFO] sdqctl.adapters.copilot: Compaction started
+ 🗜️ Compacting...                    <-- No timestamp
+15:28:04 [DEBUG] sdqctl.adapters.copilot: Context: 104,300/128,000 tokens
+```
+
+#### Issue B: Context percentage not synced after compaction (P2 - Data)
+
+After compaction, progress display shows reduced percentage but logger shows original high percentage:
+
+```
+ [Cycle 5/20] Prompt 1/6 (ctx: 3%): Complete (36.9s)
+📊 Skipping COMPACT - context below threshold
+ [Cycle 5/20] Prompt 2/6 (ctx: 3%): "## Phase 2: Execute"
+15:28:23 [DEBUG] sdqctl.adapters.copilot: Context: 105,596/128,000 tokens (82%)
+```
+
+The progress says 3% but the actual context is 82%.
+
+### Root Cause
+
+#### Issue A: Dual output channels
+
+Multiple files emit progress via stdout (no timestamps) while also logging:
+- `copilot.py:607` - `progress("  🗜️  Compacting...")`
+- `run.py:187` - `progress_fn("    🗜  Compacting...")`
+- `cycle.py:442` - `progress_print("    Compacting...")`
+
+#### Issue B: Two separate token tracking systems
+
+1. **sdqctl's `ContextManager.window.used_tokens`** - Local estimate based on character count heuristic
+2. **Copilot SDK's actual token count** - Reported via `adapter.get_context_usage()`
+
+The progress display uses `session.context.get_status()['usage_percent']` which reads from the local estimate.
+The debug logger uses SDK's actual token count.
+
+After compaction:
+- SDK resets its internal token count (correctly shows reduced usage)
+- sdqctl's `ContextWindow.used_tokens` is **never synced** from SDK
+- Result: Progress (local estimate) and logger (SDK) diverge
+
+### Impact
+
+- **Issue A**: Log readability when reviewing verbose output
+- **Issue B**: `needs_compaction()` threshold checks may use stale data, potentially skipping needed compaction or triggering unnecessary compaction
+
+### Workaround
+
+None currently. The divergence is cosmetic for display but may affect compaction decisions.
+
+### Fix Required
+
+#### Issue A (P3)
+Route all compaction progress through logger, OR suppress logger when progress is active.
+
+#### Issue B (P2) - ✅ FIXED (2026-01-25)
+After compaction, sync `session.context.window.used_tokens` from adapter:
+
+```python
+# After compaction in cycle.py/run.py:
+tokens_after, max_tokens = await ai_adapter.get_context_usage(adapter_session)
+session.context.window.used_tokens = tokens_after
+```
+
+**Resolution:** Added token sync after compaction in both `run.py` and `cycle.py`. Progress display now shows accurate context percentage.
+
+Relevant files:
+- `context.py:175-179` - `add_conversation_turn()` only adds tokens, never syncs
+- `context.py:203-211` - `get_status()` returns local estimate
+- `copilot.py:775-787` - Compaction calls `get_context_usage()` but doesn't feed back to session
 
 ## Q-017: Linting Issues Backlog
 
