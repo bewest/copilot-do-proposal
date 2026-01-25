@@ -75,7 +75,7 @@ All 8 proposed tooling commands are **fully implemented**:
 | ~~P3~~ | ~~HELP directive examples~~ | ~~Low~~ | ✅ Added section with syntax and workflow-assistant example |
 | ~~P3~~ | ~~ON-FAILURE/ON-SUCCESS tutorial~~ | ~~Low~~ | ✅ Added "Error Handling & Branching" section |
 | ~~P3~~ | ~~`validate` command tutorial~~ | ~~Low~~ | ✅ Added "Validation & CI/CD" section with GitHub Actions example |
-| P3 | Copilot skill files docs | Low | Explain purpose of init-created skills |
+| ~~P3~~ | ~~Copilot skill files docs~~ | ~~Low~~ | ✅ Added "GitHub Copilot Integration Files" section |
 
 **Completed this session (2026-01-25):**
 - ~~Document `artifact` command~~ ✅ Added to GETTING-STARTED.md
@@ -92,6 +92,7 @@ All 8 proposed tooling commands are **fully implemented**:
 - ~~ON-FAILURE/ON-SUCCESS tutorial~~ ✅ Added to docs/GETTING-STARTED.md
 - ~~HELP directive examples~~ ✅ Added section with syntax, topics, workflow-assistant example
 - ~~`validate` command tutorial~~ ✅ Added "Validation & CI/CD" section with GitHub Actions, pre-commit hook
+- ~~Copilot skill files docs~~ ✅ Added "GitHub Copilot Integration Files" section explaining skills
 
 ### Research Items (2026-01-25)
 
@@ -629,7 +630,7 @@ All 12 design decisions are documented in [`archive/DECISIONS.md`](../archive/DE
 | ~~HELP directive examples~~ | docs/GETTING-STARTED.md | Added HELP Directive section with syntax, topics, example | ✅ 2026-01-25 |
 | ~~ON-FAILURE/ON-SUCCESS examples~~ | docs/GETTING-STARTED.md | Added "Error Handling & Branching" section with patterns | ✅ 2026-01-25 |
 | ~~`validate` command tutorial~~ | docs/GETTING-STARTED.md | Added "Validation & CI/CD" section with GH Actions, pre-commit | ✅ 2026-01-25 |
-| Copilot skill files explained | docs/GETTING-STARTED.md | `sdqctl init` creates skills but purpose unclear | 🔲 Open |
+| ~~Copilot skill files explained~~ | docs/GETTING-STARTED.md | Added "GitHub Copilot Integration Files" section | ✅ 2026-01-25 |
 
 ### P3: Workflow Examples Gap
 

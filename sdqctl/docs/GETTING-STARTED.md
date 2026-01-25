@@ -57,6 +57,25 @@ sdqctl init . --force
 | `.github/copilot-instructions.md` | Instructions for GitHub Copilot |
 | `.github/skills/sdqctl-verify.md` | Copilot skill for sdqctl verification |
 
+### GitHub Copilot Integration Files
+
+When using GitHub Copilot, `init` creates two files that enhance the Copilot experience:
+
+**`.github/copilot-instructions.md`** — Project-level instructions that GitHub Copilot reads when working in your repository. Includes:
+- Overview of `.conv` workflow file syntax
+- Validation commands (no LLM required)
+- CI/CD-safe commands reference
+
+**`.github/skills/sdqctl-verify.md`** — A Copilot skill that teaches Copilot how to validate and test sdqctl workflows. Copilot can use this skill to:
+- Validate workflow syntax (`sdqctl validate`)
+- Inspect parsed structure (`sdqctl show`)
+- Preview execution (`sdqctl run --dry-run`)
+- Test with mock adapter (`sdqctl run --adapter mock`)
+
+**What are Copilot skills?** Skills are markdown files that give Copilot specialized knowledge for specific tasks. When you ask Copilot to validate a workflow, it can reference the skill file for correct commands.
+
+> **Skip Copilot files:** Use `sdqctl init --no-copilot` if you don't use GitHub Copilot.
+
 ### Configuration File (`.sdqctl.yaml`)
 
 The generated config file includes:
