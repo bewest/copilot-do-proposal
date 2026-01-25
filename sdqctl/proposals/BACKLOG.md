@@ -16,7 +16,6 @@ No critical items.
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| **Consolidate run+cycle → iterate** | Medium | See [ITERATE-CONSOLIDATION.md](ITERATE-CONSOLIDATION.md) - **Phase 1-4 complete**, Phase 5 remaining |
 | **Mixed prompt/file CLI support** | Medium | Variadic targets, see ITERATE-CONSOLIDATION.md Phase 6 |
 | **`---` separator syntax** | Low | Force turn boundaries in mixed mode |
 
@@ -40,6 +39,7 @@ No critical items.
 | **Groom QUIRKS.md** | Low | Archive resolved, extract learnings to docs. See [below](#quirks-grooming) |
 | Fix E501 lint issues (192 remaining) | Low | Refactor during normal development |
 | Review F841 unused variables (5) | Low | Needs manual review |
+| Update "cycle command" comments to "iterate" | Low | GETTING-STARTED.md, VALIDATION-WORKFLOW.md |
 | Split conversation.py (~1768 lines) | High | parser.py, validator.py, directives.py |
 | Modularize copilot.py (~1000 lines) | Medium | events.py, stats.py, session.py |
 | Add integration tests | Medium | Beyond loop stress testing |
@@ -62,6 +62,14 @@ No critical items.
 
 ---
 
+## Recently Completed
+
+| Item | Date | Notes |
+|------|------|-------|
+| **Consolidate run+cycle → iterate** | 2026-01-25 | [ITERATE-CONSOLIDATION.md](ITERATE-CONSOLIDATION.md) Phase 1-5 complete. `cycle` renamed to `iterate`, deprecated alias added. |
+
+---
+
 ## Architecture Roadmap
 
 > **Source**: Code review session 2026-01-25  
@@ -69,7 +77,7 @@ No critical items.
 
 ### Execution Engine Extraction (P2)
 
-**Problem**: `run.py` and `cycle.py` duplicate step execution logic (~500 lines overlap)
+**Problem**: `run.py` and `iterate.py` duplicate step execution logic (~500 lines overlap)
 
 **Solution**: Create `core/executor.py`
 
