@@ -417,9 +417,9 @@ def test_session_resume():
 
 ## Open Questions
 
-1. **Session naming conflicts** - What if session name already exists?
-2. **Cross-machine sessions** - Can `isRemote` sessions be resumed?
-3. **Session expiration** - Should sdqctl auto-cleanup very old sessions?
+1. **Session naming conflicts** - What if session name already exists? (warn/error)
+2. **Cross-machine sessions** - Can `isRemote` sessions be resumed? (Answer: Defer for now).
+3. **Session expiration** - Should sdqctl auto-cleanup very old sessions? (Answer: Defer for now).
 
 ---
 

@@ -361,8 +361,10 @@ grep "compaction" output.log
 ## Open Questions
 
 1. **Workspace path usage** - Should sdqctl use `session.workspace_path` for artifacts?
+  * ANSWER: from the AUTHORS: Unclear what this is blocking or impacting?
 2. **Compaction visibility** - How verbose should compaction event logging be?
-3. **Threshold tuning** - Are 30%/80%/95% good defaults for most workflows?
+  * ANSWER: From the AUTHORS: with -vvv I want to be able to see when it's skipped (current), when it's triggered, and when it's started and ended.  I'd like to also be able to see the workflow/cycle/prompt/turn info.
+3. **Threshold tuning** - Are 30%/80%/95% good defaults for most workflows?  Yes 30/85 is good by default, I think.
 
 ---
 
