@@ -72,13 +72,16 @@ All 8 proposed tooling commands are **fully implemented**:
 | 🔴 P0 | [Q-014: Event handler multiplexing](../docs/QUIRKS.md#q-014-event-handler-multiplexing-in-accumulate-mode) | Research | Critical - causes duplicate tools, log spam, token explosion |
 | 🔴 P0 | [Q-015: Duplicate tool calls](../docs/QUIRKS.md#q-015-duplicate-tool-calls-at-session-termination) | Research | Related to Q-014 |
 | 🟡 P1 | [Q-013: Unknown tool names regression](../docs/QUIRKS.md#q-013-tool-name-shows-unknown-in-completion-logs) | Research | SDK 2 intent reading hypothesis |
-| P2 | ~~Add `refcat` to GETTING-STARTED.md~~ | Low | ✅ 2026-01-25 |
-| P2 | ~~[MODEL-REQUIREMENTS Phase 3](MODEL-REQUIREMENTS.md)~~ | Medium | ✅ 2026-01-25 Adapter integration |
+| P2 | Document `artifact` command | Medium | User-facing docs for traceability IDs |
 | P2 | [CONSULT-DIRECTIVE Phase 4](CONSULT-DIRECTIVE.md) | Low | Refinements (timeout, partial save) - needs design review |
-| P2 | ~~Create `docs/COMMANDS.md`~~ | Medium | ✅ 2026-01-25 |
-| P2 | ~~[MODEL-REQUIREMENTS Phase 4](MODEL-REQUIREMENTS.md)~~ | Low | ✅ 2026-01-25 Operator configuration |
 | P3 | STPA template variables | Low | Future work |
 | P3 | CI/CD workflow examples | Low | GitHub Actions integration |
+
+**Completed this session:**
+- ~~Add `refcat` to GETTING-STARTED.md~~ ✅ (already present)
+- ~~Create `docs/COMMANDS.md`~~ ✅ (already complete)
+- ~~Create `docs/ADAPTERS.md`~~ ✅ 2026-01-25
+- ~~MODEL-REQUIREMENTS Phase 3-4~~ ✅ 2026-01-25
 
 ### Research Items (2026-01-25)
 
@@ -644,12 +647,12 @@ All 12 design decisions are documented in [`archive/DECISIONS.md`](../archive/DE
 
 ### New Gaps Identified (2026-01-25 Review)
 
-| Gap | Priority | Notes |
-|-----|----------|-------|
-| HELP directive not in GETTING-STARTED examples | P3 | Show `HELP directives workflow` syntax |
-| Adapter env vars not documented | P2 | COPILOT_SDK_AUTH, ANTHROPIC_API_KEY, OPENAI_API_KEY |
-| Q-014/Q-015 research blockers undocumented | P1 | Event multiplexing + duplicate tools need investigation |
-| `ON-FAILURE`/`ON-SUCCESS` not in GETTING-STARTED | P3 | Branching directives implemented but not in tutorials |
+| Gap | Priority | Notes | Status |
+|-----|----------|-------|--------|
+| HELP directive not in GETTING-STARTED examples | P3 | Show `HELP directives workflow` syntax | 🔲 Open |
+| ~~Adapter env vars not documented~~ | P2 | COPILOT_SDK_AUTH, ANTHROPIC_API_KEY, OPENAI_API_KEY | ✅ docs/ADAPTERS.md |
+| Q-014/Q-015 research blockers | P1 | Event multiplexing + duplicate tools need investigation | 🔬 Research |
+| `ON-FAILURE`/`ON-SUCCESS` not in GETTING-STARTED | P3 | Branching directives implemented but not in tutorials | 🔲 Open |
 
 ---
 
