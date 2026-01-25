@@ -73,7 +73,7 @@ All 8 proposed tooling commands are **fully implemented**:
 | Priority | Item | Effort | Notes |
 |----------|------|--------|-------|
 | P2 | ~~Security model documentation~~ | Medium | ✅ `docs/SECURITY-MODEL.md` created 2026-01-25 |
-| P2 | Model selection guide | Medium | When to use gpt-4 vs claude vs sonnet |
+| ~~P2~~ | ~~Model selection guide~~ | ~~Medium~~ | ✅ Added to docs/ADAPTERS.md 2026-01-25 |
 | P2 | [CONSULT-DIRECTIVE Phase 4](CONSULT-DIRECTIVE.md) | Low | Refinements (timeout, partial save) - needs design review |
 | ~~P3~~ | ~~HELP directive examples~~ | ~~Low~~ | ✅ Added section with syntax and workflow-assistant example |
 | ~~P3~~ | ~~ON-FAILURE/ON-SUCCESS tutorial~~ | ~~Low~~ | ✅ Added "Error Handling & Branching" section |
@@ -669,7 +669,7 @@ The security model for shell execution and file handling is now documented.
 |-------|--------|-------|
 | LSP support for refcat | BACKLOG References | Language Server Protocol for IDE integration |
 | Interactive docs (`sdqctl help --interactive`) | BACKLOG §Future | Browsable help system |
-| Model selection practical guide | ADAPTERS.md | When to use gpt-4 vs claude vs sonnet with examples |
+| ~~Model selection practical guide~~ | ADAPTERS.md | ✅ Added 2026-01-25 |
 | Default verbosity key actions | QUIRKS.md Q-004 | Show key actions without `-v` flag (careful selection needed) |
 
 ### Actionable Next Steps
