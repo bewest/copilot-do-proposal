@@ -249,6 +249,6 @@ Documented in [`docs/SECURITY-MODEL.md`](../docs/SECURITY-MODEL.md).
 - [docs/DIRECTIVE-REFERENCE.md](../docs/DIRECTIVE-REFERENCE.md) - Complete directive catalog
 - [docs/CODE-QUALITY.md](../docs/CODE-QUALITY.md) - Code quality standards
 - [docs/PHILOSOPHY.md](../docs/PHILOSOPHY.md) - Workflow design principles
-- [docs/QUIRKS.md](../docs/QUIRKS.md) - Known quirks (all resolved)
+- [docs/QUIRKS.md](../docs/QUIRKS.md) - Known quirks (2 active: Q-019A, Q-017)
 
 **Future ideas**: LSP support for refcat, interactive help system
