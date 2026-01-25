@@ -269,7 +269,7 @@ class AssertionsVerifier:
         for line_num, line in enumerate(lines, 1):
             for pattern in patterns:
                 for match in pattern.finditer(line):
-                    condition = match.group(1) if match.lastindex >= 1 else ""
+                    _condition = match.group(1) if match.lastindex >= 1 else ""  # noqa: F841
                     message = match.group(2) if match.lastindex >= 2 else None
 
                     # Check for trace ID in message or preceding comment

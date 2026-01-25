@@ -116,7 +116,6 @@ class TerminologyVerifier:
         files_scanned = 0
         deprecated_found = 0
         capitalization_issues = 0
-        glossary_terms_found = 0
 
         # Load glossary if available
         glossary_terms = self._load_glossary(root, glossary)
@@ -213,7 +212,6 @@ class TerminologyVerifier:
                             ))
 
         # Build result
-        total_issues = deprecated_found + capitalization_issues
         passed = deprecated_found == 0  # Only deprecated terms cause failure
 
         if glossary_terms:

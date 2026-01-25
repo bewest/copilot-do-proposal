@@ -20,9 +20,9 @@ import click
 from . import __version__
 from .commands.apply import apply
 from .commands.artifact import artifact
-from .commands.cycle import cycle
 from .commands.flow import flow
 from .commands.help import help_cmd
+from .commands.iterate import iterate
 from .commands.refcat import refcat
 from .commands.render import render
 from .commands.run import run
@@ -92,7 +92,7 @@ def cli(ctx: click.Context, verbose: int, quiet: bool, show_prompt: bool, json_e
 
 # Register commands
 cli.add_command(run)
-cli.add_command(cycle)
+cli.add_command(iterate)
 cli.add_command(flow)
 cli.add_command(apply)
 cli.add_command(status)
@@ -102,6 +102,46 @@ cli.add_command(refcat)
 cli.add_command(artifact)
 cli.add_command(sessions)
 cli.add_command(help_cmd)
+
+
+# Deprecated alias for 'cycle' command
+@cli.command("cycle", hidden=True)
+@click.argument("workflow", type=click.Path(exists=True), required=False)
+@click.option("--from-json", "from_json", type=click.Path())
+@click.option("--max-cycles", "-n", type=int, default=None)
+@click.option("--session-mode", "-s", type=click.Choice(["accumulate", "compact", "fresh"]), default="accumulate")
+@click.option("--adapter", "-a", default=None)
+@click.option("--model", "-m", default=None)
+@click.option("--context", "-c", multiple=True)
+@click.option("--allow-files", multiple=True)
+@click.option("--deny-files", multiple=True)
+@click.option("--allow-dir", multiple=True)
+@click.option("--deny-dir", multiple=True)
+@click.option("--session-name", default=None)
+@click.option("--checkpoint-dir", type=click.Path(), default=None)
+@click.option("--prologue", multiple=True)
+@click.option("--epilogue", multiple=True)
+@click.option("--header", multiple=True)
+@click.option("--footer", multiple=True)
+@click.option("--output", "-o", default=None)
+@click.option("--event-log", default=None)
+@click.option("--json", "json_output", is_flag=True)
+@click.option("--dry-run", is_flag=True)
+@click.option("--render-only", is_flag=True)
+@click.option("--min-compaction-density", type=int, default=30)
+@click.option("--no-infinite-sessions", is_flag=True)
+@click.option("--compaction-threshold", type=int, default=80)
+@click.option("--buffer-threshold", type=int, default=95)
+@click.option("--no-stop-file-prologue", is_flag=True)
+@click.option("--stop-file-nonce", default=None)
+@click.pass_context
+def cycle_alias(ctx, **kwargs):
+    """[DEPRECATED] Use 'sdqctl iterate' instead."""
+    click.secho(
+        "⚠ 'sdqctl cycle' is deprecated. Use 'sdqctl iterate' instead.",
+        fg="yellow", err=True
+    )
+    ctx.invoke(iterate, **kwargs)
 
 
 @cli.command()

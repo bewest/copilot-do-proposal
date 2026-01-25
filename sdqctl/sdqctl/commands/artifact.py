@@ -84,7 +84,6 @@ def scan_existing_ids(
             # Handle both simple (REQ-001) and category (REQ-CGM-001) formats
             if art_type in CATEGORY_TYPES:
                 # Category types have complex patterns
-                groups = match.groups()
                 if category:
                     # Only include IDs with matching category
                     if f"-{category}-" in full_id.upper():

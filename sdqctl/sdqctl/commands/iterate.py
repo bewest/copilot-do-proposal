@@ -1,9 +1,11 @@
 """
-sdqctl cycle - Run multi-cycle workflow with compaction.
+sdqctl iterate - Execute a workflow with optional multi-cycle iteration.
 
 Usage:
-    sdqctl cycle workflow.conv --max-cycles 5
-    sdqctl cycle workflow.conv --checkpoint-dir ./checkpoints
+    sdqctl iterate workflow.conv              # Single execution (default -n 1)
+    sdqctl iterate workflow.conv -n 5         # Multi-cycle execution
+    sdqctl iterate "Audit this module"        # Inline prompt
+    sdqctl iterate workflow.conv -s fresh     # Fresh session each cycle
 
 Session Modes:
     accumulate  Context grows across cycles. Compaction triggered only when
@@ -100,7 +102,7 @@ def build_infinite_session_config(
     )
 
 
-@click.command("cycle")
+@click.command("iterate")
 @click.argument("workflow", type=click.Path(exists=True), required=False)
 @click.option("--from-json", "from_json", type=click.Path(),
               help="Read workflow from JSON file or - for stdin")
@@ -136,7 +138,7 @@ def build_infinite_session_config(
 @click.option("--no-stop-file-prologue", is_flag=True, help="Disable automatic stop file instructions")
 @click.option("--stop-file-nonce", default=None, help="Override stop file nonce (random if not set)")
 @click.pass_context
-def cycle(
+def iterate(
     ctx: click.Context,
     workflow: Optional[str],
     from_json: Optional[str],
@@ -167,7 +169,22 @@ def cycle(
     no_stop_file_prologue: bool,
     stop_file_nonce: Optional[str],
 ) -> None:
-    """Run multi-cycle workflow with compaction."""
+    """Execute a workflow with optional multi-cycle iteration.
+
+    Examples:
+
+    \b
+    # Single execution (default)
+    sdqctl iterate workflow.conv
+
+    \b
+    # Multi-cycle execution
+    sdqctl iterate workflow.conv -n 5
+
+    \b
+    # Fresh session each cycle
+    sdqctl iterate workflow.conv -n 3 -s fresh
+    """
     # Validate: need either workflow or --from-json
     if not workflow and not from_json:
         raise click.UsageError("Either WORKFLOW argument or --from-json is required")
