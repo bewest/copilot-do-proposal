@@ -1,6 +1,6 @@
 # sdqctl Proposal Backlog
 
-> **Last Updated**: 2026-01-25 (Q-013/Q-014/Q-015 all resolved)  
+> **Last Updated**: 2026-01-25 (Documentation gap deep review)  
 > **Purpose**: Track open design questions, implementation work, and future proposals  
 > **Archive**: Completed session logs and design decisions → [`archive/`](../archive/)
 
@@ -604,7 +604,7 @@ All 12 design decisions are documented in [`archive/DECISIONS.md`](../archive/DE
 |-----|----------|-------|--------|
 | ~~`refcat` command not in GETTING-STARTED.md~~ | `docs/GETTING-STARTED.md` | Has "Precise Context with refcat" section | ✅ 2026-01-25 |
 | `artifact` command undocumented | README.md, docs/ | ARTIFACT-TAXONOMY.md proposal exists but no user-facing docs | 🔲 Open |
-| `resume` command separate from `sessions` | README.md | `resume` vs `sessions resume` - which is canonical? | 🔲 Open |
+| ~~`resume` command separate from `sessions`~~ | README.md, docs/COMMANDS.md | Clarified difference with comparison notes | ✅ 2026-01-25 |
 | `flow` command minimal docs | docs/ | Only 2 lines in README; no dedicated page | 🔲 Open |
 | ~~`init` command not documented~~ | docs/GETTING-STARTED.md | Added "Initialize a Project" section with config example | ✅ 2026-01-25 |
 | ~~Adapter configuration~~ | `docs/ADAPTERS.md` | How to configure each adapter (env vars, auth) | ✅ 2026-01-25 |
@@ -619,6 +619,9 @@ All 12 design decisions are documented in [`archive/DECISIONS.md`](../archive/DE
 | ~~INFINITE-SESSIONS directives not in README~~ | README.md | COMPACTION-MIN, COMPACTION-THRESHOLD now documented | ✅ 2026-01-25 |
 | ~~DEBUG directives not documented~~ | README.md | DEBUG, DEBUG-INTENTS, EVENT-LOG now in directive table | ✅ 2026-01-25 |
 | HELP directive examples | docs/GETTING-STARTED.md | `HELP directives workflow` syntax not shown | 🔲 Open |
+| ON-FAILURE/ON-SUCCESS examples | docs/GETTING-STARTED.md | Branching directives implemented but no tutorial | 🔲 Open |
+| `validate` command tutorial | docs/GETTING-STARTED.md | Referenced in CI/CD but no hands-on section | 🔲 Open |
+| Copilot skill files explained | docs/GETTING-STARTED.md | `sdqctl init` creates skills but purpose unclear | 🔲 Open |
 
 ### P3: Workflow Examples Gap
 
@@ -660,6 +663,15 @@ All 12 design decisions are documented in [`archive/DECISIONS.md`](../archive/DE
 | ~~Q-013 verification after Q-014 fix~~ | P1 | Root cause confirmed as Q-014 handler leak - now fixed | ✅ 2026-01-25 |
 | `validate` command not in GETTING-STARTED | P3 | Referenced in CI/CD but no tutorial section | 🔲 Open |
 | Copilot skill files not documented | P3 | `sdqctl init` creates skills but purpose not explained | 🔲 Open |
+
+### Gaps Added (2026-01-25 Deep Review)
+
+| Gap | Priority | Notes | Status |
+|-----|----------|-------|--------|
+| `flow` command full documentation | P2 | Only 2 lines in README; COMMANDS.md has more but no tutorial | 🔲 Open |
+| ~~`resume` vs `sessions resume` clarity~~ | P2 | Clarified in docs/COMMANDS.md with comparison notes | ✅ 2026-01-25 |
+| `artifact` user-facing guide | P2 | COMMANDS.md has reference; needs GETTING-STARTED section | 🔲 Open |
+| QUIRKS.md → all resolved | - | All quirks Q-001 through Q-015 now ✅ FIXED | ✅ 2026-01-25 |
 
 ---
 

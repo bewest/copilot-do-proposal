@@ -302,7 +302,7 @@ sdqctl refcat @file.py#L10-L50 --validate-only
 
 ## sessions
 
-Manage conversation sessions.
+Manage conversation sessions (server-side session state).
 
 ```bash
 sdqctl sessions SUBCOMMAND [OPTIONS]
@@ -338,15 +338,25 @@ sdqctl sessions cleanup --older-than 30d
 sdqctl sessions resume my-session
 ```
 
+> **Note:** `sessions resume` restores **SDK conversation history** (server-side).
+> For resuming from a local **PAUSE checkpoint file**, see [`resume`](#resume).
+
 ---
 
 ## resume
 
-Resume a paused workflow from checkpoint.
+Resume a paused workflow from a local checkpoint file.
 
 ```bash
 sdqctl resume [CHECKPOINT] [OPTIONS]
 ```
+
+> **Difference from `sessions resume`:**
+> - `resume` loads a **local checkpoint file** created by the `PAUSE` directive
+> - `sessions resume` restores **SDK session history** by session ID
+> 
+> Use `resume` for: workflow pauses, human-in-loop breaks, CONSULT responses  
+> Use `sessions resume` for: continuing previous SDK conversations
 
 **Examples:**
 ```bash
