@@ -670,6 +670,7 @@ The security model for shell execution and file handling is now documented.
 | LSP support for refcat | BACKLOG References | Language Server Protocol for IDE integration |
 | Interactive docs (`sdqctl help --interactive`) | BACKLOG §Future | Browsable help system |
 | Model selection practical guide | ADAPTERS.md | When to use gpt-4 vs claude vs sonnet with examples |
+| Default verbosity key actions | QUIRKS.md Q-004 | Show key actions without `-v` flag (careful selection needed) |
 
 ### Actionable Next Steps
 
@@ -788,10 +789,12 @@ The security model for shell execution and file handling is now documented.
 ### Action Items
 
 - [x] **P0**: Fix 5 F821 undefined name bugs (runtime errors) → ✅ 2026-01-25
-- [x] **P1**: Run `ruff check --fix` to clean 1,785 auto-fixable issues → ✅ 2026-01-25 (197 remaining: 192 E501 line length, 5 F841 unused vars)
+- [x] **P1**: Run `ruff check --fix` to clean 1,785 auto-fixable issues → ✅ 2026-01-25
 - [ ] **P1**: Split `run()` function into smaller units
 - [ ] **P2**: Fix circular import in renderer→help
 - [x] **P2**: Document security model for shell execution → `docs/SECURITY-MODEL.md` (2026-01-25)
+- [ ] **P3**: Fix E501 line too long (192 remaining) - refactor during normal development
+- [ ] **P3**: Review F841 unused variables (5 remaining)
 - [ ] **P3**: Add test parametrization and markers
 
 ---
