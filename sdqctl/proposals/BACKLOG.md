@@ -557,9 +557,10 @@ Ideas moved from QUIRKS.md "Future Considerations":
 
 ---
 
-## Open Questions / Discussion
+## Design Decisions & Implementation Notes
 
-> **Session**: 2026-01-24 | **Topic**: Validation/Verification Workflow Documentation
+> Historical record of design decisions and their implementation status.
+> Items marked ✅ Complete are kept for reference.
 
 ### P0: REFCAT Directive Implementation
 
