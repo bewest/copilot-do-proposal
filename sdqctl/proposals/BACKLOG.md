@@ -1,6 +1,6 @@
 # sdqctl Proposal Backlog
 
-> **Last Updated**: 2026-01-25 (Q-014/Q-015 fixed)  
+> **Last Updated**: 2026-01-25 (Q-013/Q-014/Q-015 all resolved)  
 > **Purpose**: Track open design questions, implementation work, and future proposals  
 > **Archive**: Completed session logs and design decisions → [`archive/`](../archive/)
 
