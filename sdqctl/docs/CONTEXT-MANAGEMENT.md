@@ -200,9 +200,9 @@ session = await client.create_session({
 })
 ```
 
-### Proposed sdqctl Integration
+### sdqctl Integration ✅
 
-When implemented, infinite sessions will be the default for `cycle` mode:
+Infinite sessions CLI options are now active in `cycle` mode:
 
 ```bash
 # Default: infinite sessions enabled
@@ -214,7 +214,8 @@ sdqctl cycle workflow.conv -n 10 --no-infinite-sessions
 # Custom thresholds
 sdqctl cycle workflow.conv -n 10 \
     --min-compaction-density 25 \
-    --compaction-threshold 75
+    --compaction-threshold 75 \
+    --buffer-threshold 90
 ```
 
 ### Threshold Behavior
@@ -223,7 +224,7 @@ sdqctl cycle workflow.conv -n 10 \
 |-----------|---------|----------|
 | `--min-compaction-density` | 30% | Skip compaction if context below this |
 | `--compaction-threshold` | 80% | Start background compaction |
-| `--max-context` | 95% | Block until compaction complete |
+| `--buffer-threshold` | 95% | Block until compaction complete |
 
 ### When to Use Manual COMPACT
 
@@ -233,12 +234,10 @@ Even with infinite sessions enabled, you may still want explicit `COMPACT` direc
 2. **Context freshness** - Force compaction to get clean slate for new phase
 3. **Preserving specific content** - Use `COMPACT-PRESERVE` for important items
 
-### Current Implementation
+### Implementation Status
 
-Until infinite sessions integration is complete, sdqctl uses **client-side compaction**:
-- Session reset with summary injection
-- Manual `COMPACT` directives required
-- `--min-compaction-density` to skip low-value compactions
+CLI options are wired to `AdapterConfig.infinite_sessions` (Phase 1-3 complete).
+Directive-based configuration (`INFINITE-SESSIONS`, `COMPACTION-THRESHOLD`) is pending.
 
 See [SDK-INFINITE-SESSIONS proposal](../proposals/SDK-INFINITE-SESSIONS.md) for implementation details.
 
