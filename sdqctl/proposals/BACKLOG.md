@@ -606,7 +606,7 @@ All 12 design decisions are documented in [`archive/DECISIONS.md`](../archive/DE
 | `artifact` command undocumented | README.md, docs/ | ARTIFACT-TAXONOMY.md proposal exists but no user-facing docs | 🔲 Open |
 | `resume` command separate from `sessions` | README.md | `resume` vs `sessions resume` - which is canonical? | 🔲 Open |
 | `flow` command minimal docs | docs/ | Only 2 lines in README; no dedicated page | 🔲 Open |
-| `init` command not documented | docs/ | Mentioned in README but no details on what it creates | 🔲 Open |
+| ~~`init` command not documented~~ | docs/GETTING-STARTED.md | Added "Initialize a Project" section with config example | ✅ 2026-01-25 |
 | ~~Adapter configuration~~ | `docs/ADAPTERS.md` | How to configure each adapter (env vars, auth) | ✅ 2026-01-25 |
 | Model selection guide | docs/ | When to use gpt-4 vs claude vs sonnet; MODEL-REQUIRES examples | 🔲 Open (see ADAPTERS.md §MODEL-REQUIRES) |
 
@@ -636,6 +636,7 @@ All 12 design decisions are documented in [`archive/DECISIONS.md`](../archive/DE
    - ~~Add DEBUG directives to README~~ ✅ 2026-01-25
    - ~~Add INFINITE-SESSIONS directives to README~~ ✅ 2026-01-25
    - ~~Add `refcat` section to GETTING-STARTED.md~~ ✅ 2026-01-25
+   - ~~Add `init` documentation to GETTING-STARTED.md~~ ✅ 2026-01-25
    
 2. **Medium effort** (1-2 hours):
    - ~~Create `docs/COMMANDS.md` with detailed command reference~~ ✅ 2026-01-25
@@ -656,6 +657,9 @@ All 12 design decisions are documented in [`archive/DECISIONS.md`](../archive/DE
 | `ON-FAILURE`/`ON-SUCCESS` not in GETTING-STARTED | P3 | Branching directives implemented but not in tutorials | 🔲 Open |
 | ~~Accumulate mode stability warning~~ | P2 | Q-014 fixed - accumulate mode now stable | ✅ 2026-01-25 |
 | ~~Event handler lifecycle docs~~ | P2 | Fix documented in QUIRKS.md Q-014 section | ✅ 2026-01-25 |
+| Q-013 verification after Q-014 fix | P1 | Test accumulate mode to confirm unknown tool names resolved | 🔲 Open |
+| `validate` command not in GETTING-STARTED | P3 | Referenced in CI/CD but no tutorial section | 🔲 Open |
+| Copilot skill files not documented | P3 | `sdqctl init` creates skills but purpose not explained | 🔲 Open |
 
 ---
 

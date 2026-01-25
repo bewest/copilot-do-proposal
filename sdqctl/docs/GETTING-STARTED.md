@@ -29,6 +29,59 @@ sdqctl --help
 
 ---
 
+## Initialize a Project
+
+The `init` command sets up sdqctl in your project:
+
+```bash
+# Initialize in current directory
+sdqctl init .
+
+# Initialize in a specific directory
+sdqctl init my-project
+
+# Skip GitHub Copilot integration files
+sdqctl init . --no-copilot
+
+# Overwrite existing files
+sdqctl init . --force
+```
+
+### What `init` Creates
+
+| File/Directory | Purpose |
+|----------------|---------|
+| `.sdqctl.yaml` | Project configuration (defaults, context settings) |
+| `workflows/` | Directory for your `.conv` workflow files |
+| `workflows/example-audit.conv` | Example security audit workflow |
+| `.github/copilot-instructions.md` | Instructions for GitHub Copilot |
+| `.github/skills/sdqctl-verify.md` | Copilot skill for sdqctl verification |
+
+### Configuration File (`.sdqctl.yaml`)
+
+The generated config file includes:
+
+```yaml
+project:
+  name: my-project
+  
+defaults:
+  adapter: copilot
+  model: gpt-4
+  
+context:
+  limit: 80%
+  on_limit: compact
+  
+checkpoints:
+  enabled: true
+  directory: .sdqctl/checkpoints
+```
+
+This sets project-wide defaults so you don't need to specify them in every workflow.
+
+---
+
 ## Your First Workflow
 
 ### 1. Run a Simple Prompt
