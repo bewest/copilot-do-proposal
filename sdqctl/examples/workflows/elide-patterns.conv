@@ -1,0 +1,89 @@
+# ELIDE Chains - Optimized Prompt Patterns
+#
+# ELIDE merges adjacent elements into a single prompt, eliminating unnecessary
+# agent turns. This workflow demonstrates common patterns for efficient execution.
+#
+# Run with: sdqctl run examples/workflows/elide-patterns.conv --adapter mock
+#
+# See: docs/FEATURE-INTERACTIONS.md for ELIDE interaction rules
+
+MODEL gpt-4
+ADAPTER mock
+MODE audit
+
+# ============================================================================
+# PATTERN 1: Test Output + Fix Instruction (Most Common)
+# ============================================================================
+# Without ELIDE: Agent responds to test output, then gets fix instruction
+# With ELIDE: Agent sees both in one turn - more efficient
+
+RUN echo "FAILED: test_auth.py::test_login - AssertionError"
+ELIDE
+PROMPT Analyze the test failure above and fix the issue in the code.
+
+# ============================================================================
+# PATTERN 2: Multi-Command Chain
+# ============================================================================
+# Chain multiple RUN outputs with a single analysis prompt
+# Agent sees all outputs together for comprehensive analysis
+
+RUN echo "=== Build Output ===" && echo "Compiled 47 files, 2 warnings"
+ELIDE
+RUN echo "=== Test Output ===" && echo "23 passed, 2 failed"
+ELIDE
+RUN echo "=== Lint Output ===" && echo "src/auth.py:42: E501 line too long"
+ELIDE
+PROMPT Review all the outputs above (build, test, lint) and prioritize fixes.
+
+# ============================================================================
+# PATTERN 3: VERIFY + Fix
+# ============================================================================
+# Use static verification output to guide AI fixes
+
+VERIFY refs
+ELIDE
+PROMPT If any @-references are broken, fix them by updating the file paths.
+
+# ============================================================================
+# PATTERN 4: Context Injection + Task
+# ============================================================================
+# Inject file content directly before task (alternative to CONTEXT directive)
+
+RUN cat README.md 2>/dev/null || echo "# Sample README"
+ELIDE
+PROMPT Update the README to include installation instructions.
+
+# ============================================================================
+# ANTI-PATTERN: ELIDE with Branching (NOT ALLOWED)
+# ============================================================================
+# The following would cause a parse error:
+#
+# RUN npm test
+# ELIDE
+# ON-FAILURE        # ❌ ERROR: Cannot branch inside ELIDE chain
+#   PROMPT Fix tests
+#
+# Instead, put branching OUTSIDE the ELIDE chain:
+#
+# RUN npm test
+# ON-FAILURE
+#   ELIDE           # ✅ OK: ELIDE inside the branch
+#   PROMPT Fix the failing tests shown above
+
+# ============================================================================
+# PATTERN 5: Long ELIDE Chain (Token Efficient)
+# ============================================================================
+# When you have multiple sequential steps, chain them all
+
+RUN echo "Step 1: Checking dependencies..."
+ELIDE
+RUN echo "Step 2: Validating config..."
+ELIDE
+RUN echo "Step 3: Running migrations..."
+ELIDE
+RUN echo "Step 4: Starting services..."
+ELIDE
+PROMPT All setup steps completed. Verify everything is working correctly.
+
+# Final summary
+PROMPT Provide a summary of all optimizations made during this workflow.

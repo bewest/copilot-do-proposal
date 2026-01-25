@@ -35,18 +35,46 @@ All 8 proposed tooling commands are **fully implemented**:
 | `help` | Documentation access | 12 commands, 6 topics | ✅ Complete |
 
 ### Priority Recommendations
+
+#### P0: Backlog Reorganization (Added 2026-01-25)
+
+> **Status**: 🔲 Open | **Effort**: Medium | **Impact**: High (maintainability)
+>
+> The BACKLOG has grown to 996 lines with completed work, design decisions, and reference 
+> material mixed with active items. This makes it hard to identify what work remains.
+
+**Objective**: Migrate knowledge to proper locations, archive completed work, reduce to <300 lines.
+
+| Task | Destination | Status |
+|------|-------------|--------|
+| Create `docs/DIRECTIVE-REFERENCE.md` | Extract directive catalog | 🔲 Open |
+| Create `docs/CODE-QUALITY.md` | Extract quality standards | 🔲 Open |
+| Update `archive/DECISIONS.md` | Add D-013 through D-015 | 🔲 Open |
+| Create `archive/2026-01-backlog-migration.md` | Snapshot completed work | 🔲 Open |
+| Remove completed sections from BACKLOG | Archive | 🔲 Open |
+| Consolidate active items | Single priority list | 🔲 Open |
+
+**See**: Session plan for detailed migration mapping.
+
+---
+
+#### Completed Priorities (Archive Candidates)
+
+<details>
+<summary>Click to expand completed items (to be archived)</summary>
+
 * ~~[SDK-INFINITE-SESSIONS](SDK-INFINITE-SESSIONS.md)~~ | ✅ Complete | Phase 1-4 | Native SDK compaction for cycle mode
 * ~~[SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md)~~ | ✅ Complete | Phase 1-4 | `sessions resume` + `SESSION-NAME` directive
 * ~~Q-014/Q-015 Event handler fix~~ | ✅ Complete | Accumulate mode now stable
 
-#### P0: Documentation Gaps (Quick Wins)
+##### P0: Documentation Gaps (Quick Wins)
 
 | Gap | Location | Complexity | Status |
 |-----|----------|------------|--------|
 | ~~Pipeline schema docs~~ | `docs/PIPELINE-SCHEMA.md` | Low | ✅ Complete |
 | ~~Verifier extension guide~~ | `docs/EXTENDING-VERIFIERS.md` | Low | ✅ Complete |
 
-#### P1: Verifier Expansion (High Value)
+##### P1: Verifier Expansion (High Value)
 
 | Verifier | Use Case | Complexity | Status |
 |----------|----------|------------|--------|
@@ -54,13 +82,15 @@ All 8 proposed tooling commands are **fully implemented**:
 | `links` | URL/file link checking | Low | ✅ Complete |
 | `terminology` | Deprecated terms + capitalization | Low | ✅ Complete |
 
-#### P2: Directive Implementation (Deferred)
+##### P2: Directive Implementation (Deferred)
 
 | Directive | Proposal | Complexity | Recommendation |
 |-----------|----------|------------|----------------|
 | `ON-FAILURE` | RUN-BRANCHING | High | ✅ Implemented 2026-01-24 |
 | `ON-SUCCESS` | RUN-BRANCHING | High | ✅ Implemented 2026-01-24 |
 | `VERIFY-TRACE` | STPA-INTEGRATION | Medium | ✅ Implemented 2026-01-24 |
+
+</details>
 
 ### Key Findings
 
@@ -120,7 +150,7 @@ Handler uses session-level `_send_*` state that resets each `send()` call.
 | **P3** | F841 unused variables (5 issues) | Code quality |
 | ~~**P3**~~ | ~~CONSULT workflow example~~ | ~~Documentation~~ | ✅ 2026-01-25 |
 | ~~**P3**~~ | ~~CI/CD integration examples~~ | ~~Documentation~~ | ✅ 2026-01-25 |
-| **P3** | ELIDE chains example | Documentation |
+| ~~**P3**~~ | ~~ELIDE chains example~~ | ~~Documentation~~ | ✅ 2026-01-25 |
 | **P3** | Default verbosity key actions | Feature |
 | **P3** | Test quality improvements | Testing |
 | ~~**P3**~~ | ~~Troubleshooting guide~~ | ~~Documentation~~ | ✅ 2026-01-25 |
@@ -746,7 +776,7 @@ The security model for shell execution and file handling is now documented.
 | ~~CI/CD integration examples~~ | ~~P3~~ | ~~GitHub Actions / GitLab CI using verify + render~~ | ✅ 2026-01-25 |
 | FEATURE-INTERACTIONS.md status | P3 | Says "Draft" but content is complete; update to "Complete" | ✅ 2026-01-25 |
 | claude/openai adapter stubs | P2 | ADAPTERS.md documents as "Planned" - either implement or clarify scope | 🔲 Open |
-| ELIDE chains example | P3 | Multi-ELIDE optimized workflows example in examples/workflows | 🔲 Open |
+| ~~ELIDE chains example~~ | ~~P3~~ | ~~Multi-ELIDE optimized workflows example in examples/workflows~~ | ✅ 2026-01-25 |
 | Default verbosity key actions | P3 | Q-004 notes: show key actions at default level (careful selection) | 🔲 Open |
 | Test quality improvements | P3 | Add error path tests, parametrization, markers, fixtures | 🔲 Open |
 
