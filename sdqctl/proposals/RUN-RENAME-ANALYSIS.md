@@ -1,9 +1,16 @@
 # `run` Command Rename Analysis
 
-> **Status**: Draft - Needs User Research  
+> **Status**: ⚠️ Superseded by [ITERATE-CONSOLIDATION.md](ITERATE-CONSOLIDATION.md)  
 > **Created**: 2026-01-24  
+> **Updated**: 2026-01-25  
 > **Priority**: P2 (Deferred)  
-> **Related**: [CLI-ERGONOMICS.md](CLI-ERGONOMICS.md)
+> **Related**: [CLI-ERGONOMICS.md](CLI-ERGONOMICS.md), [ITERATE-CONSOLIDATION.md](ITERATE-CONSOLIDATION.md)
+
+---
+
+> **Note**: This analysis focused on renaming `run` alone. The decision has evolved 
+> to consolidate both `run` and `cycle` into a new `iterate` command. See 
+> [ITERATE-CONSOLIDATION.md](ITERATE-CONSOLIDATION.md) for the full implementation plan.
 
 ---
 
