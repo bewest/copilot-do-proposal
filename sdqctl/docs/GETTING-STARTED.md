@@ -106,6 +106,7 @@ This is useful for:
 | `render` | Preview prompts without AI calls | Debugging, validation |
 | `verify` | Static verification suite | Pre-flight checks |
 | `status` | Show session/adapter status | Troubleshooting |
+| `sessions` | Manage conversation sessions | List, delete, cleanup sessions |
 
 ### run vs cycle vs apply
 
@@ -345,4 +346,11 @@ sdqctl verify all --json
 
 # Check status
 sdqctl status --adapters
+
+# Session management
+sdqctl sessions list                           # List all sessions
+sdqctl sessions list --format json             # JSON output
+sdqctl sessions list --filter "audit-*"        # Filter by pattern
+sdqctl sessions delete SESSION_ID --force      # Delete a session
+sdqctl sessions cleanup --older-than 7d        # Clean up old sessions
 ```

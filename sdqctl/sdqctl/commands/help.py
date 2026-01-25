@@ -954,6 +954,84 @@ sdqctl resume ~/.sdqctl/sessions/abc123/pause.json
 ```
 """,
 
+    "sessions": """
+# sdqctl sessions
+
+Manage conversation sessions.
+
+## Usage
+
+```bash
+sdqctl sessions list
+sdqctl sessions list --format json
+sdqctl sessions list --filter "audit-*"
+sdqctl sessions delete SESSION_ID
+sdqctl sessions cleanup --older-than 7d
+```
+
+## Subcommands
+
+| Command | Description |
+|---------|-------------|
+| `list` | List all available sessions |
+| `delete` | Delete a session permanently |
+| `cleanup` | Clean up old sessions |
+
+## List Options
+
+| Option | Description |
+|--------|-------------|
+| `--format` | Output format (table, json) |
+| `--filter` | Filter by session name pattern (glob) |
+| `--adapter` | Adapter to use (default: copilot) |
+
+## Delete Options
+
+| Option | Description |
+|--------|-------------|
+| `--force, -f` | Skip confirmation prompt |
+| `--adapter` | Adapter to use (default: copilot) |
+
+## Cleanup Options
+
+| Option | Description |
+|--------|-------------|
+| `--older-than` | Delete sessions older than (e.g., 7d, 24h, 30m) |
+| `--dry-run` | Show what would be deleted without deleting |
+| `--adapter` | Adapter to use (default: copilot) |
+
+## Examples
+
+```bash
+# List all sessions in table format
+sdqctl sessions list
+
+# List sessions as JSON
+sdqctl sessions list --format json
+
+# Filter sessions by pattern
+sdqctl sessions list --filter "security-*"
+
+# Delete a session (with confirmation)
+sdqctl sessions delete my-session-id
+
+# Delete a session (skip confirmation)
+sdqctl sessions delete my-session-id --force
+
+# Preview cleanup (dry run)
+sdqctl sessions cleanup --older-than 7d --dry-run
+
+# Clean up sessions older than 30 days
+sdqctl sessions cleanup --older-than 30d
+```
+
+## Notes
+
+- Remote sessions are automatically filtered from listings
+- The `cleanup` command respects the dry-run flag
+- Sessions older than 30 days trigger a cleanup tip in listings
+""",
+
     "flow": """
 # sdqctl flow
 
@@ -1064,6 +1142,7 @@ sdqctl status                        # Check status
 | `validate` | Validate ConversationFile |
 | `show` | Display parsed ConversationFile |
 | `status` | Show session status |
+| `sessions` | Manage conversation sessions |
 | `init` | Initialize project |
 | `resume` | Resume paused workflow |
 

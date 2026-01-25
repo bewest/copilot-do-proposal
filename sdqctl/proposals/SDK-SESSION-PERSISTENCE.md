@@ -1,6 +1,6 @@
 # SDK Session Persistence Integration
 
-> **Status**: In Progress (Phase 1 Complete)  
+> **Status**: In Progress (Phase 2 Complete)  
 > **Date**: 2026-01-24  
 > **Updated**: 2026-01-25  
 > **Priority**: P2 (Medium Impact)  
@@ -182,7 +182,25 @@ async def delete_session(self, session_id: str) -> None:
     await self._client.delete_session(session_id)
 ```
 
-### Phase 2: Sessions Command Group
+### Phase 2: Sessions Command Group ✅
+
+**Status**: Complete (2026-01-25)
+
+Added `sdqctl sessions` command group with subcommands in `sdqctl/commands/sessions.py`:
+
+- `sessions list` - List all available sessions with filtering
+- `sessions delete` - Delete a session permanently  
+- `sessions cleanup` - Clean up old sessions by age
+
+**Features**:
+- Table and JSON output formats
+- Glob pattern filtering (`--filter "audit-*"`)
+- Age-based cleanup (`--older-than 7d`)
+- Dry-run mode for cleanup
+- Remote session filtering (skipped per design decision)
+- Old session tips (prompts for cleanup when sessions >30 days exist)
+
+**Tests**: 36 new tests in `tests/test_sessions_command.py`
 
 ```python
 # sdqctl/commands/sessions.py

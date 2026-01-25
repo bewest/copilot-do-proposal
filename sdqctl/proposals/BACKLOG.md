@@ -1,6 +1,6 @@
 # sdqctl Proposal Backlog
 
-> **Last Updated**: 2026-01-24 (SDK v2 Capabilities Added)  
+> **Last Updated**: 2026-01-25 (SDK Session Persistence Phase 2 Complete)  
 > **Purpose**: Track open design questions, implementation work, and future proposals
 
 ---
@@ -8,14 +8,14 @@
 ## Executive Summary: Tooling Gap Analysis
 
 **Analysis Date**: 2026-01-23 | **Phases Completed**: 4/4  
-**SDK v2 Analysis**: 2026-01-24 | **New Proposals**: 3 (**Infinite Sessions** ✅, **Session Persistence** Phase 1 ✅, Metadata APIs ✅)
+**SDK v2 Analysis**: 2026-01-24 | **New Proposals**: 3 (**Infinite Sessions** ✅, **Session Persistence** Phase 2 ✅, Metadata APIs ✅)
 
 Note: remember to cross reference and evaluate priorities across roadmaps.
-SDK-SESSION-PERSISTENCE Phase 1 complete (2026-01-25). Next: Phase 2-4 CLI commands, then STPA directives (P2).
+SDK-SESSION-PERSISTENCE Phase 2 complete (2026-01-25). Next: Phase 3-4 resume command + SESSION-NAME directive.
 
 ### Tooling Commands Status (Non-SDK)
 
-All 7 proposed tooling commands are **fully implemented**:
+All 8 proposed tooling commands are **fully implemented**:
 
 | Command | Purpose | Subcommands | Status |
 |---------|---------|-------------|--------|
@@ -24,12 +24,13 @@ All 7 proposed tooling commands are **fully implemented**:
 | `validate` | Syntax checking | - | ✅ Complete |
 | `show` | Display parsed workflow | - | ✅ Complete |
 | `status` | Session/system info | `--adapters`, `--sessions` | ✅ Complete |
+| `sessions` | Session management | `list`, `delete`, `cleanup` | ✅ Complete (2026-01-25) |
 | `init` | Project initialization | - | ✅ Complete |
-| `help` | Documentation access | 11 commands, 6 topics | ✅ Complete |
+| `help` | Documentation access | 12 commands, 6 topics | ✅ Complete |
 
 ### Priority Recommendations
 * [SDK-INFINITE-SESSIONS](SDK-INFINITE-SESSIONS.md) | ✅ Complete | Phase 1-4 | Native SDK compaction for cycle mode |
-* [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | In Progress | Phase 1 ✅ | Resume/list/delete sessions |
+* [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | In Progress | Phase 1-2 ✅ | Phase 3-4 pending (resume command)
 * Backlog Hygiene (archive completed, chunk complex)
 
 #### P0: Documentation Gaps (Quick Wins)
@@ -57,10 +58,18 @@ All 7 proposed tooling commands are **fully implemented**:
 
 ### Key Findings
 
-1. **All tooling commands implemented** - No missing CLI commands
-2. **Verifier infrastructure complete** - 3 verifiers: `refs`, `links`, `traceability`
-3. **Help system exceeds proposal** - 11 commands + 6 topics (proposal specified nested `guidance`)
-4. **ON-FAILURE blocks deferred** - RUN-RETRY covers common retry patterns
+1. **All tooling commands implemented** - 8 CLI commands including new `sessions`
+2. **Verifier infrastructure complete** - 5 verifiers: `refs`, `links`, `traceability`, `terminology`, `assertions`
+3. **Help system exceeds proposal** - 12 commands + 6 topics
+4. **Session management complete** - `sessions list|delete|cleanup` (Phase 2)
+
+### Next Priorities
+
+| Priority | Item | Effort | Notes |
+|----------|------|--------|-------|
+| P2 | SDK-SESSION-PERSISTENCE Phase 3-4 | Medium | `resume` command + `SESSION-NAME` directive |
+| P2 | MODEL-REQUIREMENTS | Medium | Blocked by open questions |
+| P3 | STPA template variables | Low | Future work |
 
 ---
 
@@ -77,7 +86,7 @@ All 7 proposed tooling commands are **fully implemented**:
 | [ARTIFACT-TAXONOMY](ARTIFACT-TAXONOMY.md) | Implemented | ✅ Complete | Taxonomy, enumeration, `artifact` CLI commands |
 | [ERROR-HANDLING](ERROR-HANDLING.md) | Implemented | Phase 0-3 ✅ | `--strict`, `--json-errors`, ON-FAILURE complete |
 | [SDK-INFINITE-SESSIONS](SDK-INFINITE-SESSIONS.md) | Implemented | ✅ Phase 1-4 | Native SDK compaction + directives |
-| [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | In Progress | Phase 1 ✅ | Adapter methods complete; CLI pending |
+| [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | In Progress | Phase 1-2 ✅ | `sessions` CLI complete; resume command pending |
 | [SDK-METADATA-APIS](SDK-METADATA-APIS.md) | Implemented | Phase 1-2 ✅ | Adapter methods + status command enhanced |
 
 ---
@@ -100,8 +109,10 @@ The Copilot SDK has been updated to Protocol Version 2 with new capabilities. Th
 
 | Proposal | Feature | Effort | Rationale |
 |----------|---------|--------|-----------|
-| [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | Session management | Medium | Multi-day workflows, resume capability |
-This is highly desirable as this may create the ability to have an consultation workflow where iterating over open questions with sdqctl can transition to a human operator using github copilot?  We've discussed a directive that could ensure that the session we instruct the operator to join will interview/consult and clarify open questions in reasonable chunks?
+| [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | Session management | Medium | Phase 1-2 ✅, Phase 3-4 pending (resume command) |
+
+> **Note**: Session persistence enables consultation workflows where sdqctl can prepare a session
+> that a human operator can join via GitHub Copilot to clarify open questions.
 
 ### Key SDK Changes
 

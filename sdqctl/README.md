@@ -716,6 +716,27 @@ Show session and system status:
 sdqctl status
 sdqctl status --adapters
 sdqctl status --sessions
+sdqctl status --models
+sdqctl status --auth
+```
+
+### `sdqctl sessions`
+
+Manage conversation sessions:
+
+```bash
+# List all sessions
+sdqctl sessions list
+sdqctl sessions list --format json
+sdqctl sessions list --filter "audit-*"
+
+# Delete a session
+sdqctl sessions delete SESSION_ID
+sdqctl sessions delete SESSION_ID --force
+
+# Clean up old sessions
+sdqctl sessions cleanup --older-than 7d --dry-run
+sdqctl sessions cleanup --older-than 30d
 ```
 
 ### `sdqctl help`
