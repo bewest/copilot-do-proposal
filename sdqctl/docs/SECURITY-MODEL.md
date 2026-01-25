@@ -128,6 +128,21 @@ RUN_ENV LD_PRELOAD=/path/to/hook.so
 RUN_ENV PATH=/tmp/bin:$PATH
 ```
 
+#### Secret Masking
+
+When workflows are serialized (e.g., in checkpoints), environment variables with sensitive-looking names are automatically masked:
+
+| Key Pattern | Example | Serialized As |
+|-------------|---------|---------------|
+| `*KEY*` | `API_KEY=sk-123456` | `API_KEY=sk-***` |
+| `*SECRET*` | `MY_SECRET=abc` | `MY_SECRET=abc***` |
+| `*TOKEN*` | `AUTH_TOKEN=xyz` | `AUTH_TOKEN=xyz***` |
+| `*PASSWORD*` | `DB_PASSWORD=pass` | `DB_PASSWORD=pas***` |
+| `*AUTH*` | `GITHUB_AUTH=ghp_...` | `GITHUB_AUTH=ghp***` |
+| `*CREDENTIAL*` | `CRED_ID=cred123` | `CRED_ID=cre***` |
+
+Non-sensitive variables (e.g., `DEBUG=1`, `NODE_ENV=test`) are serialized as-is.
+
 #### Hardening (Future)
 
 Consider implementing an environment variable allowlist:

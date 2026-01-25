@@ -27,7 +27,6 @@ No critical items.
 | **Document-based elision logic** | Medium | Default merge, `---` breaks - part of iterate Phase 6 |
 | Extract StepExecutor from iterate.py | Medium | See [Architecture Roadmap](#architecture-roadmap) |
 | Create shared ExecutionContext dataclass | Low | Unify adapter initialization |
-| Add RUN-ENV secret masking | Low | Mask env vars in logs |
 | CONSULT-DIRECTIVE Phase 4 | Low | Timeout, partial save refinements |
 | claude/openai adapter stubs | Medium | Implement or clarify scope in ADAPTERS.md |
 | Extract common utilities (`utils/io.py`) | Low | Deduplicate ~50 JSON output + 65 file I/O patterns |

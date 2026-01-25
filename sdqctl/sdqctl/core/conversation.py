@@ -22,6 +22,28 @@ from typing import TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     from .models import ModelRequirements
 
+# Patterns for detecting secret environment variable names
+SECRET_KEY_PATTERNS = ('KEY', 'SECRET', 'TOKEN', 'PASSWORD', 'AUTH', 'CREDENTIAL', 'API_')
+
+
+def _mask_env_value(key: str, value: str) -> str:
+    """Mask environment variable value if key suggests it's a secret.
+    
+    Args:
+        key: Environment variable name
+        value: Environment variable value
+        
+    Returns:
+        Original value or masked version (first 3 chars + ***)
+    """
+    key_upper = key.upper()
+    for pattern in SECRET_KEY_PATTERNS:
+        if pattern in key_upper:
+            if len(value) > 3:
+                return value[:3] + '***'
+            return '***'
+    return value
+
 
 class DirectiveType(Enum):
     """Types of directives in a ConversationFile."""
@@ -998,6 +1020,21 @@ class ConversationFile:
             lines.append(f"CHECKPOINT-NAME {self.checkpoint_name}")
 
         if self.compact_preserve or self.checkpoint_after:
+            lines.append("")
+
+        # RUN command settings
+        if self.allow_shell:
+            lines.append("ALLOW-SHELL true")
+        if self.run_cwd:
+            lines.append(f"RUN-CWD {self.run_cwd}")
+        if self.run_timeout != 60:
+            lines.append(f"RUN-TIMEOUT {self.run_timeout}")
+        # RUN-ENV with secret masking for serialization
+        for key, value in self.run_env.items():
+            masked_value = _mask_env_value(key, value)
+            lines.append(f"RUN-ENV {key}={masked_value}")
+
+        if self.allow_shell or self.run_cwd or self.run_timeout != 60 or self.run_env:
             lines.append("")
 
         # Prompt injection (prologues/epilogues)
