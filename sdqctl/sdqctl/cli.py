@@ -18,17 +18,17 @@ For more information: sdqctl --help
 import click
 
 from . import __version__
-from .commands.run import run
+from .commands.apply import apply
+from .commands.artifact import artifact
 from .commands.cycle import cycle
 from .commands.flow import flow
-from .commands.status import status
-from .commands.apply import apply
-from .commands.render import render
-from .commands.verify import verify
 from .commands.help import help_cmd
 from .commands.refcat import refcat
-from .commands.artifact import artifact
+from .commands.render import render
+from .commands.run import run
 from .commands.sessions import sessions
+from .commands.status import status
+from .commands.verify import verify
 from .core.logging import get_logger, setup_logging
 from .core.progress import set_quiet
 
@@ -110,7 +110,7 @@ cli.add_command(help_cmd)
 @click.option("--no-copilot", is_flag=True, help="Skip GitHub Copilot integration files")
 def init(name: str, force: bool, no_copilot: bool) -> None:
     """Initialize sdqctl in a project.
-    
+
     Creates:
     - .sdqctl.yaml config file
     - workflows/ directory with examples
@@ -118,17 +118,18 @@ def init(name: str, force: bool, no_copilot: bool) -> None:
     - .github/skills/sdqctl-verify.md (unless --no-copilot)
     """
     from pathlib import Path
+
     from rich.console import Console
-    
+
     console = Console()
     target_dir = Path(name).resolve()
-    
+
     if not target_dir.exists():
         target_dir.mkdir(parents=True)
-    
+
     config_file = target_dir / ".sdqctl.yaml"
     workflows_dir = target_dir / "workflows"
-    
+
     # Create config
     if config_file.exists() and not force:
         console.print(f"[yellow]Config already exists: {config_file}[/yellow]")
@@ -139,27 +140,27 @@ def init(name: str, force: bool, no_copilot: bool) -> None:
 
 project:
   name: my-project
-  
+
 defaults:
   adapter: copilot
   model: gpt-4
-  
+
 context:
   limit: 80%
   on_limit: compact
-  
+
 checkpoints:
   enabled: true
   directory: .sdqctl/checkpoints
 """
         config_file.write_text(config_content)
         console.print(f"[green]Created: {config_file}[/green]")
-    
+
     # Create workflows directory
     if not workflows_dir.exists():
         workflows_dir.mkdir()
         console.print(f"[green]Created: {workflows_dir}/[/green]")
-    
+
     # Create example workflow
     example_workflow = workflows_dir / "example-audit.conv"
     if example_workflow.exists() and not force:
@@ -191,11 +192,11 @@ OUTPUT-FILE security-audit.md
 """
         example_workflow.write_text(example_content)
         console.print(f"[green]Created: {example_workflow}[/green]")
-    
+
     # Create GitHub Copilot integration files
     if not no_copilot:
         _create_copilot_files(target_dir, force, console)
-    
+
     console.print("\n[bold]sdqctl initialized![/bold]")
     console.print("\nNext steps:")
     console.print("  1. Edit .sdqctl.yaml to configure your project")
@@ -207,15 +208,14 @@ OUTPUT-FILE security-audit.md
 
 def _create_copilot_files(target_dir, force: bool, console) -> None:
     """Create GitHub Copilot integration files."""
-    from pathlib import Path
-    
+
     github_dir = target_dir / ".github"
     skills_dir = github_dir / "skills"
-    
+
     # Create directories
     github_dir.mkdir(exist_ok=True)
     skills_dir.mkdir(exist_ok=True)
-    
+
     # Create copilot-instructions.md
     instructions_file = github_dir / "copilot-instructions.md"
     if instructions_file.exists() and not force:
@@ -282,7 +282,7 @@ These commands are safe for CI/CD pipelines (no LLM calls):
 """
         instructions_file.write_text(instructions_content)
         console.print(f"[green]Created: {instructions_file}[/green]")
-    
+
     # Create sdqctl-verify skill
     skill_file = skills_dir / "sdqctl-verify.md"
     if skill_file.exists() and not force:
@@ -382,9 +382,9 @@ done
 @click.option("--json", "json_output", is_flag=True, help="Output results as JSON")
 def validate(workflow: str, allow_missing: bool, exclude: tuple, strict: bool, check_model: bool, json_output: bool) -> None:
     """Validate a ConversationFile.
-    
+
     Checks syntax and references without executing.
-    
+
     \b
     Examples:
       sdqctl validate workflow.conv
@@ -395,72 +395,73 @@ def validate(workflow: str, allow_missing: bool, exclude: tuple, strict: bool, c
     import json as json_module
     import sys
     from pathlib import Path
+
     from rich.console import Console
     from rich.panel import Panel
-    
+
     from .core.conversation import ConversationFile
     from .core.session import Session
-    
+
     console = Console()
-    
+
     try:
         conv = ConversationFile.from_file(Path(workflow))
         session = Session(conv)
-        
+
         # Determine validation mode
         # CLI flags override file-level settings
         is_lenient = allow_missing or (conv.validation_mode == "lenient" and not strict)
-        
+
         # Validate
         errors = []
         warnings = []
-        
+
         # Check model
         if not conv.model:
             errors.append("Missing MODEL directive")
-        
+
         # Check prompts
         if not conv.prompts:
             errors.append("No PROMPT directives found")
-        
+
         # Check context files with new validation logic
         context_errors, context_warnings = conv.validate_context_files(
             exclude_patterns=list(exclude),
             allow_missing=is_lenient,
         )
-        
+
         # Convert context issues to messages
         for pattern, path in context_errors:
             errors.append(f"Context pattern matches no files: {pattern}")
         for pattern, path in context_warnings:
             warnings.append(f"Context pattern matches no files (optional/excluded): {pattern}")
-        
+
         # Check REFCAT refs
         refcat_errors, refcat_warnings = conv.validate_refcat_refs(
             allow_missing=is_lenient,
         )
-        
+
         # Convert REFCAT issues to messages
         for ref, msg in refcat_errors:
             errors.append(f"REFCAT ref invalid: {ref} ({msg})")
         for ref, msg in refcat_warnings:
             warnings.append(f"REFCAT ref invalid (allowed-missing): {ref} ({msg})")
-        
+
         # Check HELP topics
         help_errors = conv.validate_help_topics()
         for topic, msg in help_errors:
             errors.append(f"HELP topic invalid: {msg}")
-        
+
         # Check ELIDE chain compatibility
         elide_errors = conv.validate_elide_chains()
         for msg in elide_errors:
             errors.append(f"ELIDE chain invalid: {msg}")
-        
+
         # Check REQUIRE directives (pre-flight checks)
         require_errors = conv.validate_requirements()
         for req, msg in require_errors:
             errors.append(f"REQUIRE failed: {msg}")
-        
+
         # Check MODEL-REQUIRES resolution if requested
         resolved_model = None
         model_req_count = 0
@@ -475,7 +476,7 @@ def validate(workflow: str, allow_missing: bool, exclude: tuple, strict: bool, c
                 # Just report we have model requirements
                 from .core.models import resolve_model
                 resolved_model = resolve_model(conv.model_requirements, fallback=conv.model)
-        
+
         # JSON output
         if json_output:
             result = {
@@ -498,7 +499,7 @@ def validate(workflow: str, allow_missing: bool, exclude: tuple, strict: bool, c
             if errors:
                 sys.exit(1)
             return
-        
+
         # Report
         if errors:
             console.print("[red]Validation failed:[/red]")
@@ -516,22 +517,22 @@ def validate(workflow: str, allow_missing: bool, exclude: tuple, strict: bool, c
                 for warning in warnings:
                     console.print(f"  ⚠ {warning}")
                 console.print()
-            
+
             validation_mode_str = f"Validation mode: {'lenient' if is_lenient else 'strict'}"
             optional_count = len(conv.context_files_optional)
             exclude_count = len(conv.context_exclude) + len(exclude)
             req_count = len(conv.requirements)
-            
+
             # Build requirements line if any
             req_line = f"Requirements: {req_count} (all passed)\n" if req_count > 0 else ""
-            
+
             # Build model requirements line if any
             model_req_line = ""
             if model_req_count > 0:
                 model_req_line = f"Model requirements: {model_req_count}\n"
                 if resolved_model:
                     model_req_line += f"Resolved model: {resolved_model}\n"
-            
+
             console.print(Panel.fit(
                 f"Model: {conv.model}\n"
                 f"Adapter: {conv.adapter}\n"
@@ -546,7 +547,7 @@ def validate(workflow: str, allow_missing: bool, exclude: tuple, strict: bool, c
                 f"{validation_mode_str}",
                 title="[green]✓ Valid ConversationFile[/green]"
             ))
-    
+
     except Exception as e:
         if json_output:
             console.print_json(json_module.dumps({"valid": False, "error": str(e)}))
@@ -559,25 +560,26 @@ def validate(workflow: str, allow_missing: bool, exclude: tuple, strict: bool, c
 @click.argument("workflow", type=click.Path(exists=True))
 def show(workflow: str) -> None:
     """Display a parsed ConversationFile.
-    
+
     Shows the internal representation of a workflow file.
     """
     from pathlib import Path
+
     from rich.console import Console
     from rich.syntax import Syntax
-    
+
     from .core.conversation import ConversationFile
-    
+
     console = Console()
-    
+
     try:
         conv = ConversationFile.from_file(Path(workflow))
-        
+
         # Show original content
         original = Path(workflow).read_text()
         console.print("[bold]Original file:[/bold]")
         console.print(Syntax(original, "dockerfile", theme="monokai", line_numbers=True))
-        
+
         # Show parsed representation
         console.print("\n[bold]Parsed representation:[/bold]")
         console.print(f"  model: {conv.model}")
@@ -599,7 +601,7 @@ def show(workflow: str) -> None:
         console.print(f"  pause_points: {conv.pause_points}")
         console.print(f"  output_format: {conv.output_format}")
         console.print(f"  output_file: {conv.output_file}")
-    
+
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
 
@@ -613,48 +615,43 @@ def show(workflow: str) -> None:
 @click.option("--verbose", "-v", is_flag=True, help="Verbose output (deprecated, use -v on main command)")
 def resume(checkpoint: str, list_checkpoints: bool, adapter: str, dry_run: bool, json_output: bool, verbose: bool) -> None:
     """Resume a paused workflow from checkpoint.
-    
+
     Continues execution from where PAUSE stopped.
-    
+
     Examples:
         sdqctl resume ~/.sdqctl/sessions/abc123/pause.json
         sdqctl resume --list
         sdqctl resume --dry-run checkpoint.json
     """
     import asyncio
-    import json
     import logging
     import sys
-    from pathlib import Path
+
     from rich.console import Console
-    from rich.panel import Panel
-    
-    from .adapters import get_adapter
-    from .adapters.base import AdapterConfig
-    from .core.session import Session
-    
+
+
     console = Console()
     resume_logger = get_logger(__name__)
-    
+
     # Boost verbosity if --verbose flag used on this command
     if verbose and not resume_logger.isEnabledFor(logging.INFO):
         setup_logging(1)
-    
+
     # Handle --list flag
     if list_checkpoints:
         _list_checkpoints(console, json_output)
         return
-    
+
     # Require checkpoint if not listing
     if not checkpoint:
         console.print("[red]Error: checkpoint path required (or use --list)[/red]")
         sys.exit(1)
-    
+
     # Handle --dry-run flag
     if dry_run:
         _dry_run_resume(checkpoint, console, json_output)
         return
-    
+
     asyncio.run(_resume_async(checkpoint, adapter, console, json_output))
 
 
@@ -662,7 +659,7 @@ def _list_checkpoints(console, json_output: bool) -> None:
     """List all available pause checkpoints."""
     import json as json_module
     from pathlib import Path
-    
+
     sessions_dir = Path(".sdqctl/sessions")
     if not sessions_dir.exists():
         if json_output:
@@ -670,7 +667,7 @@ def _list_checkpoints(console, json_output: bool) -> None:
         else:
             console.print("[yellow]No sessions directory found[/yellow]")
         return
-    
+
     checkpoints = list(sessions_dir.glob("*/pause.json"))
     if not checkpoints:
         if json_output:
@@ -678,7 +675,7 @@ def _list_checkpoints(console, json_output: bool) -> None:
         else:
             console.print("[yellow]No checkpoints found[/yellow]")
         return
-    
+
     if json_output:
         result = []
         for cp in sorted(checkpoints, key=lambda p: p.stat().st_mtime, reverse=True):
@@ -710,9 +707,11 @@ def _dry_run_resume(checkpoint: str, console, json_output: bool) -> None:
     """Show what would happen on resume without executing."""
     import json as json_module
     from pathlib import Path
+
     from rich.panel import Panel
+
     from .core.session import Session
-    
+
     checkpoint_path = Path(checkpoint)
     try:
         session = Session.load_from_pause(checkpoint_path)
@@ -722,9 +721,9 @@ def _dry_run_resume(checkpoint: str, console, json_output: bool) -> None:
         else:
             console.print(f"[red]Error loading checkpoint: {e}[/red]")
         return
-    
+
     conv = session.conversation
-    
+
     if json_output:
         result = {
             "dry_run": True,
@@ -750,33 +749,33 @@ def _dry_run_resume(checkpoint: str, console, json_output: bool) -> None:
             f"Messages in context: {len(session.state.messages)}",
             title="[yellow]Dry Run - Resume Configuration[/yellow]"
         ))
-        
+
         console.print("\n[bold]Prompts remaining:[/bold]")
         for i, prompt in enumerate(conv.prompts[session.state.prompt_index:], session.state.prompt_index + 1):
             preview = prompt[:80] + "..." if len(prompt) > 80 else prompt
             console.print(f"  {i}. {preview}")
-        
+
         console.print("\n[yellow]Dry run - no execution[/yellow]")
 
 
 async def _resume_async(checkpoint: str, adapter_name: str, console, json_output: bool = False) -> None:
     """Async implementation of resume command."""
     import json as json_module
-    import logging
     from pathlib import Path
+
     from rich.panel import Panel
-    
+
     from .adapters import get_adapter
     from .adapters.base import AdapterConfig
     from .core.session import Session
-    
+
     resume_logger = get_logger(__name__)
     checkpoint_path = Path(checkpoint)
-    
+
     try:
         session = Session.load_from_pause(checkpoint_path)
         conv = session.conversation
-        
+
         if not json_output:
             console.print(Panel.fit(
                 f"Session ID: {session.id}\n"
@@ -785,11 +784,11 @@ async def _resume_async(checkpoint: str, adapter_name: str, console, json_output
                 f"Messages in history: {len(session.state.messages)}",
                 title="[blue]Resuming Paused Workflow[/blue]"
             ))
-        
+
         # Apply adapter override
         if adapter_name:
             conv.adapter = adapter_name
-        
+
         # Get adapter
         try:
             ai_adapter = get_adapter(conv.adapter)
@@ -798,44 +797,44 @@ async def _resume_async(checkpoint: str, adapter_name: str, console, json_output
                 console.print(f"[red]Error: {e}[/red]")
                 console.print("[yellow]Using mock adapter instead[/yellow]")
             ai_adapter = get_adapter("mock")
-        
+
         await ai_adapter.start()
-        
+
         adapter_session = await ai_adapter.create_session(
             AdapterConfig(model=conv.model, streaming=True)
         )
-        
+
         session.state.status = "running"
         responses = []
-        
+
         # Build pause point lookup
         pause_after = {idx: msg for idx, msg in conv.pause_points}
-        
+
         # Resume from saved prompt index
         start_idx = session.state.prompt_index
-        
+
         for i in range(start_idx, len(conv.prompts)):
             prompt = conv.prompts[i]
-            
+
             resume_logger.info(f"Sending prompt {i + 1}/{len(conv.prompts)}...")
-            
+
             response = await ai_adapter.send(adapter_session, prompt)
             responses.append(response)
-            
+
             resume_logger.debug(f"{response[:200]}..." if len(response) > 200 else response)
-            
+
             session.add_message("user", prompt)
             session.add_message("assistant", response)
-            
+
             # Check for another PAUSE
             if i in pause_after:
                 pause_msg = pause_after[i]
                 session.state.prompt_index = i + 1
                 new_checkpoint = session.save_pause_checkpoint(pause_msg)
-                
+
                 await ai_adapter.destroy_session(adapter_session)
                 await ai_adapter.stop()
-                
+
                 if json_output:
                     result = {
                         "status": "paused",
@@ -850,16 +849,16 @@ async def _resume_async(checkpoint: str, adapter_name: str, console, json_output
                     console.print(f"[dim]Checkpoint saved: {new_checkpoint}[/dim]")
                     console.print(f"\n[bold]To resume:[/bold] sdqctl resume {new_checkpoint}")
                 return
-        
+
         # Completed successfully
         await ai_adapter.destroy_session(adapter_session)
         await ai_adapter.stop()
-        
+
         session.state.status = "completed"
-        
+
         # Clean up pause checkpoint
         checkpoint_path.unlink(missing_ok=True)
-        
+
         # Write output if configured
         if conv.output_file:
             output_content = "\n\n---\n\n".join(
@@ -868,7 +867,7 @@ async def _resume_async(checkpoint: str, adapter_name: str, console, json_output
             Path(conv.output_file).write_text(output_content)
             if not json_output:
                 console.print(f"[green]Output written to {conv.output_file}[/green]")
-        
+
         if json_output:
             result = {
                 "status": "completed",
@@ -879,7 +878,7 @@ async def _resume_async(checkpoint: str, adapter_name: str, console, json_output
             console.print_json(json_module.dumps(result))
         else:
             console.print("\n[green]✓ Workflow completed[/green]")
-    
+
     except Exception as e:
         if json_output:
             console.print_json(json_module.dumps({"error": str(e)}))

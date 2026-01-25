@@ -5,12 +5,12 @@ Provides tools for checking code references, links, terminology,
 traceability, and assertions.
 """
 
-from .base import VerificationError, VerificationResult, Verifier
-from .refs import RefsVerifier
-from .links import LinksVerifier
-from .traceability import TraceabilityVerifier
-from .terminology import TerminologyVerifier
 from .assertions import AssertionsVerifier
+from .base import VerificationError, VerificationResult, Verifier
+from .links import LinksVerifier
+from .refs import RefsVerifier
+from .terminology import TerminologyVerifier
+from .traceability import TraceabilityVerifier
 
 # Registry of available verifiers
 VERIFIERS: dict[str, type] = {
@@ -23,7 +23,7 @@ VERIFIERS: dict[str, type] = {
 
 __all__ = [
     "VerificationError",
-    "VerificationResult", 
+    "VerificationResult",
     "Verifier",
     "RefsVerifier",
     "LinksVerifier",

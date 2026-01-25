@@ -12,7 +12,7 @@ Assertion patterns detected:
 """
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -39,18 +39,18 @@ class Assertion:
 
 class AssertionsVerifier:
     """Verify that assertions are properly documented and traced.
-    
+
     Scans source files for assertion statements and checks:
     1. Whether assertions have meaningful messages
     2. Whether assertions link to traceability IDs (REQ, SC, UCA)
-    
+
     This helps ensure safety-critical assertions are properly documented
     for regulatory compliance (IEC 62304, ISO 14971).
     """
-    
+
     name = "assertions"
     description = "Check that assertions are documented and traced"
-    
+
     # Language-specific assertion patterns
     ASSERTION_PATTERNS = {
         "python": [
@@ -80,7 +80,7 @@ class AssertionsVerifier:
             re.compile(r'\bassert\s*\(\s*(.+?)(?:,\s*(.+))?\s*\)', re.MULTILINE),
         ],
     }
-    
+
     # File extensions by language
     EXTENSIONS_BY_LANGUAGE = {
         ".py": "python",
@@ -92,13 +92,13 @@ class AssertionsVerifier:
         ".js": "typescript",  # Use same patterns
         ".jsx": "typescript",
     }
-    
+
     # Traceability ID patterns (from traceability.py)
     TRACE_ID_PATTERN = re.compile(
         r'\b(REQ-[A-Z0-9]*-?\d{3}|SPEC-\d{3}|SC-[A-Z0-9]*-?\d{3}[a-z]?|'
         r'UCA-[A-Z0-9]*-?\d{3}|TEST-\d{3})\b'
     )
-    
+
     def verify(
         self,
         root: Path,
@@ -111,7 +111,7 @@ class AssertionsVerifier:
         **options: Any
     ) -> VerificationResult:
         """Verify assertions in source files.
-        
+
         Args:
             root: Directory to scan
             recursive: Whether to scan subdirectories
@@ -120,13 +120,13 @@ class AssertionsVerifier:
             no_default_excludes: If True, don't apply default exclusions
             require_message: If True, error if assertion lacks message
             require_trace: If True, error if assertion lacks trace ID
-            
+
         Returns:
             VerificationResult with assertion coverage metrics
         """
         root = Path(root)
         scan_ext = extensions or set(self.EXTENSIONS_BY_LANGUAGE.keys())
-        
+
         # Build exclusion patterns
         exclude_patterns: set[str] = set()
         if not no_default_excludes:
@@ -134,10 +134,10 @@ class AssertionsVerifier:
         exclude_patterns.update(load_sdqctlignore(root))
         if exclude:
             exclude_patterns.update(exclude)
-        
+
         errors: list[VerificationError] = []
         warnings: list[VerificationError] = []
-        
+
         # Stats
         files_scanned = 0
         files_excluded = 0
@@ -145,16 +145,16 @@ class AssertionsVerifier:
         assertions_with_message = 0
         assertions_with_trace = 0
         assertions_by_language: dict[str, int] = {}
-        
+
         # Collect all assertions
         all_assertions: list[Assertion] = []
-        
+
         # Find files to scan
         if recursive:
             all_files = [f for f in root.rglob('*') if f.suffix in scan_ext and f.is_file()]
         else:
             all_files = [f for f in root.glob('*') if f.suffix in scan_ext and f.is_file()]
-        
+
         # Filter excluded files
         files = []
         for f in all_files:
@@ -162,13 +162,13 @@ class AssertionsVerifier:
                 files_excluded += 1
             else:
                 files.append(f)
-        
+
         for filepath in files:
             files_scanned += 1
             language = self.EXTENSIONS_BY_LANGUAGE.get(filepath.suffix)
             if not language:
                 continue
-            
+
             try:
                 content = filepath.read_text(errors='replace')
             except Exception as e:
@@ -178,25 +178,25 @@ class AssertionsVerifier:
                     message=f"Could not read file: {e}",
                 ))
                 continue
-            
+
             # Find assertions in file
             file_assertions = self._find_assertions(
-                content, 
+                content,
                 str(self._relative_path(filepath, root)),
                 language
             )
-            
+
             for assertion in file_assertions:
                 assertions_found += 1
                 assertions_by_language[language] = assertions_by_language.get(language, 0) + 1
-                
+
                 if assertion.has_message:
                     assertions_with_message += 1
                 if assertion.has_trace_id:
                     assertions_with_trace += 1
-                
+
                 all_assertions.append(assertion)
-                
+
                 # Check requirements
                 if require_message and not assertion.has_message:
                     errors.append(VerificationError(
@@ -212,7 +212,7 @@ class AssertionsVerifier:
                         message=f"Assertion lacks message: {assertion.content[:50]}...",
                         fix_hint="Consider adding a descriptive message",
                     ))
-                
+
                 if require_trace and not assertion.has_trace_id:
                     errors.append(VerificationError(
                         file=assertion.file,
@@ -220,20 +220,20 @@ class AssertionsVerifier:
                         message=f"Assertion lacks trace ID: {assertion.content[:50]}...",
                         fix_hint="Add REQ-NNN, SC-NNN, or UCA-NNN in message or comment",
                     ))
-        
+
         # Calculate coverage
         message_coverage = (assertions_with_message / assertions_found * 100) if assertions_found > 0 else 0
         trace_coverage = (assertions_with_trace / assertions_found * 100) if assertions_found > 0 else 0
-        
+
         # Build result
         passed = len(errors) == 0
-        
+
         summary = (
             f"Scanned {files_scanned} file(s), found {assertions_found} assertion(s): "
             f"{assertions_with_message} with messages ({message_coverage:.0f}%), "
             f"{assertions_with_trace} with trace IDs ({trace_coverage:.0f}%)"
         )
-        
+
         return VerificationResult(
             passed=passed,
             errors=errors,
@@ -250,7 +250,7 @@ class AssertionsVerifier:
                 "by_language": assertions_by_language,
             },
         )
-    
+
     def _find_assertions(
         self,
         content: str,
@@ -260,29 +260,29 @@ class AssertionsVerifier:
         """Find all assertions in a file."""
         assertions: list[Assertion] = []
         patterns = self.ASSERTION_PATTERNS.get(language, [])
-        
+
         if not patterns:
             return assertions
-        
+
         lines = content.split('\n')
-        
+
         for line_num, line in enumerate(lines, 1):
             for pattern in patterns:
                 for match in pattern.finditer(line):
                     condition = match.group(1) if match.lastindex >= 1 else ""
                     message = match.group(2) if match.lastindex >= 2 else None
-                    
+
                     # Check for trace ID in message or preceding comment
                     trace_id = None
                     has_trace = False
-                    
+
                     # Check message for trace ID
                     if message:
                         trace_match = self.TRACE_ID_PATTERN.search(message)
                         if trace_match:
                             trace_id = trace_match.group(1)
                             has_trace = True
-                    
+
                     # Check preceding comment (look at previous line)
                     if not has_trace and line_num > 1:
                         prev_line = lines[line_num - 2]  # 0-indexed
@@ -291,7 +291,7 @@ class AssertionsVerifier:
                             if trace_match:
                                 trace_id = trace_match.group(1)
                                 has_trace = True
-                    
+
                     # Check same-line comment
                     if not has_trace:
                         comment_start = self._get_comment_marker(language)
@@ -303,7 +303,7 @@ class AssertionsVerifier:
                                 if trace_match:
                                     trace_id = trace_match.group(1)
                                     has_trace = True
-                    
+
                     assertions.append(Assertion(
                         file=filepath,
                         line=line_num,
@@ -313,9 +313,9 @@ class AssertionsVerifier:
                         has_trace_id=has_trace,
                         trace_id=trace_id,
                     ))
-        
+
         return assertions
-    
+
     def _is_comment(self, line: str, language: str) -> bool:
         """Check if a line is a comment."""
         stripped = line.strip()
@@ -324,7 +324,7 @@ class AssertionsVerifier:
         elif language in ("swift", "kotlin", "typescript"):
             return stripped.startswith('//') or stripped.startswith('/*')
         return False
-    
+
     def _get_comment_marker(self, language: str) -> str | None:
         """Get the inline comment marker for a language."""
         if language == "python":
@@ -332,7 +332,7 @@ class AssertionsVerifier:
         elif language in ("swift", "kotlin", "typescript"):
             return '//'
         return None
-    
+
     def _relative_path(self, path: Path, root: Path) -> Path:
         """Get path relative to root, or absolute if not under root."""
         try:

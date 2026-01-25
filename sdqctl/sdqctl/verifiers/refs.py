@@ -27,32 +27,32 @@ from .base import (
 
 class RefsVerifier:
     """Verify that @-references and alias:refs resolve to actual paths.
-    
+
     Uses the refcat module for path resolution, supporting:
     - Standard @-references relative to containing file
     - Workspace aliases from workspace.lock.json
     """
-    
+
     name = "refs"
     description = "Check that @-references and alias:refs resolve to files"
-    
+
     # Pattern to match @-references: @path/to/file.ext or @./relative/path
     # Excludes common false positives like @param, @returns, email addresses
     AT_REF_PATTERN = re.compile(
         r'@(\.?[a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]+)',
         re.MULTILINE
     )
-    
+
     # Pattern to match alias:path references (e.g., loop:Loop/README.md)
     # Supports optional line range suffix (#L10 or #L10-L50)
     ALIAS_REF_PATTERN = re.compile(
         r'\b([a-zA-Z][a-zA-Z0-9_-]*):([a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]+)(?:#[^\s]*)?',
         re.MULTILINE
     )
-    
+
     # File extensions to scan for references
     SCAN_EXTENSIONS = {'.md', '.conv', '.txt', '.yaml', '.yml'}
-    
+
     # Patterns that look like refs but aren't (JSDoc, decorators, etc.)
     FALSE_POSITIVE_PATTERNS = {
         # JSDoc annotations
@@ -66,10 +66,10 @@ class RefsVerifier:
         # Other common patterns
         '@verify', '@test', '@before', '@after',
     }
-    
+
     # Patterns that match version pins like @v4.4.3 or @2.4.0
     VERSION_PATTERN = re.compile(r'^v?\d+(\.\d+)*$')
-    
+
     # Common prefixes that look like alias:path but aren't
     ALIAS_FALSE_POSITIVES = {
         'http', 'https', 'ftp', 'mailto', 'file', 'data',  # URLs
@@ -81,10 +81,10 @@ class RefsVerifier:
         'path',  # Placeholder paths like path/to/file.ext
         'mm', 'ss', 'hh',  # Timestamp format patterns like mm:ss.SSS, HH:mm:ss
     }
-    
+
     def verify(
-        self, 
-        root: Path, 
+        self,
+        root: Path,
         recursive: bool = True,
         extensions: set[str] | None = None,
         exclude: set[str] | None = None,
@@ -92,20 +92,20 @@ class RefsVerifier:
         **options: Any
     ) -> VerificationResult:
         """Verify @-references and alias:refs in files under root.
-        
+
         Args:
             root: Directory to scan
             recursive: Whether to scan subdirectories
             extensions: File extensions to scan (default: .md, .conv, .txt)
             exclude: Additional patterns to exclude (glob syntax)
             no_default_excludes: If True, don't apply default exclusions
-            
+
         Returns:
             VerificationResult with broken reference errors
         """
         root = Path(root)
         scan_ext = extensions or self.SCAN_EXTENSIONS
-        
+
         # Build exclusion patterns
         exclude_patterns: set[str] = set()
         if not no_default_excludes:
@@ -113,10 +113,10 @@ class RefsVerifier:
         exclude_patterns.update(load_sdqctlignore(root))
         if exclude:
             exclude_patterns.update(exclude)
-        
+
         errors: list[VerificationError] = []
         warnings: list[VerificationError] = []
-        
+
         # Stats
         files_scanned = 0
         files_excluded = 0
@@ -126,13 +126,13 @@ class RefsVerifier:
         alias_refs_found = 0
         alias_refs_valid = 0
         alias_refs_broken = 0
-        
+
         # Find files to scan
         if recursive:
             all_files = [f for f in root.rglob('*') if f.suffix in scan_ext and f.is_file()]
         else:
             all_files = [f for f in root.glob('*') if f.suffix in scan_ext and f.is_file()]
-        
+
         # Filter excluded files
         files = []
         for f in all_files:
@@ -140,7 +140,7 @@ class RefsVerifier:
                 files_excluded += 1
             else:
                 files.append(f)
-        
+
         for filepath in files:
             files_scanned += 1
             try:
@@ -152,7 +152,7 @@ class RefsVerifier:
                     message=f"Could not read file: {e}",
                 ))
                 continue
-            
+
             # Process each line
             for line_num, line in enumerate(content.split('\n'), 1):
                 # Check @-references
@@ -163,7 +163,7 @@ class RefsVerifier:
                 refs_found += at_total
                 refs_valid += at_valid
                 refs_broken += (at_total - at_valid)
-                
+
                 # Check alias:path references
                 alias_errors, alias_valid, alias_total = self._check_alias_refs(
                     line, line_num, filepath, root
@@ -172,18 +172,18 @@ class RefsVerifier:
                 alias_refs_found += alias_total
                 alias_refs_valid += alias_valid
                 alias_refs_broken += (alias_total - alias_valid)
-        
+
         # Build result
         total_refs = refs_found + alias_refs_found
         total_valid = refs_valid + alias_refs_valid
         total_broken = refs_broken + alias_refs_broken
         passed = total_broken == 0
-        
+
         summary = (
             f"Scanned {files_scanned} file(s), found {total_refs} reference(s): "
             f"{total_valid} valid, {total_broken} broken"
         )
-        
+
         return VerificationResult(
             passed=passed,
             errors=errors,
@@ -200,52 +200,52 @@ class RefsVerifier:
                 "files_excluded": files_excluded,
             },
         )
-    
+
     def _check_at_refs(
-        self, 
-        line: str, 
-        line_num: int, 
-        filepath: Path, 
+        self,
+        line: str,
+        line_num: int,
+        filepath: Path,
         root: Path
     ) -> tuple[list[VerificationError], int, int]:
         """Check @-references in a line.
-        
+
         Resolution order:
         1. Explicit relative (./path) - resolve from file's directory
         2. Explicit absolute (/path) - resolve from root
         3. Try workspace root first, then fall back to file-relative
-        
+
         Returns:
             Tuple of (errors, valid_count, total_count)
         """
         errors: list[VerificationError] = []
         valid_count = 0
         total_count = 0
-        
+
         for match in self.AT_REF_PATTERN.finditer(line):
             ref_path = match.group(1)
-            
+
             # Skip false positives (decorators, JSDoc, etc.)
             full_match = f"@{ref_path}"
             if any(full_match.startswith(fp) for fp in self.FALSE_POSITIVE_PATTERNS):
                 continue
-            
+
             # Skip version pins like @v4.4.3 or @2.4.0
             if self.VERSION_PATTERN.match(ref_path):
                 continue
-            
+
             # Skip if looks like email (text before @ looks like email local part)
             if '@' in line[:match.start()] and '.' in ref_path:
                 before = line[:match.start()]
                 if re.search(r'[a-zA-Z0-9._%+-]+$', before):
                     continue
-            
+
             # Skip if looks like domain name (common TLDs at end, case-insensitive)
             if re.match(r'^[a-zA-Z0-9.-]+\.(com|org|net|io|de|be|co|uk|edu|gov)$', ref_path, re.IGNORECASE):
                 continue
-            
+
             total_count += 1
-            
+
             # Resolve reference path with fallback strategy
             resolved = None
             if ref_path.startswith('./'):
@@ -262,7 +262,7 @@ class RefsVerifier:
                 else:
                     # Fall back to file-relative
                     resolved = filepath.parent / ref_path
-            
+
             # Check if file exists
             if resolved.exists():
                 valid_count += 1
@@ -273,9 +273,9 @@ class RefsVerifier:
                     message=f"Broken reference: @{ref_path}",
                     fix_hint=f"Create {resolved} or fix the reference",
                 ))
-        
+
         return errors, valid_count, total_count
-    
+
     def _check_alias_refs(
         self,
         line: str,
@@ -284,42 +284,42 @@ class RefsVerifier:
         root: Path
     ) -> tuple[list[VerificationError], int, int]:
         """Check alias:path references in a line.
-        
+
         Uses refcat module for alias resolution from workspace.lock.json.
-        
+
         Returns:
             Tuple of (errors, valid_count, total_count)
         """
         errors: list[VerificationError] = []
         valid_count = 0
         total_count = 0
-        
+
         for match in self.ALIAS_REF_PATTERN.finditer(line):
             alias = match.group(1)
             ref_path = match.group(2)
             full_ref = f"{alias}:{ref_path}"
-            
+
             # Skip URL schemes and common false positives
             if alias.lower() in self.ALIAS_FALSE_POSITIVES:
                 continue
-            
+
             # Skip Unix socket paths and URL-like patterns (e.g., sock:/var/run/docker.sock)
             if ref_path.startswith('/'):
                 continue
-            
+
             # Skip ellipsis paths (display shorthand like Sources/.../File.swift)
             if '...' in ref_path or '…' in ref_path:
                 continue
-            
+
             # Skip placeholder paths like path/to/file.ext (example refs in docs)
             if ref_path.startswith('path/to/'):
                 continue
-            
+
             total_count += 1
-            
+
             # Use refcat for resolution
             resolved, alias_known = self._resolve_alias_ref(alias, ref_path, root)
-            
+
             if resolved and resolved.exists():
                 valid_count += 1
             else:
@@ -330,16 +330,16 @@ class RefsVerifier:
                     hint = f"Unknown alias '{alias}' - check workspace.lock.json"
                 else:
                     hint = f"Could not resolve path for alias '{alias}'"
-                
+
                 errors.append(VerificationError(
                     file=str(filepath.relative_to(root) if filepath.is_relative_to(root) else filepath),
                     line=line_num,
                     message=f"Broken alias reference: {full_ref}",
                     fix_hint=hint,
                 ))
-        
+
         return errors, valid_count, total_count
-    
+
     def _resolve_alias_ref(
         self,
         alias: str,
@@ -347,16 +347,16 @@ class RefsVerifier:
         root: Path
     ) -> tuple[Optional[Path], bool]:
         """Resolve alias:path using refcat module.
-        
+
         Returns:
             Tuple of (resolved_path, alias_known)
             - resolved_path: The resolved path (even if file doesn't exist)
             - alias_known: True if alias was found in workspace.lock.json
         """
         try:
-            from ..core.refcat import RefSpec, resolve_path, AliasNotFoundError
+            from ..core.refcat import AliasNotFoundError, RefSpec, resolve_path
             from ..core.refcat import FileNotFoundError as RefcatFileNotFoundError
-            
+
             spec = RefSpec(path=Path(ref_path), alias=alias)
             resolved = resolve_path(spec, root)
             return resolved, True

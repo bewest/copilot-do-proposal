@@ -21,18 +21,18 @@ from .conversation import (
     substitute_template_variables,
 )
 from .refcat import (
-    parse_ref,
-    extract_content,
-    format_for_context,
     RefcatConfig,
     RefcatError,
+    extract_content,
+    format_for_context,
+    parse_ref,
 )
 
 
 @dataclass
 class RenderedPrompt:
     """A single rendered prompt with all components."""
-    
+
     index: int  # 1-based
     raw: str  # Original prompt text
     prologues: list[str]  # Resolved prologue contents
@@ -43,7 +43,7 @@ class RenderedPrompt:
 @dataclass
 class RenderedCycle:
     """A rendered cycle with context and prompts."""
-    
+
     number: int  # 1-based cycle number
     context_files: list[ContextFile]
     context_content: str  # Formatted context for injection
@@ -55,7 +55,7 @@ class RenderedCycle:
 @dataclass
 class RenderedWorkflow:
     """Complete rendered workflow output."""
-    
+
     workflow_path: Optional[Path]
     workflow_name: str
     session_mode: str
@@ -76,10 +76,10 @@ def render_prompt(
     variables: dict[str, str],
 ) -> RenderedPrompt:
     """Render a single prompt with its prologues and epilogues.
-    
+
     Prologues are only included on the first prompt (index=1).
     Epilogues are only included on the last prompt (index=total_prompts).
-    
+
     Args:
         prompt: The raw prompt text
         prologues: List of prologue strings (may include @file refs)
@@ -88,13 +88,13 @@ def render_prompt(
         total_prompts: Total number of prompts in the cycle
         base_path: Base path for resolving @file references
         variables: Template variables for substitution
-        
+
     Returns:
         RenderedPrompt with all content resolved
     """
     is_first = (index == 1)
     is_last = (index == total_prompts)
-    
+
     # Resolve prologues (only for first prompt)
     resolved_prologues = []
     if is_first:
@@ -102,7 +102,7 @@ def render_prompt(
             content = resolve_content_reference(p, base_path)
             content = substitute_template_variables(content, variables)
             resolved_prologues.append(content)
-    
+
     # Resolve epilogues (only for last prompt)
     resolved_epilogues = []
     if is_last:
@@ -110,13 +110,13 @@ def render_prompt(
             content = resolve_content_reference(e, base_path)
             content = substitute_template_variables(content, variables)
             resolved_epilogues.append(content)
-    
+
     # Build full prompt
     full_prompt = build_prompt_with_injection(
         prompt, prologues, epilogues, base_path, variables,
         is_first_prompt=is_first, is_last_prompt=is_last
     )
-    
+
     return RenderedPrompt(
         index=index,
         raw=prompt,
@@ -136,7 +136,7 @@ def render_cycle(
     refcat_refs: list[str] | None = None,
 ) -> RenderedCycle:
     """Render a single cycle of a workflow.
-    
+
     Args:
         conv: The conversation file
         cycle_number: 1-based cycle number
@@ -145,7 +145,7 @@ def render_cycle(
         base_variables: Base template variables (without cycle-specific)
         include_context: Whether to include context file contents
         refcat_refs: Optional list of REFCAT refs to extract
-        
+
     Returns:
         RenderedCycle with all prompts resolved
     """
@@ -154,18 +154,18 @@ def render_cycle(
     variables["CYCLE_NUMBER"] = str(cycle_number)
     variables["CYCLE_TOTAL"] = str(max_cycles)
     variables["MAX_CYCLES"] = str(max_cycles)
-    
+
     # Get context
     context_files = list(context_manager.files) if include_context else []
     context_content = context_manager.get_context_content() if include_context else ""
-    
+
     # Extract REFCAT content
     refcat_content = ""
     if refcat_refs and include_context:
         base_path = conv.source_path.parent if conv.source_path else Path.cwd()
         refcat_parts = []
         config = RefcatConfig(show_cwd=True, show_attribution=True)
-        
+
         for ref in refcat_refs:
             try:
                 spec = parse_ref(ref)
@@ -174,10 +174,10 @@ def render_cycle(
                 refcat_parts.append(formatted)
             except RefcatError as e:
                 refcat_parts.append(f"<!-- REFCAT error for {ref}: {e} -->")
-        
+
         if refcat_parts:
             refcat_content = "\n\n".join(refcat_parts)
-    
+
     # Resolve help topics to prologues
     resolved_prologues = list(conv.prologues)  # Copy prologues
     if conv.help_topics:
@@ -186,12 +186,12 @@ def render_cycle(
             if topic in TOPICS:
                 resolved_prologues.append(TOPICS[topic])
             # Unknown topics are ignored (validation should catch them)
-    
+
     # Render all prompts
     base_path = conv.source_path.parent if conv.source_path else None
     rendered_prompts = []
     total_prompts = len(conv.prompts)
-    
+
     for i, prompt in enumerate(conv.prompts, 1):
         rendered = render_prompt(
             prompt=prompt,
@@ -203,7 +203,7 @@ def render_cycle(
             variables=variables,
         )
         rendered_prompts.append(rendered)
-    
+
     return RenderedCycle(
         number=cycle_number,
         context_files=context_files,
@@ -221,42 +221,42 @@ def render_workflow(
     include_context: bool = True,
 ) -> RenderedWorkflow:
     """Render a complete workflow with all cycles.
-    
+
     Args:
         conv: The conversation file to render
         session_mode: Session mode (fresh, compact, accumulate)
         max_cycles: Override for max cycles (uses conv.max_cycles if None)
         include_context: Whether to include context file contents
-        
+
     Returns:
         RenderedWorkflow with all cycles and prompts resolved
     """
     cycles_to_render = max_cycles if max_cycles is not None else conv.max_cycles
-    
+
     # Get base variables
     base_variables = get_standard_variables(conv.source_path)
-    
+
     # Setup context manager
     base_path = Path(conv.cwd) if conv.cwd else Path.cwd()
     if conv.source_path:
         base_path = conv.source_path.parent
-    
+
     # Build path filter if restrictions exist
     path_filter = None
     if (conv.file_restrictions.allow_patterns or conv.file_restrictions.deny_patterns or
         conv.file_restrictions.allow_dirs or conv.file_restrictions.deny_dirs):
         path_filter = conv.file_restrictions.is_path_allowed
-    
+
     context_manager = ContextManager(
         base_path=base_path,
         limit_threshold=conv.context_limit,
         path_filter=path_filter,
     )
-    
+
     # Load context files
     for pattern in conv.context_files:
         context_manager.add_pattern(pattern)
-    
+
     # Render cycles
     rendered_cycles = []
     for cycle_num in range(1, cycles_to_render + 1):
@@ -272,7 +272,7 @@ def render_workflow(
             refcat_refs=conv.refcat_refs,
         )
         rendered_cycles.append(rendered_cycle)
-    
+
     return RenderedWorkflow(
         workflow_path=conv.source_path,
         workflow_name=conv.source_path.stem if conv.source_path else "inline",
@@ -292,20 +292,20 @@ def format_rendered_markdown(
     plan_mode: bool = False,
 ) -> str:
     """Format rendered workflow as markdown.
-    
+
     Args:
         rendered: The rendered workflow
         show_sections: Whether to add section headers
         include_context: Whether to include context file contents
         plan_mode: If True, show @file references instead of expanding content
-        
+
     Returns:
         Markdown-formatted string
     """
     from datetime import datetime
-    
+
     lines = []
-    
+
     # Header
     lines.append(f"# Rendered Workflow: {rendered.workflow_name}")
     lines.append("")
@@ -319,7 +319,7 @@ def format_rendered_markdown(
     lines.append(f"**Cycles:** {rendered.max_cycles}")
     lines.append(f"**Rendered:** {datetime.now().isoformat()}")
     lines.append("")
-    
+
     # Template variables
     if show_sections:
         lines.append("## Template Variables")
@@ -327,19 +327,19 @@ def format_rendered_markdown(
         for key, value in sorted(rendered.base_variables.items()):
             lines.append(f"- `{{{{{key}}}}}` = `{value}`")
         lines.append("")
-    
+
     # Cycles
     for cycle in rendered.cycles:
         lines.append("---")
         lines.append("")
         lines.append(f"## Cycle {cycle.number}")
         lines.append("")
-        
+
         # Context files
         if include_context and cycle.context_files:
             lines.append("### Context Files")
             lines.append("")
-            
+
             if plan_mode:
                 # Plan mode: show @file references only
                 for ctx_file in cycle.context_files:
@@ -357,17 +357,17 @@ def format_rendered_markdown(
                         rel_path = str(ctx_file.path.relative_to(Path.cwd()))
                     except ValueError:
                         rel_path = str(ctx_file.path)
-                    
+
                     # Detect language for syntax highlighting
                     ext = ctx_file.path.suffix.lstrip(".")
                     lang = _extension_to_language(ext)
-                    
+
                     lines.append(f"#### {rel_path}")
                     lines.append(f"```{lang}")
                     lines.append(ctx_file.content.rstrip())
                     lines.append("```")
                     lines.append("")
-        
+
         # REFCAT excerpts
         if include_context and cycle.refcat_content:
             lines.append("### REFCAT Excerpts")
@@ -378,12 +378,12 @@ def format_rendered_markdown(
             else:
                 lines.append(cycle.refcat_content)
             lines.append("")
-        
+
         # Prompts
         for prompt in cycle.prompts:
             lines.append(f"### Prompt {prompt.index} of {len(cycle.prompts)}")
             lines.append("")
-            
+
             if show_sections and prompt.prologues:
                 lines.append("**Prologues:**")
                 if plan_mode:
@@ -401,7 +401,7 @@ def format_rendered_markdown(
                         preview = preview.replace("\n", " ")
                         lines.append(f"- [{i}] {preview}")
                 lines.append("")
-            
+
             if plan_mode:
                 lines.append("**Prompt (raw):**")
                 lines.append("")
@@ -415,7 +415,7 @@ def format_rendered_markdown(
                 lines.append(prompt.resolved)
                 lines.append("```")
             lines.append("")
-            
+
             if show_sections and prompt.epilogues:
                 lines.append("**Epilogues:**")
                 if plan_mode:
@@ -431,17 +431,17 @@ def format_rendered_markdown(
                         preview = preview.replace("\n", " ")
                         lines.append(f"- [{i}] {preview}")
                 lines.append("")
-    
+
     return "\n".join(lines)
 
 
 def format_rendered_json(rendered: RenderedWorkflow, plan_mode: bool = False) -> dict:
     """Format rendered workflow as JSON-serializable dict.
-    
+
     Args:
         rendered: The rendered workflow
         plan_mode: If True, omit expanded content and show references only
-        
+
     Returns:
         Dict suitable for json.dumps()
     """

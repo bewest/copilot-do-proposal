@@ -15,7 +15,7 @@ Usage:
     # Simple progress
     progress("Running workflow.conv...")
     progress("Done in 4.1s")
-    
+
     # Enhanced workflow progress with context tracking
     wp = WorkflowProgress("workflow.conv", total_cycles=3, total_prompts=4)
     wp.start()
@@ -54,7 +54,7 @@ def is_tty() -> bool:
 
 def progress(message: str, end: str = "\n", flush: bool = True) -> None:
     """Print progress message to stdout (unless quiet mode).
-    
+
     Args:
         message: The message to print
         end: String appended after the message (default: newline)
@@ -66,7 +66,7 @@ def progress(message: str, end: str = "\n", flush: bool = True) -> None:
 
 def progress_step(current: int, total: int, action: str) -> None:
     """Print a step progress message.
-    
+
     Example: "  Step 2/5: Sending prompt..."
     """
     progress(f"  Step {current}/{total}: {action}")
@@ -74,7 +74,7 @@ def progress_step(current: int, total: int, action: str) -> None:
 
 def progress_file(action: str, path: str) -> None:
     """Print a file operation message.
-    
+
     Example: "  Writing output to reports/analysis.md"
     """
     progress(f"  {action} {path}")
@@ -82,7 +82,7 @@ def progress_file(action: str, path: str) -> None:
 
 def progress_done(duration_seconds: float) -> None:
     """Print completion message with duration.
-    
+
     Example: "Done in 4.1s"
     """
     progress(f"Done in {duration_seconds:.1f}s")
@@ -91,7 +91,7 @@ def progress_done(duration_seconds: float) -> None:
 @contextmanager
 def progress_timer():
     """Context manager that tracks elapsed time.
-    
+
     Usage:
         with progress_timer() as timer:
             do_work()
@@ -101,11 +101,11 @@ def progress_timer():
         def __init__(self):
             self.start = time.time()
             self.elapsed = 0.0
-        
+
         def mark(self) -> float:
             self.elapsed = time.time() - self.start
             return self.elapsed
-    
+
     timer = Timer()
     try:
         yield timer
@@ -115,7 +115,7 @@ def progress_timer():
 
 class ProgressTracker:
     """Track progress through a multi-step operation.
-    
+
     Usage:
         tracker = ProgressTracker("workflow.conv", total_steps=5)
         tracker.start()
@@ -125,19 +125,19 @@ class ProgressTracker:
             tracker.step_done()
         tracker.done()
     """
-    
+
     def __init__(self, name: str, total_steps: int = 0):
         self.name = name
         self.total_steps = total_steps
         self.current_step = 0
         self.start_time: Optional[float] = None
         self.step_start_time: Optional[float] = None
-    
+
     def start(self) -> None:
         """Mark the start of the operation."""
         self.start_time = time.time()
         progress(f"Running {self.name}...")
-    
+
     def step(self, action: str) -> None:
         """Start a new step."""
         self.current_step += 1
@@ -146,7 +146,7 @@ class ProgressTracker:
             progress_step(self.current_step, self.total_steps, action)
         else:
             progress(f"  {action}")
-    
+
     def step_done(self, result: Optional[str] = None) -> None:
         """Mark current step as complete."""
         if self.step_start_time:
@@ -154,15 +154,15 @@ class ProgressTracker:
             if result:
                 progress(f"  {result} ({elapsed:.1f}s)")
             # If no result, step message already printed
-    
+
     def file_op(self, action: str, path: str) -> None:
         """Report a file operation."""
         progress_file(action, path)
-    
+
     def checkpoint(self, name: str) -> None:
         """Report a checkpoint."""
         progress(f"  📌 CHECKPOINT: {name}")
-    
+
     def done(self) -> None:
         """Mark operation complete."""
         if self.start_time:
@@ -172,9 +172,9 @@ class ProgressTracker:
 
 class WorkflowProgress:
     """Enhanced progress tracking for workflow execution.
-    
+
     Tracks cycle, prompt, and context usage with TTY-aware formatting.
-    
+
     Usage:
         wp = WorkflowProgress("workflow.conv", total_cycles=3, total_prompts=4)
         wp.start()
@@ -183,7 +183,7 @@ class WorkflowProgress:
         wp.cycle_complete(cycle=1)
         wp.done()
     """
-    
+
     def __init__(
         self,
         name: str,
@@ -198,7 +198,7 @@ class WorkflowProgress:
         self.start_time: Optional[float] = None
         self.prompt_start_time: Optional[float] = None
         self._last_line_length = 0  # For TTY overwrite
-    
+
     def _format_position(
         self,
         cycle: int,
@@ -210,34 +210,34 @@ class WorkflowProgress:
             pos = f"[Cycle {cycle}/{self.total_cycles}] Prompt {prompt}/{self.total_prompts}"
         else:
             pos = f"Prompt {prompt}/{self.total_prompts}"
-        
+
         if context_pct is not None:
             pos += f" (ctx: {context_pct:.0f}%)"
-        
+
         return pos
-    
+
     def _overwrite_line(self, message: str) -> None:
         """Print message, overwriting previous line if TTY."""
         if _is_tty and self._last_line_length > 0:
             # Clear previous line and write new one
             clear = "\r" + " " * self._last_line_length + "\r"
             print(clear, end="", flush=True, file=sys.stdout)
-        
+
         if not _quiet:
             print(f"  {message}", end="" if _is_tty else "\n", flush=True, file=sys.stdout)
             self._last_line_length = len(message) + 2  # +2 for "  " prefix
-    
+
     def _end_overwrite(self) -> None:
         """End any TTY overwrite with a newline."""
         if _is_tty and self._last_line_length > 0:
             print(file=sys.stdout)
             self._last_line_length = 0
-    
+
     def start(self) -> None:
         """Mark the start of workflow execution."""
         self.start_time = time.time()
         progress(f"Running {self.name}...")
-    
+
     def prompt_sending(
         self,
         cycle: int,
@@ -246,7 +246,7 @@ class WorkflowProgress:
         preview: Optional[str] = None,
     ) -> None:
         """Report that a prompt is being sent.
-        
+
         Args:
             cycle: Current cycle (1-indexed)
             prompt: Current prompt (1-indexed)
@@ -255,7 +255,7 @@ class WorkflowProgress:
         """
         self.prompt_start_time = time.time()
         pos = self._format_position(cycle, prompt, context_pct)
-        
+
         if preview and self.verbosity >= 1:
             # Truncate preview
             if len(preview) > 50:
@@ -264,9 +264,9 @@ class WorkflowProgress:
             message = f"{pos}: \"{preview}\""
         else:
             message = f"{pos}: Sending..."
-        
+
         self._overwrite_line(message)
-    
+
     def prompt_complete(
         self,
         cycle: int,
@@ -276,7 +276,7 @@ class WorkflowProgress:
         context_pct: Optional[float] = None,
     ) -> None:
         """Report that a prompt completed.
-        
+
         Args:
             cycle: Current cycle (1-indexed)
             prompt: Current prompt (1-indexed)
@@ -285,38 +285,38 @@ class WorkflowProgress:
             context_pct: New context window usage percentage
         """
         self._end_overwrite()
-        
+
         if duration is None and self.prompt_start_time:
             duration = time.time() - self.prompt_start_time
-        
+
         pos = self._format_position(cycle, prompt, context_pct)
-        
+
         details = []
         if duration is not None:
             details.append(f"{duration:.1f}s")
         if tokens_added is not None:
             details.append(f"+{tokens_added} tokens")
-        
+
         if details:
             progress(f"  {pos}: Complete ({', '.join(details)})")
         else:
             progress(f"  {pos}: Complete")
-    
+
     def cycle_complete(self, cycle: int, compacted: bool = False) -> None:
         """Report that a cycle completed."""
         if compacted:
             progress(f"  [Cycle {cycle}/{self.total_cycles}] Complete (compacted)")
         else:
             progress(f"  [Cycle {cycle}/{self.total_cycles}] Complete")
-    
+
     def file_op(self, action: str, path: str) -> None:
         """Report a file operation."""
         progress(f"  {action} {path}")
-    
+
     def checkpoint(self, name: str) -> None:
         """Report a checkpoint."""
         progress(f"  📌 CHECKPOINT: {name}")
-    
+
     def done(self) -> None:
         """Mark workflow complete."""
         self._end_overwrite()

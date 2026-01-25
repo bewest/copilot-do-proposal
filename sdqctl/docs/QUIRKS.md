@@ -104,37 +104,24 @@ All checks passed!
 
 **Priority:** P3 - Low (Cosmetic)  
 **Discovered:** 2026-01-25  
-**Status:** 🟡 Backlog
+**Status:** 🟢 Mostly Fixed (2026-01-25) - 197 remaining
 
 ### Description
 
-Comprehensive ruff linting revealed 1,994 issues across the codebase. Most are auto-fixable cosmetic issues.
+Comprehensive ruff linting revealed issues across the codebase. Auto-fix applied 2026-01-25.
 
-### Breakdown
+### Progress (2026-01-25)
 
-| Category | Count | Auto-fixable | Notes |
-|----------|-------|--------------|-------|
-| W293 (whitespace in blank lines) | 1,617 | ✅ Yes | `ruff check --fix` |
-| E501 (line too long >100) | 193 | ⚠️ Manual | Requires refactoring |
-| W291 (trailing whitespace) | 63 | ✅ Yes | `ruff check --fix` |
-| F541 (f-string no placeholders) | 41 | ✅ Yes | `ruff check --fix` |
-| F401 (unused imports) | 35 | ✅ Yes | `ruff check --fix` |
-| I001 (unsorted imports) | 34 | ✅ Yes | `ruff check --fix` |
-| F841 (unused variables) | 5 | ⚠️ Review | May be intentional |
-| F811 (redefinition) | 1 | ⚠️ Review | `time` import |
+| Before | After | Fixed |
+|--------|-------|-------|
+| 1,994 issues | 197 issues | 1,797 (90%) |
 
-### Quick Fix
+### Remaining Issues
 
-```bash
-cd sdqctl
-ruff check sdqctl/ --fix  # Fixes 1,450 issues
-```
-
-### Recommendation
-
-- Run auto-fix for immediate cleanup
-- Address E501 (long lines) during normal development
-- Review F841 (unused vars) for dead code
+| Category | Count | Notes |
+|----------|-------|-------|
+| E501 (line too long >100) | 192 | Requires manual refactoring |
+| F841 (unused variables) | 5 | Needs code review |
 
 ---
 

@@ -56,30 +56,30 @@ def scan_existing_ids(
     recursive: bool = True,
 ) -> list[tuple[str, int]]:
     """Scan files for existing artifact IDs of a given type.
-    
+
     Returns list of (full_id, number) tuples.
     """
     if art_type not in ID_PATTERNS:
         return []
-    
+
     pattern = ID_PATTERNS[art_type]
     found_ids: list[tuple[str, int]] = []
-    
+
     # Find files to scan
     if recursive:
         files = [f for f in root.rglob('*') if f.suffix in SCAN_EXTENSIONS and f.is_file()]
     else:
         files = [f for f in root.glob('*') if f.suffix in SCAN_EXTENSIONS and f.is_file()]
-    
+
     for filepath in files:
         try:
             content = filepath.read_text(errors='replace')
         except Exception:
             continue
-        
+
         for match in pattern.finditer(content):
             full_id = match.group(1)
-            
+
             # Extract the numeric portion
             # Handle both simple (REQ-001) and category (REQ-CGM-001) formats
             if art_type in CATEGORY_TYPES:
@@ -102,7 +102,7 @@ def scan_existing_ids(
                 num_match = re.search(r'-(\d+)$', full_id)
                 if num_match:
                     found_ids.append((full_id, int(num_match.group(1))))
-    
+
     return found_ids
 
 
@@ -117,7 +117,7 @@ def get_next_id(
         next_num = max_num + 1
     else:
         next_num = 1
-    
+
     # Format the ID
     if category and art_type in CATEGORY_TYPES:
         return f"{art_type}-{category}-{next_num:03d}"
@@ -128,16 +128,16 @@ def get_next_id(
 @click.group()
 def artifact() -> None:
     """Artifact ID management utilities.
-    
+
     Generate next artifact IDs, scan for existing artifacts, and manage
     artifact registries for traceability documentation.
-    
+
     \b
     Artifact Types:
       STPA:    LOSS, HAZ, UCA, SC
       Reqs:    REQ, SPEC, TEST, GAP
       Dev:     BUG, PROP, Q, IQ
-    
+
     \b
     Examples:
       sdqctl artifact next REQ              # → REQ-001 (or next available)
@@ -158,11 +158,11 @@ def artifact() -> None:
               help="Output as JSON")
 def next_id(type_spec: str, path: str, no_scan: bool, as_json: bool) -> None:
     """Generate the next available artifact ID.
-    
+
     TYPE_SPEC can be:
       - Simple type: REQ, UCA, SPEC, TEST, BUG, etc.
       - Category-scoped: REQ-CGM, UCA-BOLUS, GAP-SYNC, etc.
-    
+
     \b
     Examples:
       sdqctl artifact next REQ
@@ -170,23 +170,23 @@ def next_id(type_spec: str, path: str, no_scan: bool, as_json: bool) -> None:
       sdqctl artifact next UCA-BOLUS --path traceability/
     """
     art_type, category = parse_type_and_category(type_spec)
-    
+
     if art_type not in ID_PATTERNS:
         console.print(f"[red]Unknown artifact type: {art_type}[/red]")
         console.print(f"[dim]Valid types: {', '.join(sorted(ID_PATTERNS.keys()))}[/dim]")
         raise SystemExit(1)
-    
+
     if category and art_type not in CATEGORY_TYPES:
         console.print(f"[yellow]Warning: {art_type} does not support categories, ignoring '{category}'[/yellow]")
         category = None
-    
+
     if no_scan:
         existing: list[tuple[str, int]] = []
     else:
         existing = scan_existing_ids(Path(path), art_type, category)
-    
+
     next_artifact_id = get_next_id(art_type, category, existing)
-    
+
     if as_json:
         import json
         result = {
@@ -211,7 +211,7 @@ def next_id(type_spec: str, path: str, no_scan: bool, as_json: bool) -> None:
               help="Output as JSON")
 def list_artifacts(type_spec: Optional[str], path: str, show_all: bool, as_json: bool) -> None:
     """List existing artifact IDs.
-    
+
     \b
     Examples:
       sdqctl artifact list REQ              # List all REQ artifacts
@@ -219,7 +219,7 @@ def list_artifacts(type_spec: Optional[str], path: str, show_all: bool, as_json:
       sdqctl artifact list --all            # List all artifact types
     """
     root = Path(path)
-    
+
     if show_all or not type_spec:
         # Scan for all types
         all_artifacts: dict[str, list[tuple[str, int]]] = {}
@@ -227,7 +227,7 @@ def list_artifacts(type_spec: Optional[str], path: str, show_all: bool, as_json:
             found = scan_existing_ids(root, art_type, None)
             if found:
                 all_artifacts[art_type] = found
-        
+
         if as_json:
             import json
             result = {
@@ -239,28 +239,28 @@ def list_artifacts(type_spec: Optional[str], path: str, show_all: bool, as_json:
             if not all_artifacts:
                 console.print("[dim]No artifacts found[/dim]")
                 return
-            
+
             table = Table(title="Artifact Summary")
             table.add_column("Type", style="cyan")
             table.add_column("Count", justify="right")
             table.add_column("Range", style="dim")
-            
+
             for art_type in sorted(all_artifacts.keys()):
                 ids = all_artifacts[art_type]
                 nums = [num for _, num in ids]
                 range_str = f"{min(nums):03d}-{max(nums):03d}" if nums else "-"
                 table.add_row(art_type, str(len(ids)), range_str)
-            
+
             console.print(table)
     else:
         art_type, category = parse_type_and_category(type_spec)
-        
+
         if art_type not in ID_PATTERNS:
             console.print(f"[red]Unknown artifact type: {art_type}[/red]")
             raise SystemExit(1)
-        
+
         found = scan_existing_ids(root, art_type, category)
-        
+
         if as_json:
             import json
             result = {
@@ -273,7 +273,7 @@ def list_artifacts(type_spec: Optional[str], path: str, show_all: bool, as_json:
             if not found:
                 console.print(f"[dim]No {type_spec} artifacts found[/dim]")
                 return
-            
+
             # Sort by number and display
             for id_, num in sorted(found, key=lambda x: x[1]):
                 console.print(id_)
@@ -285,50 +285,50 @@ def find_all_references(
     recursive: bool = True,
 ) -> list[tuple[Path, int, str]]:
     """Find all references to an artifact ID in files.
-    
+
     Returns list of (filepath, line_number, line_content) tuples.
     """
     references: list[tuple[Path, int, str]] = []
-    
+
     # Build a pattern that matches the exact ID with word boundaries
     pattern = re.compile(rf'\b{re.escape(artifact_id)}\b')
-    
+
     # Find files to scan
     if recursive:
         files = [f for f in root.rglob('*') if f.suffix in SCAN_EXTENSIONS and f.is_file()]
     else:
         files = [f for f in root.glob('*') if f.suffix in SCAN_EXTENSIONS and f.is_file()]
-    
+
     for filepath in files:
         try:
             lines = filepath.read_text(errors='replace').splitlines()
         except Exception:
             continue
-        
+
         for line_num, line in enumerate(lines, start=1):
             if pattern.search(line):
                 references.append((filepath, line_num, line))
-    
+
     return references
 
 
 def replace_in_file(filepath: Path, old_id: str, new_id: str) -> int:
     """Replace all occurrences of old_id with new_id in a file.
-    
+
     Returns the number of replacements made.
     """
     pattern = re.compile(rf'\b{re.escape(old_id)}\b')
-    
+
     try:
         content = filepath.read_text(errors='replace')
     except Exception:
         return 0
-    
+
     new_content, count = pattern.subn(new_id, content)
-    
+
     if count > 0:
         filepath.write_text(new_content)
-    
+
     return count
 
 
@@ -343,10 +343,10 @@ def replace_in_file(filepath: Path, old_id: str, new_id: str) -> int:
               help="Output as JSON")
 def rename_artifact(old_id: str, new_id: str, path: str, dry_run: bool, as_json: bool) -> None:
     """Rename an artifact ID and update all references.
-    
+
     Searches for all occurrences of OLD_ID and replaces them with NEW_ID.
     Use --dry-run to preview changes before applying.
-    
+
     \b
     Examples:
       sdqctl artifact rename REQ-001 REQ-OVERRIDE-001
@@ -354,10 +354,10 @@ def rename_artifact(old_id: str, new_id: str, path: str, dry_run: bool, as_json:
       sdqctl artifact rename GAP-001 GAP-SYNC-001 --path traceability/
     """
     root = Path(path)
-    
+
     # Find all references to the old ID
     references = find_all_references(root, old_id)
-    
+
     if not references:
         if as_json:
             import json
@@ -365,12 +365,12 @@ def rename_artifact(old_id: str, new_id: str, path: str, dry_run: bool, as_json:
         else:
             console.print(f"[yellow]No references to {old_id} found[/yellow]")
         return
-    
+
     # Group references by file
     files_with_refs: dict[Path, list[tuple[int, str]]] = defaultdict(list)
     for filepath, line_num, line in references:
         files_with_refs[filepath].append((line_num, line))
-    
+
     if dry_run:
         if as_json:
             import json
@@ -392,7 +392,7 @@ def rename_artifact(old_id: str, new_id: str, path: str, dry_run: bool, as_json:
         else:
             console.print(f"[bold]Dry run:[/bold] Would rename [cyan]{old_id}[/cyan] → [green]{new_id}[/green]")
             console.print(f"[dim]Found {len(references)} reference(s) in {len(files_with_refs)} file(s):[/dim]\n")
-            
+
             for filepath in sorted(files_with_refs.keys()):
                 refs = files_with_refs[filepath]
                 rel_path = filepath.relative_to(root) if filepath.is_relative_to(root) else filepath
@@ -405,17 +405,17 @@ def rename_artifact(old_id: str, new_id: str, path: str, dry_run: bool, as_json:
                     console.print(f"  L{line_num}: {preview}")
                 console.print()
         return
-    
+
     # Perform the rename
     total_replacements = 0
     files_changed: list[Path] = []
-    
+
     for filepath in files_with_refs.keys():
         count = replace_in_file(filepath, old_id, new_id)
         if count > 0:
             total_replacements += count
             files_changed.append(filepath)
-    
+
     if as_json:
         import json
         result = {
@@ -436,25 +436,25 @@ def rename_artifact(old_id: str, new_id: str, path: str, dry_run: bool, as_json:
 
 def find_definition_heading(filepath: Path, artifact_id: str) -> Optional[tuple[int, str]]:
     """Find the definition heading for an artifact ID.
-    
+
     Looks for patterns like:
       ### REQ-001: Some Title
       ## UCA-BOLUS-003: Description
-    
+
     Returns (line_number, full_heading_text) or None if not found.
     """
     pattern = re.compile(rf'^(#+\s+{re.escape(artifact_id)}[:\s].*)$', re.MULTILINE)
-    
+
     try:
         content = filepath.read_text(errors='replace')
     except Exception:
         return None
-    
+
     lines = content.splitlines()
     for line_num, line in enumerate(lines, start=1):
         if pattern.match(line):
             return (line_num, line)
-    
+
     return None
 
 
@@ -462,7 +462,7 @@ def mark_heading_retired(heading: str) -> str:
     """Add [RETIRED] suffix to a heading if not already present."""
     if "[RETIRED]" in heading:
         return heading  # Already marked
-    
+
     # Insert [RETIRED] after the artifact ID
     # Pattern: ### REQ-001: Title -> ### REQ-001: [RETIRED] Title
     #          ### REQ-001 -> ### REQ-001 [RETIRED]
@@ -494,11 +494,11 @@ def retire_artifact(
     as_json: bool,
 ) -> None:
     """Mark an artifact as retired with reason and optional successor.
-    
+
     Finds the artifact's definition heading and marks it as [RETIRED],
     adding status metadata. Use this when an artifact is superseded or
     no longer applicable.
-    
+
     \b
     Examples:
       sdqctl artifact retire REQ-003 --reason "Superseded by REQ-010"
@@ -506,13 +506,13 @@ def retire_artifact(
       sdqctl artifact retire UCA-005 --reason "Obsolete design" --dry-run
     """
     from datetime import date
-    
+
     root = Path(path)
     today = date.today().isoformat()
-    
+
     # Find all files containing this artifact
     references = find_all_references(root, artifact_id)
-    
+
     if not references:
         if as_json:
             import json
@@ -524,12 +524,12 @@ def retire_artifact(
         else:
             console.print(f"[red]Error:[/red] No references to {artifact_id} found")
         raise SystemExit(1)
-    
+
     # Find the definition heading
     definition_file: Optional[Path] = None
     definition_line: Optional[int] = None
     definition_heading: Optional[str] = None
-    
+
     # Check each file for a heading definition
     for filepath, _, _ in references:
         result = find_definition_heading(filepath, artifact_id)
@@ -537,7 +537,7 @@ def retire_artifact(
             definition_file = filepath
             definition_line, definition_heading = result
             break
-    
+
     if not definition_file or not definition_heading:
         # No heading found - report all references for manual review
         if as_json:
@@ -553,13 +553,13 @@ def retire_artifact(
             console.print(f"Found {len(references)} reference(s) but no heading like '### {artifact_id}: ...'")
             console.print("[dim]Consider adding a definition section manually[/dim]")
         raise SystemExit(1)
-    
+
     # Build the retirement block
     retired_heading = mark_heading_retired(definition_heading)
     status_block = f"\n**Status:** RETIRED ({today})\n**Reason:** {reason}"
     if successor:
         status_block += f"\n**Successor:** {successor}"
-    
+
     if dry_run:
         if as_json:
             import json
@@ -581,28 +581,28 @@ def retire_artifact(
             rel_path = definition_file.relative_to(root) if definition_file.is_relative_to(root) else definition_file
             console.print(f"[bold]Dry run:[/bold] Would retire [cyan]{artifact_id}[/cyan]")
             console.print(f"\n[dim]File:[/dim] {rel_path}:{definition_line}")
-            console.print(f"\n[dim]Original heading:[/dim]")
+            console.print("\n[dim]Original heading:[/dim]")
             console.print(f"  {definition_heading}")
-            console.print(f"\n[dim]Retired heading:[/dim]")
+            console.print("\n[dim]Retired heading:[/dim]")
             console.print(f"  {retired_heading}")
-            console.print(f"\n[dim]Status block to insert:[/dim]")
+            console.print("\n[dim]Status block to insert:[/dim]")
             for line in status_block.strip().split("\n"):
                 console.print(f"  {line}")
         return
-    
+
     # Apply the retirement
     try:
         content = definition_file.read_text(errors='replace')
     except Exception as e:
         console.print(f"[red]Error reading {definition_file}:[/red] {e}")
         raise SystemExit(1)
-    
+
     lines = content.splitlines()
-    
+
     # Find and replace the heading, then insert status block after
     modified_lines = []
     heading_found = False
-    
+
     for i, line in enumerate(lines):
         if not heading_found and line == definition_heading:
             modified_lines.append(retired_heading)
@@ -612,18 +612,18 @@ def retire_artifact(
             heading_found = True
         else:
             modified_lines.append(line)
-    
+
     if not heading_found:
-        console.print(f"[red]Error:[/red] Could not find heading to modify")
+        console.print("[red]Error:[/red] Could not find heading to modify")
         raise SystemExit(1)
-    
+
     # Write the modified content
     try:
         definition_file.write_text("\n".join(modified_lines))
     except Exception as e:
         console.print(f"[red]Error writing {definition_file}:[/red] {e}")
         raise SystemExit(1)
-    
+
     if as_json:
         import json
         result = {

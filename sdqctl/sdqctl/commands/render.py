@@ -15,7 +15,6 @@ Usage:
 
 import json
 import sys
-import warnings
 from pathlib import Path
 from typing import Optional
 
@@ -50,7 +49,7 @@ def _render_common(
     plan_mode: bool = False,
 ) -> None:
     """Common render logic for all render subcommands.
-    
+
     Args:
         plan_mode: If True, show @file references instead of expanding content
     """
@@ -58,21 +57,21 @@ def _render_common(
         # Load workflow
         conv = ConversationFile.from_file(Path(workflow))
         logger.info(f"Loaded workflow: {workflow}")
-        
+
         # Apply CLI overrides
         if prologue:
             conv.prologues = list(prologue) + conv.prologues
         if epilogue:
             conv.epilogues = list(epilogue) + conv.epilogues
-        
+
         # Validate context files (render is lenient - only warns)
         errors, warns = conv.validate_context_files(allow_missing=True)
         all_issues = errors + warns
         if all_issues:
-            console.print(f"[yellow]Warning: Some context files not found:[/yellow]")
+            console.print("[yellow]Warning: Some context files not found:[/yellow]")
             for pattern, resolved in all_issues:
                 console.print(f"[yellow]  - {pattern}[/yellow]")
-        
+
         # Render workflow
         rendered = render_workflow(
             conv=conv,
@@ -80,14 +79,14 @@ def _render_common(
             max_cycles=cycles,
             include_context=not no_context,
         )
-        
+
         # Filter to specific cycle if requested
         if cycle is not None:
             if cycle < 1 or cycle > len(rendered.cycles):
                 console.print(f"[red]Error: Cycle {cycle} not in range 1-{len(rendered.cycles)}[/red]")
                 sys.exit(1)
             rendered.cycles = [rendered.cycles[cycle - 1]]
-        
+
         # Filter to specific prompt if requested
         if prompt is not None:
             for c in rendered.cycles:
@@ -95,7 +94,7 @@ def _render_common(
                     console.print(f"[red]Error: Prompt {prompt} not in range 1-{len(c.prompts)}[/red]")
                     sys.exit(1)
                 c.prompts = [c.prompts[prompt - 1]]
-        
+
         # Format output
         if json_output:
             output_content = json.dumps(format_rendered_json(rendered, plan_mode=plan_mode), indent=2)
@@ -106,11 +105,11 @@ def _render_common(
                 include_context=not no_context,
                 plan_mode=plan_mode,
             )
-        
+
         # Write output
         if output:
             output_path = Path(output)
-            
+
             # Handle fresh mode with directory output
             if session_mode == "fresh" and output_path.suffix == "" and len(rendered.cycles) > 1:
                 # Write separate files per cycle
@@ -127,7 +126,7 @@ def _render_common(
                         cycles=[c],
                         base_variables=rendered.base_variables,
                     )
-                    
+
                     if json_output:
                         cycle_content = json.dumps(format_rendered_json(single_cycle_copy, plan_mode=plan_mode), indent=2)
                         cycle_file = output_path / f"cycle-{c.number}.json"
@@ -139,7 +138,7 @@ def _render_common(
                             plan_mode=plan_mode,
                         )
                         cycle_file = output_path / f"cycle-{c.number}.md"
-                    
+
                     cycle_file.write_text(cycle_content)
                     console.print(f"[green]Wrote {cycle_file}[/green]")
             else:
@@ -153,11 +152,11 @@ def _render_common(
                 console.print_json(output_content)
             else:
                 console.print(output_content)
-    
+
     except MissingContextFiles as e:
         console.print(f"[red]Error: Missing mandatory context files: {e.patterns}[/red]")
         sys.exit(e.exit_code)
-    
+
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
         logger.exception("Render failed")
@@ -187,21 +186,21 @@ def common_render_options(f):
 @click.pass_context
 def render(ctx: click.Context) -> None:
     """Render workflow prompts without executing.
-    
+
     Produces fully-resolved prompts with all context, templates,
     prologues, and epilogues expanded. No AI calls are made.
-    
+
     \b
     Commands:
       render run      Render a single-cycle workflow
       render cycle    Render a multi-cycle workflow
       render apply    Render a per-component workflow
-    
+
     \b
     Modes:
       --plan    Show @file references instead of expanding content
       --full    Fully expand all content (default)
-    
+
     \b
     Examples:
       sdqctl render run workflow.conv                  # stdout
@@ -232,7 +231,7 @@ def render_file(
     full_mode: bool,
 ) -> None:
     """Render a workflow file (legacy, use 'render run' instead).
-    
+
     \b
     Examples:
       sdqctl render file workflow.conv
@@ -273,9 +272,9 @@ def render_run(
     full_mode: bool,
 ) -> None:
     """Render workflow for run command (single cycle).
-    
+
     Equivalent to: sdqctl run workflow.conv --render-only
-    
+
     \b
     Examples:
       sdqctl render run workflow.conv
@@ -319,9 +318,9 @@ def render_cycle(
     full_mode: bool,
 ) -> None:
     """Render workflow for cycle command (multi-cycle).
-    
+
     Equivalent to: sdqctl cycle workflow.conv --render-only
-    
+
     \b
     Examples:
       sdqctl render cycle workflow.conv --max-cycles 5
@@ -330,7 +329,7 @@ def render_cycle(
     """
     # max_cycles takes precedence over cycles
     num_cycles = max_cycles or cycles
-    
+
     _render_common(
         workflow=workflow,
         session_mode=session_mode,
@@ -368,11 +367,11 @@ def render_apply(
     full_mode: bool,
 ) -> None:
     """Render workflow for apply command (per-component).
-    
+
     Equivalent to: sdqctl apply workflow.conv --render-only
-    
+
     Shows how the workflow would be rendered for each component.
-    
+
     \b
     Examples:
       sdqctl render apply workflow.conv --components "lib/*.js"
@@ -380,11 +379,11 @@ def render_apply(
     """
     # For apply, we'd need to discover components and render each
     # For now, just render the base workflow with a note
-    console.print(f"[yellow]Note: Rendering base workflow. Use --components to specify targets.[/yellow]")
-    
+    console.print("[yellow]Note: Rendering base workflow. Use --components to specify targets.[/yellow]")
+
     if components:
         console.print(f"[dim]Component patterns: {list(components)}[/dim]")
-    
+
     _render_common(
         workflow=workflow,
         session_mode=session_mode,

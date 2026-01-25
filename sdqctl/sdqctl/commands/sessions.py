@@ -45,7 +45,7 @@ Be concise. Present one question at a time. Offer reasonable defaults."""
 
 def parse_duration(duration_str: str) -> datetime:
     """Parse duration string like '7d', '24h', '30m' into a cutoff datetime.
-    
+
     Returns the datetime that is `duration` ago from now.
     """
     match = re.match(r"^(\d+)([dhm])$", duration_str.lower())
@@ -53,10 +53,10 @@ def parse_duration(duration_str: str) -> datetime:
         raise click.BadParameter(
             f"Invalid duration format: {duration_str}. Use format like '7d', '24h', '30m'"
         )
-    
+
     value = int(match.group(1))
     unit = match.group(2)
-    
+
     if unit == "d":
         delta = timedelta(days=value)
     elif unit == "h":
@@ -65,7 +65,7 @@ def parse_duration(duration_str: str) -> datetime:
         delta = timedelta(minutes=value)
     else:
         raise click.BadParameter(f"Unknown duration unit: {unit}")
-    
+
     return datetime.now(timezone.utc) - delta
 
 
@@ -79,7 +79,7 @@ def format_age(timestamp_str: str) -> str:
         dt = datetime.fromisoformat(ts)
         now = datetime.now(timezone.utc)
         delta = now - dt
-        
+
         if delta.days > 0:
             return f"{delta.days}d ago"
         elif delta.seconds >= 3600:
@@ -95,13 +95,13 @@ def format_age(timestamp_str: str) -> str:
 @click.group("sessions")
 def sessions():
     """Manage conversation sessions.
-    
+
     \b
     Commands:
       list     List all available sessions
       delete   Delete a session permanently
       cleanup  Clean up old sessions
-    
+
     \b
     Examples:
       sdqctl sessions list
@@ -114,13 +114,13 @@ def sessions():
 
 
 @sessions.command("list")
-@click.option("--format", "output_format", type=click.Choice(["table", "json"]), 
+@click.option("--format", "output_format", type=click.Choice(["table", "json"]),
               default="table", help="Output format")
 @click.option("--filter", "name_filter", help="Filter by session name pattern (glob)")
 @click.option("--adapter", "-a", default="copilot", help="Adapter to use (default: copilot)")
 def list_sessions(output_format: str, name_filter: Optional[str], adapter: str):
     """List all available sessions.
-    
+
     Shows session ID, last modified time, and remote status.
     Use --filter to filter by session name pattern (e.g., 'audit-*').
     """
@@ -142,17 +142,17 @@ async def _list_sessions_async(output_format: str, name_filter: Optional[str], a
         else:
             console.print(f"[red]Error listing sessions: {e}[/red]")
         return
-    
+
     # Filter by pattern if provided
     if name_filter:
         sessions_list = [s for s in sessions_list if fnmatch(s.get("id", ""), name_filter)]
-    
+
     # Filter out remote sessions (per design decision)
     sessions_list = [s for s in sessions_list if not s.get("is_remote", False)]
-    
+
     # Sort by modified time (newest first)
     sessions_list.sort(key=lambda s: s.get("modified_time", ""), reverse=True)
-    
+
     if output_format == "json":
         console.print_json(json.dumps({"sessions": sessions_list}))
     else:
@@ -162,27 +162,27 @@ async def _list_sessions_async(output_format: str, name_filter: Optional[str], a
             else:
                 console.print("[yellow]No sessions found[/yellow]")
             return
-        
+
         table = Table(title="Sessions")
         table.add_column("ID", style="cyan", no_wrap=True)
         table.add_column("Modified", style="dim")
         table.add_column("Summary", style="green", max_width=40)
-        
+
         for s in sessions_list[:50]:  # Limit display
             age = format_age(s.get("modified_time", ""))
             summary = s.get("summary") or ""
             if len(summary) > 37:
                 summary = summary[:37] + "..."
             table.add_row(s.get("id", "unknown"), age, summary)
-        
+
         console.print(table)
-        
+
         if len(sessions_list) > 50:
             console.print(f"\n[dim]...and {len(sessions_list) - 50} more sessions[/dim]")
-        
+
         # Prompt for old sessions cleanup
         old_sessions = [
-            s for s in sessions_list 
+            s for s in sessions_list
             if _is_older_than(s.get("modified_time", ""), days=30)
         ]
         if old_sessions:
@@ -211,14 +211,14 @@ def _is_older_than(timestamp_str: str, days: int) -> bool:
 @click.option("--adapter", "-a", default="copilot", help="Adapter to use (default: copilot)")
 def delete_session(session_id: str, force: bool, adapter: str):
     """Delete a session permanently.
-    
+
     The session cannot be resumed after deletion.
     """
     if not force:
         if not click.confirm(f"Delete session '{session_id}'?"):
             console.print("[yellow]Aborted[/yellow]")
             return
-    
+
     run_async(_delete_session_async(session_id, adapter))
 
 
@@ -237,21 +237,21 @@ async def _delete_session_async(session_id: str, adapter_name: str):
 
 
 @sessions.command("cleanup")
-@click.option("--older-than", "older_than", required=True, 
+@click.option("--older-than", "older_than", required=True,
               help="Delete sessions older than (e.g., 7d, 24h)")
 @click.option("--dry-run", is_flag=True, help="Show what would be deleted without deleting")
 @click.option("--adapter", "-a", default="copilot", help="Adapter to use (default: copilot)")
 def cleanup_sessions(older_than: str, dry_run: bool, adapter: str):
     """Clean up old sessions.
-    
+
     Deletes sessions that haven't been modified in the specified duration.
-    
+
     \b
     Duration format:
       7d  - 7 days
       24h - 24 hours
       30m - 30 minutes
-    
+
     \b
     Examples:
       sdqctl sessions cleanup --older-than 7d --dry-run
@@ -262,7 +262,7 @@ def cleanup_sessions(older_than: str, dry_run: bool, adapter: str):
     except click.BadParameter as e:
         console.print(f"[red]{e.message}[/red]")
         return
-    
+
     run_async(_cleanup_sessions_async(cutoff, dry_run, adapter))
 
 
@@ -273,7 +273,7 @@ async def _cleanup_sessions_async(cutoff: datetime, dry_run: bool, adapter_name:
         await ai_adapter.start()
         try:
             sessions_list = await ai_adapter.list_sessions()
-            
+
             # Filter out remote sessions and find old ones
             old_sessions = []
             for s in sessions_list:
@@ -288,11 +288,11 @@ async def _cleanup_sessions_async(cutoff: datetime, dry_run: bool, adapter_name:
                         old_sessions.append(s)
                 except (ValueError, TypeError):
                     continue
-            
+
             if not old_sessions:
                 console.print("[green]No sessions to clean up[/green]")
                 return
-            
+
             if dry_run:
                 console.print(f"[yellow]Would delete {len(old_sessions)} sessions:[/yellow]")
                 for s in old_sessions:
@@ -307,7 +307,7 @@ async def _cleanup_sessions_async(cutoff: datetime, dry_run: bool, adapter_name:
                         deleted += 1
                     except Exception as e:
                         console.print(f"  [red]Failed to delete {s['id']}: {e}[/red]")
-                
+
                 console.print(f"\n[green]Deleted {deleted} sessions[/green]")
         finally:
             await ai_adapter.stop()
@@ -329,10 +329,10 @@ def resume_session_cmd(
     streaming: bool,
 ):
     """Resume a previous conversation session.
-    
+
     Restores conversation history and continues from where you left off.
     Use --prompt to send an immediate message.
-    
+
     \b
     Examples:
       sdqctl sessions resume security-audit-2026-01
@@ -355,21 +355,22 @@ async def _resume_session_async(
     streaming: bool,
 ):
     """Async implementation of resume session command."""
-    from ..adapters.base import AdapterConfig
     from rich.markdown import Markdown
     from rich.panel import Panel
-    
+
+    from ..adapters.base import AdapterConfig
+
     try:
         ai_adapter = get_adapter(adapter_name)
         await ai_adapter.start()
-        
+
         try:
             # Build config for resumed session
             config = AdapterConfig(
                 model=model or "gpt-4",
                 streaming=streaming,
             )
-            
+
             # Check for local checkpoint with CONSULT status
             consult_topic = None
             session_dir = Path.home() / ".sdqctl" / "sessions" / session_id
@@ -386,26 +387,26 @@ async def _resume_session_async(
                             consult_topic = "Open Questions"
                 except (json.JSONDecodeError, KeyError):
                     pass
-            
+
             # Resume the session
             console.print(f"[dim]Resuming session: {session_id}[/dim]")
             session = await ai_adapter.resume_session(session_id, config)
-            console.print(f"[green]✓[/green] Session resumed")
-            
+            console.print("[green]✓[/green] Session resumed")
+
             # If this was a CONSULT session, inject consultation prompt
             if consult_topic and not prompt:
                 console.print(f"\n[yellow]📋 Consultation: {consult_topic}[/yellow]")
                 console.print("[dim]Agent will present open questions...[/dim]\n")
                 prompt = CONSULTATION_PROMPT.format(topic=consult_topic)
-            
+
             # Send prompt if provided
             if prompt:
                 # Don't show full consultation prompt (it's verbose)
                 display_prompt = prompt if not consult_topic else f"[Consultation: {consult_topic}]"
                 console.print(Panel(display_prompt, title="Prompt", border_style="blue"))
-                
+
                 response = await ai_adapter.send(session, prompt)
-                
+
                 # Display response
                 if response:
                     md = Markdown(response)
@@ -416,6 +417,6 @@ async def _resume_session_async(
                 )
         finally:
             await ai_adapter.stop()
-            
+
     except Exception as e:
         console.print(f"[red]Error resuming session: {e}[/red]")

@@ -11,7 +11,7 @@ See proposals/REFCAT-DESIGN.md for full specification.
 """
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -210,7 +210,7 @@ def resolve_alias(alias: str, aliases: Optional[dict[str, Path]] = None, cwd: Op
 
     Raises:
         AliasNotFoundError: If alias is not defined
-    
+
     Resolution order:
         1. Explicit aliases dict passed in
         2. workspace.lock.json in cwd or parent directories
@@ -244,10 +244,10 @@ def resolve_alias(alias: str, aliases: Optional[dict[str, Path]] = None, cwd: Op
 
 def _resolve_workspace_alias(alias: str, start_dir: Path) -> Optional[Path]:
     """Try to resolve alias from workspace.lock.json.
-    
+
     Searches for workspace.lock.json in start_dir and parent directories.
     Supports the Nightscout ecosystem format:
-    
+
     {
         "externals_dir": "externals",
         "repos": [
@@ -257,7 +257,7 @@ def _resolve_workspace_alias(alias: str, start_dir: Path) -> Optional[Path]:
     }
     """
     import json
-    
+
     # Walk up directory tree looking for workspace.lock.json
     current = start_dir.resolve()
     for _ in range(10):  # Max 10 levels up
@@ -266,9 +266,9 @@ def _resolve_workspace_alias(alias: str, start_dir: Path) -> Optional[Path]:
             try:
                 with open(lockfile) as f:
                     data = json.load(f)
-                
+
                 externals_dir = data.get("externals_dir", "externals")
-                
+
                 for repo in data.get("repos", []):
                     # Check primary alias
                     if repo.get("alias") == alias:
@@ -279,18 +279,18 @@ def _resolve_workspace_alias(alias: str, start_dir: Path) -> Optional[Path]:
                     # Check repo name as fallback
                     if repo.get("name") == alias:
                         return current / externals_dir / repo["name"]
-                
+
                 # Found lockfile but alias not in it
                 return None
-                
+
             except (json.JSONDecodeError, KeyError, TypeError):
                 pass
-        
+
         parent = current.parent
         if parent == current:
             break
         current = parent
-    
+
     return None
 
 
@@ -503,20 +503,20 @@ def format_for_context(
 
 def format_as_spec(extracted: ExtractedContent, config: Optional[RefcatConfig] = None) -> str:
     """Format extracted content as a normalized ref spec string.
-    
+
     Produces output like:
         @path/file.py#L10-L50
-    
+
     Args:
         extracted: Extracted content
         config: Formatting configuration
-    
+
     Returns:
         Normalized ref spec string
     """
     if config is None:
         config = RefcatConfig()
-    
+
     # Determine path display
     try:
         if config.relative_paths:
@@ -525,7 +525,7 @@ def format_as_spec(extracted: ExtractedContent, config: Optional[RefcatConfig] =
             display_path = extracted.path
     except ValueError:
         display_path = extracted.path
-    
+
     # Build spec string
     is_full_file = extracted.line_start == 1 and extracted.line_end == extracted.total_lines
     if is_full_file:

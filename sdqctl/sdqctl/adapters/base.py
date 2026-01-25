@@ -6,7 +6,7 @@ All adapters must implement this interface to be used with sdqctl.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, AsyncIterator, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 if TYPE_CHECKING:
     from sdqctl.core.models import ModelRequirements
@@ -15,10 +15,10 @@ if TYPE_CHECKING:
 @dataclass
 class InfiniteSessionConfig:
     """Configuration for SDK infinite sessions with automatic context compaction.
-    
+
     When enabled, the SDK automatically manages context window limits through
     background compaction, without requiring manual COMPACT directives.
-    
+
     Attributes:
         enabled: Whether infinite sessions are enabled (default: True for cycle mode)
         min_compaction_density: Skip compaction if context below this % (default: 0.30)
@@ -39,12 +39,12 @@ class AdapterConfig:
     streaming: bool = True
     tools: list[dict] = field(default_factory=list)
     extra: dict = field(default_factory=dict)
-    
+
     # Debug configuration (from ConversationFile DEBUG directives)
     debug_categories: list[str] = field(default_factory=list)  # session, tool, intent, event, all
     debug_intents: bool = False  # Verbose intent tracking
     event_log: Optional[str] = None  # Path for event export
-    
+
     # Infinite sessions configuration (SDK v2)
     infinite_sessions: Optional[InfiniteSessionConfig] = None
 
@@ -195,10 +195,10 @@ Provide a concise summary that captures all essential information.
         }
 
     # Metadata APIs (optional - adapters may override)
-    
+
     async def get_cli_status(self) -> dict:
         """Get CLI/backend version and protocol info.
-        
+
         Returns:
             Dict with version info, or empty dict if not supported.
             Example: {"version": "0.0.394", "protocol_version": 2}
@@ -207,7 +207,7 @@ Provide a concise summary that captures all essential information.
 
     async def get_auth_status(self) -> dict:
         """Get authentication status.
-        
+
         Returns:
             Dict with auth info, or empty dict if not supported.
             Example: {"authenticated": True, "login": "user", "auth_type": "user"}
@@ -216,7 +216,7 @@ Provide a concise summary that captures all essential information.
 
     async def list_models(self) -> list[dict]:
         """List available models with capabilities.
-        
+
         Returns:
             List of model info dicts, or empty list if not supported.
             Example: [{"id": "gpt-4", "context_window": 128000, "vision": True}]
@@ -225,7 +225,7 @@ Provide a concise summary that captures all essential information.
 
     def get_available_models(self) -> list[str]:
         """Get list of available model identifiers.
-        
+
         Returns:
             List of model IDs available through this adapter.
             Default implementation returns empty list (use sdqctl registry).
@@ -238,20 +238,20 @@ Provide a concise summary that captures all essential information.
         fallback: str | None = None,
     ) -> str | None:
         """Resolve abstract model requirements to a concrete model.
-        
+
         This allows adapters to use their own model availability and
         capabilities data for resolution. Default implementation defers
         to sdqctl's built-in registry.
-        
+
         Args:
             requirements: ModelRequirements with constraints and preferences
             fallback: Fallback model if no match found
-            
+
         Returns:
             Model name that satisfies requirements, or fallback/None
         """
         # Import here to avoid circular imports
         from sdqctl.core.models import resolve_model
-        
+
         available = self.get_available_models() or None
         return resolve_model(requirements, available_models=available, fallback=fallback)

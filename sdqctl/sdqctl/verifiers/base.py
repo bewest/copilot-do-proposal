@@ -9,8 +9,7 @@ traceability, and assertions.
 import fnmatch
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Protocol, Any
-
+from typing import Any, Protocol
 
 # Default directories to exclude from verification scans
 DEFAULT_EXCLUDES = {
@@ -36,22 +35,22 @@ DEFAULT_EXCLUDES = {
 
 def load_sdqctlignore(root: Path) -> set[str]:
     """Load exclusion patterns from .sdqctlignore file.
-    
+
     Format is similar to .gitignore:
     - One pattern per line
     - Lines starting with # are comments
     - Empty lines are ignored
     - Patterns use glob syntax
-    
+
     Args:
         root: Directory to search for .sdqctlignore
-        
+
     Returns:
         Set of exclusion patterns
     """
     ignore_file = root / ".sdqctlignore"
     patterns: set[str] = set()
-    
+
     if ignore_file.exists():
         try:
             for line in ignore_file.read_text().splitlines():
@@ -60,18 +59,18 @@ def load_sdqctlignore(root: Path) -> set[str]:
                     patterns.add(line)
         except Exception:
             pass
-    
+
     return patterns
 
 
 def should_exclude(path: Path, root: Path, exclude_patterns: set[str]) -> bool:
     """Check if a path should be excluded from verification.
-    
+
     Args:
         path: Path to check
         root: Root directory for relative path calculation
         exclude_patterns: Set of glob patterns to exclude
-        
+
     Returns:
         True if path should be excluded
     """
@@ -79,9 +78,9 @@ def should_exclude(path: Path, root: Path, exclude_patterns: set[str]) -> bool:
         rel_path = path.relative_to(root)
     except ValueError:
         rel_path = path
-    
+
     rel_str = str(rel_path)
-    
+
     for pattern in exclude_patterns:
         # Check each part of the path against the pattern
         for part in rel_path.parts:
@@ -93,19 +92,19 @@ def should_exclude(path: Path, root: Path, exclude_patterns: set[str]) -> bool:
         # Check with ** prefix for deep matches
         if fnmatch.fnmatch(rel_str, f"**/{pattern}"):
             return True
-    
+
     return False
 
 
 @dataclass
 class VerificationError:
     """A single verification error or warning."""
-    
+
     file: str
     line: int | None
     message: str
     fix_hint: str | None = None
-    
+
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
         return {
@@ -119,27 +118,27 @@ class VerificationError:
 @dataclass
 class VerificationResult:
     """Result of a verification run."""
-    
+
     passed: bool
     errors: list[VerificationError] = field(default_factory=list)
     warnings: list[VerificationError] = field(default_factory=list)
     summary: str = ""
     details: dict = field(default_factory=dict)
-    
+
     def to_markdown(self) -> str:
         """Format results as markdown for context injection."""
         lines = []
-        
+
         # Status header
         status = "✅ Passed" if self.passed else "❌ Failed"
         lines.append(f"## Verification Result: {status}")
         lines.append("")
-        
+
         # Summary
         if self.summary:
             lines.append(self.summary)
             lines.append("")
-        
+
         # Errors
         if self.errors:
             lines.append(f"### Errors ({len(self.errors)})")
@@ -152,7 +151,7 @@ class VerificationResult:
                 if err.fix_hint:
                     lines.append(f"  - Fix: {err.fix_hint}")
             lines.append("")
-        
+
         # Warnings
         if self.warnings:
             lines.append(f"### Warnings ({len(self.warnings)})")
@@ -163,7 +162,7 @@ class VerificationResult:
                     loc += f":{warn.line}"
                 lines.append(f"- **{loc}**: {warn.message}")
             lines.append("")
-        
+
         # Details
         if self.details:
             lines.append("### Details")
@@ -171,9 +170,9 @@ class VerificationResult:
             for key, value in self.details.items():
                 lines.append(f"- **{key}**: {value}")
             lines.append("")
-        
+
         return "\n".join(lines)
-    
+
     def to_json(self) -> dict:
         """Format results as JSON for CLI output."""
         return {
@@ -189,17 +188,17 @@ class VerificationResult:
 
 class Verifier(Protocol):
     """Protocol for verification implementations."""
-    
+
     name: str
     description: str
-    
+
     def verify(self, root: Path, **options: Any) -> VerificationResult:
         """Run verification and return results.
-        
+
         Args:
             root: Root directory to verify
             **options: Verifier-specific options
-            
+
         Returns:
             VerificationResult with pass/fail status and details
         """

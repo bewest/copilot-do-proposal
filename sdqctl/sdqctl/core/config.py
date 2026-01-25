@@ -41,22 +41,22 @@ class Config:
     context: ConfigContext = field(default_factory=ConfigContext)
     checkpoints: ConfigCheckpoints = field(default_factory=ConfigCheckpoints)
     source_path: Optional[Path] = None
-    
+
     @classmethod
     def from_dict(cls, data: dict, source_path: Optional[Path] = None) -> "Config":
         """Create Config from parsed YAML dict."""
         config = cls(source_path=source_path)
-        
+
         # Project
         if "project" in data and isinstance(data["project"], dict):
             config.project_name = data["project"].get("name", "")
-        
+
         # Defaults
         if "defaults" in data and isinstance(data["defaults"], dict):
             defaults = data["defaults"]
             config.defaults.adapter = defaults.get("adapter", config.defaults.adapter)
             config.defaults.model = defaults.get("model", config.defaults.model)
-        
+
         # Context
         if "context" in data and isinstance(data["context"], dict):
             ctx = data["context"]
@@ -66,13 +66,13 @@ class Config:
             elif isinstance(limit, (int, float)):
                 config.context.limit = float(limit) if limit <= 1 else float(limit) / 100
             config.context.on_limit = ctx.get("on_limit", config.context.on_limit)
-        
+
         # Checkpoints
         if "checkpoints" in data and isinstance(data["checkpoints"], dict):
             cp = data["checkpoints"]
             config.checkpoints.enabled = cp.get("enabled", config.checkpoints.enabled)
             config.checkpoints.directory = cp.get("directory", config.checkpoints.directory)
-        
+
         return config
 
 
@@ -82,27 +82,27 @@ _cached_config: Optional[Config] = None
 
 def load_config(path: Optional[Path] = None, use_cache: bool = True) -> Config:
     """Load .sdqctl.yaml from project root or home.
-    
+
     Search order:
     1. Explicit path if provided
     2. .sdqctl.yaml in current directory
     3. .sdqctl.yaml in parent directories (up to git root or /)
     4. ~/.sdqctl.yaml in home directory
-    
+
     Args:
         path: Explicit path to config file
         use_cache: Whether to use cached config (default True)
-        
+
     Returns:
         Loaded Config, or default Config if no file found
     """
     global _cached_config
-    
+
     if use_cache and _cached_config is not None:
         return _cached_config
-    
+
     config_path = None
-    
+
     if path and path.exists():
         config_path = path
     else:
@@ -117,13 +117,13 @@ def load_config(path: Optional[Path] = None, use_cache: bool = True) -> Config:
             if (search_dir / ".git").exists():
                 break
             search_dir = search_dir.parent
-        
+
         # Fall back to home directory
         if config_path is None:
             home_config = Path.home() / ".sdqctl.yaml"
             if home_config.exists():
                 config_path = home_config
-    
+
     if config_path is None:
         config = Config()
     else:
@@ -137,10 +137,10 @@ def load_config(path: Optional[Path] = None, use_cache: bool = True) -> Config:
                 f"Failed to load config from {config_path}: {e}"
             )
             config = Config()
-    
+
     if use_cache:
         _cached_config = config
-    
+
     return config
 
 

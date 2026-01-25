@@ -17,12 +17,10 @@ from typing import Optional
 
 import click
 from rich.console import Console
-from rich.markdown import Markdown
 
 from ..core.logging import get_logger
 from ..core.refcat import (
     AliasNotFoundError,
-    ExtractedContent,
     FileNotFoundError,
     InvalidRefError,
     PatternNotFoundError,
@@ -59,25 +57,25 @@ def _load_workflow_context_patterns(workflow_path: Path) -> list[str]:
 
 def _expand_glob_patterns(refs: list[str], cwd: Path) -> list[str | Path]:
     """Expand glob patterns in refs to file paths.
-    
+
     Returns a mix of:
     - Path objects for expanded glob matches
     - Original strings for refs with line numbers or aliases
     """
     import glob as glob_module
-    
+
     expanded: list[str | Path] = []
-    
+
     for ref in refs:
         # Strip @ prefix for processing
         clean_ref = ref[1:] if ref.startswith('@') else ref
-        
+
         # Check if it's a glob pattern (contains * or ?)
         # But not if it has line numbers or alias prefix
         has_glob = '*' in clean_ref or '?' in clean_ref
         has_line_ref = '#' in clean_ref
         has_alias = ':' in clean_ref and not clean_ref.startswith('/')
-        
+
         if has_glob and not has_line_ref and not has_alias:
             # Expand glob pattern
             pattern_path = cwd / clean_ref
@@ -85,19 +83,19 @@ def _expand_glob_patterns(refs: list[str], cwd: Path) -> list[str | Path]:
                 matches = glob_module.glob(str(pattern_path), recursive=True)
             else:
                 matches = glob_module.glob(str(pattern_path))
-            
+
             for match in matches:
                 match_path = Path(match)
                 if match_path.is_file():
                     expanded.append(match_path)
-            
+
             if not matches:
                 # Keep original ref to generate error message
                 expanded.append(ref)
         else:
             # Keep as-is (will be parsed by parse_ref)
             expanded.append(ref)
-    
+
     return expanded
 
 
@@ -175,9 +173,9 @@ def refcat(
     spec_output: bool,
 ) -> None:
     """Extract file content with line-level precision.
-    
+
     REFS are file references with optional line ranges, or glob patterns:
-    
+
     \b
       @path/file.py              Entire file
       @path/file.py#L10          Single line 10
@@ -186,30 +184,30 @@ def refcat(
       @path/file.py#/pattern/    Find pattern (first match)
       alias:path/file.py#L10     With alias prefix
       @docs/**/*.md              Glob pattern (expands to matching files)
-    
+
     Examples:
-    
+
     \b
       # Extract specific lines
       sdqctl refcat @sdqctl/core/context.py#L182-L194
-      
+
       # Multiple refs
       sdqctl refcat @file1.py#L10 @file2.py#L20-L30
-      
+
       # Glob pattern - extract all matching files
       sdqctl refcat "@docs/*.md" --list-files
-      
+
       # Extract all context from a workflow
       sdqctl refcat --from-workflow workflows/verify-refs.conv --list-files
-      
+
       # JSON output for scripting
       sdqctl refcat @file.py#L10-L50 --json
-      
+
       # Validate refs without output
       sdqctl refcat @file.py#L10-L50 --validate-only
     """
     cwd = relative_to or Path.cwd()
-    
+
     # Build config
     config = RefcatConfig(
         show_line_numbers=not no_line_numbers,
@@ -217,22 +215,22 @@ def refcat(
         show_attribution=not no_attribution,
         relative_paths=not absolute,
     )
-    
+
     # Collect refs from various sources
     all_refs: list[str] = list(refs) if refs else []
-    
+
     # Load refs from workflow if specified
     if from_workflow:
         workflow_refs = _load_workflow_context_patterns(from_workflow)
         all_refs.extend(workflow_refs)
-    
+
     if not all_refs:
         console.print("[yellow]No refs provided. Use --from-workflow or provide REFS.[/yellow]")
         return
-    
+
     # Expand glob patterns
     expanded_refs = _expand_glob_patterns(all_refs, cwd)
-    
+
     # List files mode - just show what would be processed
     if list_files:
         if json_output:
@@ -249,18 +247,18 @@ def refcat(
                 else:
                     console.print(f"  {item}")
         return
-    
+
     # Process each ref
     results: list[dict] = []
     errors: list[str] = []
-    
+
     for ref in expanded_refs:
         # Handle both Path objects (from glob) and strings (original refs)
         ref_str = f"@{ref}" if isinstance(ref, Path) else ref
         try:
             spec = parse_ref(ref_str)
             extracted = extract_content(spec, cwd)
-            
+
             if validate_only:
                 # Just validate, collect info
                 results.append({
@@ -276,7 +274,7 @@ def refcat(
                     "formatted": format_for_context(extracted, config),
                     "spec": format_as_spec(extracted, config),
                 })
-                
+
         except FileNotFoundError as e:
             errors.append(f"Error: {e}")
             if json_output:
@@ -297,7 +295,7 @@ def refcat(
             errors.append(f"Error: {e}")
             if json_output:
                 results.append({"ref": ref_str, "valid": False, "error": str(e)})
-    
+
     # Output
     if json_output:
         if validate_only:
@@ -315,13 +313,13 @@ def refcat(
                 "errors": errors,
             }
         console.print_json(json.dumps(output, indent=2))
-    
+
     elif spec_output:
         # Spec mode: output normalized ref spec strings
         for r in results:
             if "spec" in r:
                 print(r["spec"])
-        
+
     elif validate_only:
         # Validation mode output
         for r in results:
@@ -329,18 +327,18 @@ def refcat(
                 console.print(f"[green]✓[/green] {r['ref']} → {r['path']} ({r['lines']})")
             else:
                 console.print(f"[red]✗[/red] {r['ref']}: {r.get('error', 'unknown error')}")
-        
+
         if errors:
             sys.exit(1)
         else:
             console.print(f"\n[green]All {len(results)} ref(s) valid[/green]")
-            
+
     elif quiet:
         # Quiet mode: just content
         for r in results:
             if "extracted" in r:
                 print(r["extracted"].content)
-                
+
     else:
         # Normal mode: formatted markdown
         for i, r in enumerate(results):
@@ -348,7 +346,7 @@ def refcat(
                 if i > 0:
                     print()  # Separator between refs
                 print(r["formatted"])
-    
+
     # Print errors to stderr
     if errors and not json_output:
         err_console = Console(stderr=True)

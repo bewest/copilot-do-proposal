@@ -1,5 +1,6 @@
 """Core components for sdqctl."""
 
+from .context import ContextManager
 from .conversation import (
     ConversationFile,
     ConversationStep,
@@ -8,9 +9,8 @@ from .conversation import (
     apply_iteration_context,
     substitute_template_variables,
 )
-from .context import ContextManager
 from .logging import get_logger, setup_logging
-from .progress import progress, set_quiet, is_quiet, ProgressTracker
+from .progress import ProgressTracker, is_quiet, progress, set_quiet
 from .session import Session
 
 __all__ = [

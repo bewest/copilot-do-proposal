@@ -1,9 +1,9 @@
 """Command implementations for sdqctl CLI."""
 
-from .run import run
+from .apply import apply
 from .cycle import cycle
 from .flow import flow
+from .run import run
 from .status import status
-from .apply import apply
 
 __all__ = ["run", "cycle", "flow", "status", "apply"]

@@ -82,7 +82,7 @@ class Session:
         if conversation.file_restrictions.allow_patterns or conversation.file_restrictions.deny_patterns or \
            conversation.file_restrictions.allow_dirs or conversation.file_restrictions.deny_dirs:
             path_filter = conversation.file_restrictions.is_path_allowed
-        
+
         self.context = ContextManager(
             base_path=Path(conversation.cwd) if conversation.cwd else Path.cwd(),
             limit_threshold=conversation.context_limit,
@@ -95,13 +95,13 @@ class Session:
 
     def reload_context(self) -> None:
         """Reload CONTEXT files from disk.
-        
+
         Used by fresh mode to pick up file changes between cycles.
         Preserves ContextManager config (base_path, limit_threshold, path_filter).
         """
         # Clear existing files (preserves conversation token count)
         self.context.clear_files()
-        
+
         # Re-load from disk using stored patterns
         for pattern in self.conversation.context_files:
             self.context.add_pattern(pattern)
@@ -232,7 +232,7 @@ class Session:
         # Load the original conversation file or inline content
         conv_path = data.get("conversation_file")
         conv_inline = data.get("conversation_inline")
-        
+
         if conv_path and Path(conv_path).exists():
             conv = ConversationFile.from_file(Path(conv_path))
         elif conv_inline:
@@ -249,7 +249,7 @@ class Session:
         session.id = data["session_id"]
         session.state.cycle_number = data["cycle_number"]
         session.state.prompt_index = data["prompt_index"]
-        
+
         # Restore status: keep "consulting" for CONSULT, otherwise set "resumed"
         saved_status = data.get("status", "pending")
         session.state.status = saved_status if saved_status == "consulting" else "resumed"
@@ -268,12 +268,12 @@ class Session:
 
     def needs_compaction(self, min_density: float = 0) -> bool:
         """Check if context window is near limit and above minimum density.
-        
+
         Args:
             min_density: Minimum context usage (0-100%) below which compaction
                         is skipped. E.g., min_density=30 means skip compaction
                         if context is less than 30% full.
-                        
+
         Returns:
             True if compaction should occur (near limit AND above min density)
         """

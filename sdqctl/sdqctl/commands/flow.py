@@ -12,8 +12,7 @@ from typing import Optional
 
 import click
 from rich.console import Console
-from rich.progress import Progress, BarColumn, TextColumn, TaskID
-from rich.table import Table
+from rich.progress import BarColumn, Progress, TaskID, TextColumn
 
 from ..adapters import get_adapter
 from ..adapters.base import AdapterConfig
@@ -55,7 +54,7 @@ def flow(
 ) -> None:
     """Execute batch/parallel workflows."""
     run_async(_flow_async(
-        patterns, parallel, adapter, model, 
+        patterns, parallel, adapter, model,
         prologue, epilogue, header, footer,
         output_dir, json_output, dry_run, continue_on_error
     ))
@@ -77,10 +76,9 @@ async def _flow_async(
 ) -> None:
     """Async implementation of flow command."""
     from ..core.conversation import (
-        build_prompt_with_injection,
         build_output_with_injection,
+        build_prompt_with_injection,
         get_standard_variables,
-        substitute_template_variables,
     )
 
     # Collect workflow files
@@ -145,7 +143,7 @@ async def _flow_async(
                     conv.adapter = adapter_name
                 if model:
                     conv.model = model
-                
+
                 # Add CLI-provided prologues/epilogues (prepend to file-defined ones)
                 if cli_prologues:
                     conv.prologues = list(cli_prologues) + conv.prologues
@@ -155,7 +153,7 @@ async def _flow_async(
                     conv.headers = list(cli_headers) + conv.headers
                 if cli_footers:
                     conv.footers = list(cli_footers) + conv.footers
-                
+
                 # Get template variables for this workflow
                 template_vars = get_standard_variables(conv.source_path)
 
@@ -266,7 +264,7 @@ async def _flow_async(
             "results": list(results.values()),
         }))
     else:
-        console.print(f"\n[bold]Flow Results[/bold]")
+        console.print("\n[bold]Flow Results[/bold]")
         console.print(f"  Completed: [green]{completed_count}[/green]")
         console.print(f"  Failed: [red]{failed_count}[/red]")
 

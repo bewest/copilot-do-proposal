@@ -10,7 +10,6 @@ Usage:
 import click
 from rich.console import Console
 from rich.markdown import Markdown
-from rich.panel import Panel
 from rich.table import Table
 
 console = Console()
@@ -1235,7 +1234,7 @@ sdqctl <command> --help      # Click's built-in help
 @click.option("--list", "-l", "list_topics", is_flag=True, help="List available topics")
 def help_cmd(topic: str, list_topics: bool) -> None:
     """Show help for commands and topics.
-    
+
     \b
     Examples:
       sdqctl help              # Overview
@@ -1246,24 +1245,24 @@ def help_cmd(topic: str, list_topics: bool) -> None:
     if list_topics:
         _list_topics()
         return
-    
+
     if topic is None:
         # Show overview
         console.print(Markdown(get_overview()))
         return
-    
+
     topic_lower = topic.lower()
-    
+
     # Check if it's a command
     if topic_lower in COMMAND_HELP:
         console.print(Markdown(COMMAND_HELP[topic_lower]))
         return
-    
+
     # Check if it's a topic
     if topic_lower in TOPICS:
         console.print(Markdown(TOPICS[topic_lower]))
         return
-    
+
     # Unknown topic
     console.print(f"[yellow]Unknown topic: {topic}[/yellow]\n")
     _list_topics()
@@ -1275,18 +1274,18 @@ def _list_topics() -> None:
     table = Table(show_header=False, box=None, padding=(0, 2))
     table.add_column(style="cyan")
     table.add_column(style="dim")
-    
+
     for cmd in sorted(COMMAND_HELP.keys()):
         desc = COMMAND_HELP[cmd].split("\n")[2].strip("# ")  # First heading
         table.add_row(cmd, desc)
-    
+
     console.print(table)
-    
+
     console.print("\n[bold]Topics[/bold]")
     table = Table(show_header=False, box=None, padding=(0, 2))
     table.add_column(style="cyan")
     table.add_column(style="dim")
-    
+
     topic_descriptions = {
         "directives": "ConversationFile directive reference",
         "adapters": "AI provider configuration",
@@ -1297,9 +1296,9 @@ def _list_topics() -> None:
         "ai": "Workflow authoring guidance for AI agents",
         "validation": "Static verification workflow guide",
     }
-    
+
     for topic in sorted(TOPICS.keys()):
         table.add_row(topic, topic_descriptions.get(topic, ""))
-    
+
     console.print(table)
     console.print("\nUsage: sdqctl help <command|topic>")

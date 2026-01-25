@@ -18,17 +18,17 @@ from typing import Optional
 import click
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
 from rich.table import Table
 
 from ..adapters import get_adapter
 from ..adapters.base import AdapterConfig
-from .utils import run_async
 from ..core.conversation import ConversationFile, apply_iteration_context
 from ..core.logging import get_logger
 from ..core.loop_detector import get_stop_file_instruction
 from ..core.progress import progress as progress_print
 from ..core.session import Session
+from .utils import run_async
 
 logger = get_logger(__name__)
 console = Console()
@@ -37,7 +37,7 @@ console = Console()
 @click.command("apply")
 @click.argument("workflow", type=click.Path(exists=True))
 @click.option("--components", "-c", help="Glob pattern for components to iterate over")
-@click.option("--from-discovery", "discovery_file", type=click.Path(exists=True), 
+@click.option("--from-discovery", "discovery_file", type=click.Path(exists=True),
               help="JSON file from sdqctl discover")
 @click.option("--progress", "progress_file", help="Progress tracker file (markdown)")
 @click.option("--parallel", "-p", default=1, type=int, help="Number of parallel executions")
@@ -69,25 +69,25 @@ def apply(
     stop_file_nonce: Optional[str],
 ) -> None:
     """Apply a workflow to multiple components.
-    
+
     Iterates over a list of components (from glob pattern or discovery file)
     and runs the workflow for each, substituting template variables like
     {{COMPONENT_PATH}}, {{COMPONENT_NAME}}, etc.
-    
+
     Examples:
-    
+
     \b
     # Apply to all plugins
     sdqctl apply workflow.conv --components "lib/plugins/*.js"
-    
+
     \b
     # Apply with progress tracking
     sdqctl apply workflow.conv -c "lib/plugins/*.js" --progress progress.md
-    
+
     \b
     # Apply from discovery output
     sdqctl apply workflow.conv --from-discovery components.json
-    
+
     \b
     # Parallel execution
     sdqctl apply workflow.conv -c "lib/**/*.js" --parallel 4
@@ -117,24 +117,19 @@ async def _apply_async(
     stop_file_nonce: Optional[str] = None,
 ) -> None:
     """Async implementation of apply command."""
-    from ..core.conversation import (
-        build_prompt_with_injection,
-        build_output_with_injection,
-        get_standard_variables,
-    )
-    from ..core.loop_detector import generate_nonce
-    
     import time as time_module
+
+    from ..core.loop_detector import generate_nonce
     apply_start = time_module.time()
-    
+
     # Generate nonce for stop file (once per apply command invocation)
     nonce = stop_file_nonce if stop_file_nonce else generate_nonce()
-    
+
     # Load workflow
     conv = ConversationFile.from_file(Path(workflow_path))
     logger.info(f"Loaded workflow from {workflow_path}")
     progress_print(f"Applying {Path(workflow_path).name}...")
-    
+
     # Apply overrides
     if adapter_name:
         conv.adapter = adapter_name
@@ -142,7 +137,7 @@ async def _apply_async(
         conv.model = model
     if output_dir:
         conv.output_dir = output_dir
-    
+
     # Add CLI-provided prologues/epilogues (prepend to file-defined ones)
     if cli_prologues:
         conv.prologues = list(cli_prologues) + conv.prologues
@@ -152,10 +147,10 @@ async def _apply_async(
         conv.headers = list(cli_headers) + conv.headers
     if cli_footers:
         conv.footers = list(cli_footers) + conv.footers
-    
+
     # Get component list
     component_list = []
-    
+
     if discovery_file:
         # Load from discovery JSON
         discovery_data = json.loads(Path(discovery_file).read_text())
@@ -166,7 +161,7 @@ async def _apply_async(
         else:
             console.print("[red]Error: Discovery file must contain 'components' array[/red]")
             return
-        
+
         # Extract paths from component objects
         component_paths = []
         for comp in component_list:
@@ -177,7 +172,7 @@ async def _apply_async(
             else:
                 console.print(f"[yellow]Warning: Skipping invalid component: {comp}[/yellow]")
         component_list = component_paths
-        
+
     elif components_pattern:
         # Expand glob pattern
         paths = glob_module.glob(components_pattern, recursive=True)
@@ -185,13 +180,13 @@ async def _apply_async(
     else:
         console.print("[red]Error: Must specify --components or --from-discovery[/red]")
         return
-    
+
     if not component_list:
         console.print("[yellow]No components found matching pattern[/yellow]")
         return
-    
+
     progress_print(f"  Found {len(component_list)} components")
-    
+
     # Show what we'll process
     console.print(Panel.fit(
         f"Workflow: {workflow_path}\n"
@@ -201,7 +196,7 @@ async def _apply_async(
         f"Model: {conv.model}",
         title="Apply Configuration"
     ))
-    
+
     if dry_run:
         table = Table(title="Components")
         table.add_column("Index", style="dim")
@@ -213,10 +208,10 @@ async def _apply_async(
     else:
         for comp in component_list:
             logger.debug(f"  - {comp['path']} ({comp.get('type', 'unknown')})")
-    
+
     if dry_run:
         console.print("\n[yellow]Dry run - no execution[/yellow]")
-        
+
         # Show what template substitution would produce for first component
         if component_list:
             first = component_list[0]
@@ -230,11 +225,11 @@ async def _apply_async(
             if test_conv.output_file:
                 console.print(f"  Output: {test_conv.output_file}")
         return
-    
+
     # Initialize progress tracker
     progress_data = ProgressTracker(progress_file, component_list)
     progress_data.write_initial()
-    
+
     # Check if stop file already exists (previous run may have requested stop)
     stop_file_path = Path.cwd() / f"STOPAUTOMATION-{nonce}.json"
     if stop_file_path.exists():
@@ -245,7 +240,7 @@ async def _apply_async(
             reason = stop_data.get("reason", "Unknown reason")
         except (json_mod.JSONDecodeError, IOError):
             reason = "Could not read stop file content"
-        
+
         console.print(Panel(
             f"[bold yellow]⚠️  Stop file exists from previous run[/bold yellow]\n\n"
             f"[bold]File:[/bold] {stop_file_path.name}\n"
@@ -258,7 +253,7 @@ async def _apply_async(
             border_style="yellow",
         ))
         return
-    
+
     # Get adapter
     try:
         ai_adapter = get_adapter(conv.adapter)
@@ -266,9 +261,9 @@ async def _apply_async(
         console.print(f"[red]Error: {e}[/red]")
         console.print("[yellow]Using mock adapter instead[/yellow]")
         ai_adapter = get_adapter("mock")
-    
+
     await ai_adapter.start()
-    
+
     try:
             # Process components (sequential or parallel)
             if parallel > 1:
@@ -292,7 +287,7 @@ async def _apply_async(
                     console=console,
                 ) as progress:
                     task = progress.add_task("Processing components...", total=len(component_list))
-                    
+
                     for i, comp in enumerate(component_list, 1):
                         progress.update(task, description=f"[{i}/{len(component_list)}] {comp['path']}")
                         await _process_single_component(
@@ -300,11 +295,11 @@ async def _apply_async(
                             ai_adapter, progress_data, no_stop_file_prologue, nonce
                         )
                         progress.advance(task)
-    
+
     finally:
         await ai_adapter.stop()
         progress_data.write_final()
-    
+
     # Summary
     apply_elapsed = time_module.time() - apply_start
     progress_print(f"Done in {apply_elapsed:.1f}s")
@@ -343,41 +338,41 @@ async def _process_single_component(
 ) -> None:
     """Process a single component through the workflow."""
     from ..core.conversation import (
-        build_prompt_with_injection,
         build_output_with_injection,
+        build_prompt_with_injection,
         get_standard_variables,
     )
-    
+
     component_path = component["path"]
     component_type = component.get("type", "unknown")
-    
+
     start_time = time.time()
     progress_data.update_status(component_path, "running")
     progress_print(f"  [{index}/{total}] Processing {component_path}...")
-    
+
     try:
         # Apply template variables
         instance_conv = apply_iteration_context(
             conv, component_path, index, total, component_type
         )
-        
+
         # Get template variables for this instance (includes STOP_FILE if nonce provided)
         template_vars = get_standard_variables(instance_conv.source_path, stop_file_nonce=nonce)
-        
+
         # Create session
         session = Session(instance_conv)
-        
+
         # Create adapter session
         adapter_session = await ai_adapter.create_session(
             AdapterConfig(model=instance_conv.model, streaming=True)
         )
-        
+
         responses = []
         context_content = session.context.get_context_content()
-        
+
         for i, prompt in enumerate(instance_conv.prompts):
             logger.debug(f"  [{index}/{total}] Prompt {i+1}/{len(instance_conv.prompts)}")
-            
+
             # Build prompt with prologue/epilogue injection
             is_first = (i == 0)
             is_last = (i == len(instance_conv.prompts) - 1)
@@ -390,20 +385,20 @@ async def _process_single_component(
             )
             if i == 0 and context_content:
                 full_prompt = f"{context_content}\n\n{full_prompt}"
-            
+
             # Add stop file instruction on first prompt of each component (Q-002)
             if i == 0 and not no_stop_file_prologue and nonce:
                 stop_file_name = f"STOPAUTOMATION-{nonce}.json"
                 stop_instruction = get_stop_file_instruction(stop_file_name)
                 full_prompt = f"{full_prompt}\n\n{stop_instruction}"
-            
+
             response = await ai_adapter.send(adapter_session, full_prompt)
             responses.append(response)
             session.add_message("user", prompt)
             session.add_message("assistant", response)
-        
+
         await ai_adapter.destroy_session(adapter_session)
-        
+
         # Write output with header/footer injection
         output_path = None
         if instance_conv.output_file:
@@ -417,15 +412,15 @@ async def _process_single_component(
             )
             output_path.write_text(output_content)
             progress_print(f"  [{index}/{total}] Writing to {output_path}")
-        
+
         duration = time.time() - start_time
         progress_print(f"  [{index}/{total}] Done ({duration:.1f}s)")
         progress_data.update_status(
-            component_path, "done", 
+            component_path, "done",
             output=str(output_path) if output_path else None,
             duration=duration
         )
-        
+
     except Exception as e:
         duration = time.time() - start_time
         progress_print(f"  [{index}/{total}] Failed: {e}")
@@ -435,7 +430,7 @@ async def _process_single_component(
 
 class ProgressTracker:
     """Tracks and writes progress for component iteration."""
-    
+
     def __init__(self, progress_file: Optional[str], components: list[dict]):
         self.progress_file = Path(progress_file) if progress_file else None
         self.components = components
@@ -444,11 +439,11 @@ class ProgressTracker:
             for comp in components
         }
         self.start_time = datetime.now()
-    
+
     def update_status(
-        self, 
-        component_path: str, 
-        status: str, 
+        self,
+        component_path: str,
+        status: str,
         output: Optional[str] = None,
         duration: Optional[float] = None,
         error: Optional[str] = None,
@@ -461,20 +456,20 @@ class ProgressTracker:
             "error": error,
         }
         self._write_progress()
-    
+
     def write_initial(self) -> None:
         """Write initial progress file."""
         self._write_progress()
-    
+
     def write_final(self) -> None:
         """Write final progress file."""
         self._write_progress()
-    
+
     def _write_progress(self) -> None:
         """Write current progress to file."""
         if not self.progress_file:
             return
-        
+
         lines = [
             "## Iteration Progress",
             "",
@@ -483,17 +478,17 @@ class ProgressTracker:
             "| Component | Status | Output | Duration |",
             "|-----------|--------|--------|----------|",
         ]
-        
+
         done_count = 0
         running_count = 0
         pending_count = 0
         failed_count = 0
-        
+
         for comp in self.components:
             path = comp["path"]
             info = self.status.get(path, {"status": "pending"})
             status = info["status"]
-            
+
             # Status emoji
             if status == "done":
                 status_str = "✅ Done"
@@ -507,14 +502,14 @@ class ProgressTracker:
             else:
                 status_str = "⏳ Pending"
                 pending_count += 1
-            
+
             output = info.get("output") or "-"
             duration = f"{info['duration']:.1f}s" if info.get("duration") else "-"
-            
+
             # Truncate long paths
             display_path = Path(path).name
             lines.append(f"| {display_path} | {status_str} | {output} | {duration} |")
-        
+
         lines.extend([
             "",
             f"**Summary:** {done_count}/{len(self.components)} complete"
@@ -522,5 +517,5 @@ class ProgressTracker:
             + (f", {pending_count} pending" if pending_count else "")
             + (f", {failed_count} failed" if failed_count else ""),
         ])
-        
+
         self.progress_file.write_text("\n".join(lines))

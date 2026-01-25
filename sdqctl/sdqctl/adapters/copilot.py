@@ -11,12 +11,12 @@ import logging
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Callable, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 if TYPE_CHECKING:
     from sdqctl.core.models import ModelRequirements
 
-from .base import AdapterBase, AdapterConfig, AdapterSession, CompactionResult, InfiniteSessionConfig
+from .base import AdapterBase, AdapterConfig, AdapterSession, CompactionResult
 
 # Lazy import to avoid hard dependency
 CopilotClient = None
@@ -30,21 +30,21 @@ TRACE = 5
 
 def _get_field(data: Any, *keys: str, default: Any = None) -> Any:
     """Extract a field from data, trying multiple attribute/key names.
-    
+
     Handles both object attributes and dict-like access patterns, which is
     important because SDK event data may come as either depending on version.
-    
+
     Args:
         data: SDK event data (object or dict)
         *keys: Attribute/key names to try in order
         default: Value to return if no key is found
-        
+
     Returns:
         The first found value, or default if none found
     """
     if data is None:
         return default
-    
+
     for key in keys:
         # Try attribute access first (for SDK Data objects)
         val = getattr(data, key, None)
@@ -55,19 +55,19 @@ def _get_field(data: Any, *keys: str, default: Any = None) -> Any:
             val = data.get(key)
             if val is not None:
                 return val
-    
+
     return default
 
 
 def _get_tool_name(data: Any) -> str:
     """Extract tool name from event data, handling nested structures.
-    
+
     Tool name can appear in:
     - data.tool_name (direct field)
     - data.name (generic name field)
     - data.tool (short name)
     - data.tool_requests[0].name (nested in tool_requests list)
-    
+
     Returns:
         Tool name string, or "unknown" if not found
     """
@@ -75,7 +75,7 @@ def _get_tool_name(data: Any) -> str:
     name = _get_field(data, "tool_name", "name", "tool")
     if name:
         return name
-    
+
     # Check for tool_requests list (contains ToolRequest objects)
     tool_requests = _get_field(data, "tool_requests")
     if tool_requests and isinstance(tool_requests, list) and len(tool_requests) > 0:
@@ -83,23 +83,23 @@ def _get_tool_name(data: Any) -> str:
         name = _get_field(first_request, "name", "tool_name")
         if name:
             return name
-    
+
     return "unknown"
 
 
 def _format_data(data: Any, include_fields: list[str] | None = None) -> str:
     """Format SDK Data object for logging, filtering out None values.
-    
+
     Args:
         data: SDK event data object
         include_fields: If provided, only include these fields. Otherwise include all non-None.
-        
+
     Returns:
         Compact string representation with only meaningful values
     """
     if data is None:
         return "None"
-    
+
     # Try to extract meaningful fields
     result = {}
     try:
@@ -116,10 +116,10 @@ def _format_data(data: Any, include_fields: list[str] | None = None) -> str:
                 result[attr] = val
     except Exception:
         return str(data)[:200]
-    
+
     if not result:
         return "{}"
-    
+
     # Format compactly
     parts = [f"{k}={v}" for k, v in result.items()]
     return ", ".join(parts)
@@ -153,11 +153,11 @@ class EventRecord:
 
 class EventCollector:
     """Accumulates SDK events during a session for export."""
-    
+
     def __init__(self, session_id: str):
         self.session_id = session_id
         self.events: list[EventRecord] = []
-    
+
     def add(self, event_type: str, data: Any, turn: int, ephemeral: bool = False) -> None:
         """Record an event."""
         # Convert data to dict for serialization
@@ -169,7 +169,7 @@ class EventCollector:
             data_dict = {k: str(v) for k, v in data.items()}
         else:
             data_dict = {"value": str(data)}
-        
+
         record = EventRecord(
             event_type=event_type,
             timestamp=datetime.now().isoformat(),
@@ -179,21 +179,21 @@ class EventCollector:
             ephemeral=ephemeral,
         )
         self.events.append(record)
-    
+
     def export_jsonl(self, path: str) -> int:
         """Export events to JSONL file. Returns count of events written."""
         from dataclasses import asdict
         from pathlib import Path
-        
+
         output_path = Path(path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         with open(output_path, 'w') as f:
             for event in self.events:
                 f.write(json.dumps(asdict(event)) + '\n')
-        
+
         return len(self.events)
-    
+
     def clear(self) -> None:
         """Clear accumulated events."""
         self.events.clear()
@@ -208,7 +208,7 @@ class TurnStats:
     reasoning_shown: bool = False
 
 
-@dataclass 
+@dataclass
 class SessionStats:
     """Accumulated statistics for a session."""
     total_input_tokens: int = 0
@@ -302,7 +302,7 @@ class CopilotAdapter(AdapterBase):
 
     async def create_session(self, config: AdapterConfig) -> AdapterSession:
         """Create a new Copilot session.
-        
+
         Supports SDK v2 infinite sessions for automatic context management.
         When infinite_sessions is configured, the SDK handles background
         compaction automatically.
@@ -367,7 +367,7 @@ class CopilotAdapter(AdapterBase):
                     f"Session complete: {stats.turns} turns, "
                     f"{stats.total_input_tokens} in / {stats.total_output_tokens} out tokens{tool_summary}{intent_summary}"
                 )
-            
+
             try:
                 await session._internal.destroy()
             except Exception:
@@ -384,7 +384,7 @@ class CopilotAdapter(AdapterBase):
         on_reasoning: Optional[Callable[[str], None]] = None,
     ) -> str:
         """Send a prompt and get response.
-        
+
         Args:
             session: The adapter session
             prompt: The prompt to send
@@ -392,7 +392,7 @@ class CopilotAdapter(AdapterBase):
             on_reasoning: Optional callback for AI reasoning (for loop detection)
         """
         from ..core.progress import progress
-        
+
         copilot_session = session._internal
         stats = self.session_stats.get(session.id, SessionStats())
         turn_stats = TurnStats()
@@ -417,7 +417,7 @@ class CopilotAdapter(AdapterBase):
             if stats.event_collector:
                 # Mark streaming/delta events as ephemeral (can be skipped in compact exports)
                 ephemeral = event_type in (
-                    "assistant.message_delta", 
+                    "assistant.message_delta",
                     "assistant.reasoning_delta",
                     "tool.execution_partial_result",
                 )
@@ -529,18 +529,18 @@ class CopilotAdapter(AdapterBase):
                 tool_name = _get_tool_name(data)
                 tool_call_id = _get_field(data, "tool_call_id", "id", default=str(stats._send_turn_stats.tool_calls if stats._send_turn_stats else 0))
                 tool_args = _get_field(data, "arguments", "args", default={})
-                
+
                 if stats._send_turn_stats:
                     stats._send_turn_stats.tool_calls += 1
                 stats.total_tool_calls += 1
-                
+
                 # Track active tool for timing
                 stats.active_tools[tool_call_id] = {
                     "name": tool_name,
                     "args": tool_args,
                     "start_time": datetime.now(),
                 }
-                
+
                 logger.info(f"🔧 Tool: {tool_name}")
                 # Log args at DEBUG level (truncated)
                 if tool_args and logger.isEnabledFor(logging.DEBUG):
@@ -554,7 +554,7 @@ class CopilotAdapter(AdapterBase):
                 tool_call_id = _get_field(data, "tool_call_id", "id")
                 success = _get_field(data, "success", default=True)
                 result = _get_field(data, "result", "output", default=None)
-                
+
                 # Calculate duration if we tracked this tool
                 duration_str = ""
                 if tool_call_id and tool_call_id in stats.active_tools:
@@ -564,7 +564,7 @@ class CopilotAdapter(AdapterBase):
                     # Use stored name if direct extraction failed (Q-013 fix)
                     if tool_name == "unknown" and tool_info.get("name"):
                         tool_name = tool_info["name"]
-                
+
                 # Track success/failure counts
                 if success:
                     stats.tool_calls_succeeded += 1
@@ -572,7 +572,7 @@ class CopilotAdapter(AdapterBase):
                 else:
                     stats.tool_calls_failed += 1
                     status_icon = "✗"
-                
+
                 # Format result summary for better observability
                 result_summary = ""
                 if result and logger.isEnabledFor(logging.DEBUG):
@@ -586,7 +586,7 @@ class CopilotAdapter(AdapterBase):
                             result_summary = f" → {len(result_str)} chars"
                     elif result_str and result_str != "None":
                         result_summary = f" → {result_str[:50]}..."
-                
+
                 logger.info(f"  {status_icon} {tool_name}{duration_str}{result_summary}")
 
             elif event_type == "tool.execution_partial_result":
@@ -702,7 +702,7 @@ class CopilotAdapter(AdapterBase):
 
     def was_aborted(self, session: AdapterSession) -> bool:
         """Check if the session received an abort signal.
-        
+
         Use this after catching AgentAborted to determine if graceful
         stop was requested by the agent.
         """
@@ -711,7 +711,7 @@ class CopilotAdapter(AdapterBase):
 
     def get_abort_info(self, session: AdapterSession) -> Optional[tuple[str, Optional[str]]]:
         """Get abort reason and details if session was aborted.
-        
+
         Returns:
             Tuple of (reason, details) or None if not aborted
         """
@@ -722,11 +722,11 @@ class CopilotAdapter(AdapterBase):
 
     def export_events(self, session: AdapterSession, path: str) -> int:
         """Export all recorded events for a session to JSONL file.
-        
+
         Args:
             session: The adapter session
             path: Output file path (will be created/overwritten)
-            
+
         Returns:
             Number of events exported
         """
@@ -740,7 +740,7 @@ class CopilotAdapter(AdapterBase):
         stats = self.session_stats.get(session.id)
         if stats:
             return (stats.total_input_tokens, 128000)
-        
+
         copilot_session = session._internal
 
         try:
@@ -764,25 +764,25 @@ class CopilotAdapter(AdapterBase):
         summary_prompt: str,
     ) -> CompactionResult:
         """Compact using Copilot's /compact slash command.
-        
+
         The /compact command triggers native SDK compaction which is more
         efficient than re-summarization. Falls back to base implementation
         if /compact doesn't work as expected.
         """
         tokens_before, _ = await self.get_context_usage(session)
-        
+
         # Try /compact command first (native SDK compaction)
         try:
             # Build preserve instruction if provided
             preserve_hint = ""
             if preserve:
                 preserve_hint = f"Preserve: {', '.join(preserve)}. "
-            
+
             compact_prompt = f"/compact {preserve_hint}{summary_prompt}".strip()
             response = await self.send(session, compact_prompt)
-            
+
             tokens_after, _ = await self.get_context_usage(session)
-            
+
             # If tokens reduced significantly, /compact worked
             if tokens_after < tokens_before * 0.8:
                 logger.info(f"Native /compact succeeded: {tokens_before} → {tokens_after} tokens")
@@ -800,10 +800,10 @@ class CopilotAdapter(AdapterBase):
                     tokens_before=tokens_before,
                     tokens_after=tokens_after,
                 )
-                
+
         except Exception as e:
             logger.warning(f"/compact command failed: {e}, falling back to summarization")
-        
+
         # Fall back to base implementation (sends summarization prompt)
         return await super().compact(session, preserve, summary_prompt)
 
@@ -818,18 +818,18 @@ class CopilotAdapter(AdapterBase):
         epilogues: Optional[list[str]] = None,
     ) -> tuple[AdapterSession, CompactionResult]:
         """Compact by getting summary and creating a new session.
-        
+
         This implements client-side compaction:
         1. Get summary via /compact
         2. Destroy current session
         3. Create new session with compacted context injected
-        
+
         The new session receives context in this order:
         - epilogues (from .conv file)
         - compaction_prologue (from COMPACT-PROLOGUE)
         - compacted summary
         - compaction_epilogue (from COMPACT-EPILOGUE)
-        
+
         Args:
             session: Current session to compact
             config: Config for new session
@@ -838,65 +838,65 @@ class CopilotAdapter(AdapterBase):
             compaction_epilogue: Content after summary (COMPACT-EPILOGUE)
             prologues: Regular prologues to inject
             epilogues: Regular epilogues to inject
-            
+
         Returns:
             Tuple of (new_session, compaction_result)
         """
         tokens_before, _ = await self.get_context_usage(session)
-        
+
         # Get summary via /compact
         preserve_hint = ""
         if preserve:
             preserve_hint = f"Preserve: {', '.join(preserve)}. "
-        
+
         compact_prompt = f"/compact {preserve_hint}Summarize this conversation for continuation.".strip()
-        
+
         try:
             summary = await self.send(session, compact_prompt)
         except Exception as e:
             logger.warning(f"/compact failed: {e}, using fallback summarization")
             summary = await self.send(session, f"Summarize this conversation. {preserve_hint}")
-        
+
         logger.info(f"🗜️ Compaction: got summary ({len(summary)} chars)")
-        
+
         # Destroy old session
         await self.destroy_session(session)
-        
+
         # Create new session
         new_session = await self.create_session(config)
-        
+
         # Build compacted context
         context_parts = []
-        
+
         # Add epilogues first (workflow-level context)
         if epilogues:
             for epilogue in epilogues:
                 context_parts.append(epilogue)
-        
+
         # Add compaction prologue
         if compaction_prologue:
             context_parts.append(compaction_prologue)
         else:
             context_parts.append("This conversation has been compacted. Summary of previous context:")
-        
+
         # Add the summary
         context_parts.append(summary)
-        
+
         # Add compaction epilogue
         if compaction_epilogue:
             context_parts.append(compaction_epilogue)
         else:
             context_parts.append("Continue from the context above.")
-        
+
         compacted_context = "\n\n".join(context_parts)
-        
+
         # Send compacted context to establish new session
         await self.send(new_session, compacted_context)
-        
+
         tokens_after, _ = await self.get_context_usage(new_session)
-        
+
         logger.info(f"🗜️ Compaction complete: {tokens_before} → {tokens_after} tokens (new session)")
-        
+
         return new_session, CompactionResult(
             preserved_content=compacted_context,
             summary=summary,
@@ -925,7 +925,7 @@ class CopilotAdapter(AdapterBase):
         _ensure_copilot_sdk()
         if not self.client:
             await self.start()
-        
+
         try:
             status = await self.client.get_status()
             return {
@@ -941,7 +941,7 @@ class CopilotAdapter(AdapterBase):
         _ensure_copilot_sdk()
         if not self.client:
             await self.start()
-        
+
         try:
             auth = await self.client.get_auth_status()
             return {
@@ -960,7 +960,7 @@ class CopilotAdapter(AdapterBase):
         _ensure_copilot_sdk()
         if not self.client:
             await self.start()
-        
+
         try:
             models = await self.client.list_models()
             result = []
@@ -968,7 +968,7 @@ class CopilotAdapter(AdapterBase):
                 caps = m.get("capabilities", {})
                 limits = caps.get("limits", {})
                 supports = caps.get("supports", {})
-                
+
                 result.append({
                     "id": m.get("id", "unknown"),
                     "name": m.get("name", m.get("id", "unknown")),
@@ -985,17 +985,17 @@ class CopilotAdapter(AdapterBase):
 
     def get_available_models(self) -> list[str]:
         """Get list of available model identifiers.
-        
+
         Uses cached models from the last list_models() call, or runs
         synchronously if no cache available.
-        
+
         Returns:
             List of model IDs available through Copilot.
         """
         # Use cached data if available from a previous list_models() call
         if hasattr(self, "_cached_model_ids") and self._cached_model_ids:
             return self._cached_model_ids
-        
+
         # Return default models if we can't query
         return ["gpt-4", "gpt-4o", "gpt-4-turbo", "claude-sonnet-4"]
 
@@ -1005,18 +1005,18 @@ class CopilotAdapter(AdapterBase):
         fallback: str | None = None,
     ) -> str | None:
         """Resolve abstract model requirements to a concrete model.
-        
+
         Uses Copilot's available models and the sdqctl capability registry.
-        
+
         Args:
             requirements: ModelRequirements with constraints and preferences
             fallback: Fallback model if no match found
-            
+
         Returns:
             Model name that satisfies requirements, or fallback/None
         """
         from sdqctl.core.models import resolve_model
-        
+
         available = self.get_available_models()
         return resolve_model(requirements, available_models=available, fallback=fallback)
 
@@ -1026,7 +1026,7 @@ class CopilotAdapter(AdapterBase):
 
     async def list_sessions(self) -> list[dict]:
         """List all available sessions with metadata.
-        
+
         Returns:
             List of session metadata dicts with keys:
             - id: Session identifier
@@ -1038,7 +1038,7 @@ class CopilotAdapter(AdapterBase):
         _ensure_copilot_sdk()
         if not self.client:
             await self.start()
-        
+
         try:
             sessions = await self.client.list_sessions()
             return [
@@ -1056,69 +1056,69 @@ class CopilotAdapter(AdapterBase):
             return []
 
     async def resume_session(
-        self, 
-        session_id: str, 
+        self,
+        session_id: str,
         config: AdapterConfig
     ) -> AdapterSession:
         """Resume an existing session by ID.
-        
+
         Restores conversation history and continues from previous state.
-        
+
         Args:
             session_id: The ID of the session to resume
             config: Adapter configuration for the resumed session
-            
+
         Returns:
             AdapterSession for the resumed session
-            
+
         Raises:
             RuntimeError: If session doesn't exist or client not started
         """
         _ensure_copilot_sdk()
         if not self.client:
             await self.start()
-        
+
         resume_config = {}
         if config.tools:
             resume_config["tools"] = config.tools
-        
+
         copilot_session = await self.client.resume_session(
-            session_id, 
+            session_id,
             resume_config if resume_config else None
         )
-        
+
         # Use the original session_id (or a short version if very long)
         internal_id = session_id[:8] if len(session_id) > 8 else session_id
-        
+
         session = AdapterSession(
             id=internal_id,
             adapter=self,
             config=config,
             _internal=copilot_session,
         )
-        
+
         self.sessions[internal_id] = copilot_session
         stats = SessionStats(model=config.model)
         stats.event_collector = EventCollector(internal_id)
         self.session_stats[internal_id] = stats
-        
+
         logger.info(f"Resumed session: {session_id}")
         return session
 
     async def delete_session(self, session_id: str) -> None:
         """Delete a session permanently.
-        
+
         The session cannot be resumed after deletion.
-        
+
         Args:
             session_id: The ID of the session to delete
-            
+
         Raises:
             RuntimeError: If deletion fails
         """
         _ensure_copilot_sdk()
         if not self.client:
             await self.start()
-        
+
         await self.client.delete_session(session_id)
         logger.info(f"Deleted session: {session_id}")

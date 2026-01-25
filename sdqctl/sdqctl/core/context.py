@@ -13,12 +13,11 @@ Token Estimation Note:
     Actual token counts vary by model and content type:
     - GPT models: use tiktoken for accurate counts
     - Claude models: typically ~3.5 chars/token for code
-    
+
     For precise token budgeting, consider integrating tiktoken or model-specific
     tokenizers. The current heuristic prioritizes simplicity and zero dependencies.
 """
 
-import fnmatch
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -26,7 +25,7 @@ from typing import Optional
 
 def estimate_tokens(content: str) -> int:
     """Estimate token count for content.
-    
+
     Uses ~4 characters per token heuristic. This is approximate;
     see module docstring for accuracy considerations.
     """
@@ -90,7 +89,7 @@ class ContextManager:
           @lib/auth.js        -> Single file
           @lib/auth/*.js      -> Glob pattern
           @lib/**/*.js        -> Recursive glob
-          
+
         Resolution order for relative paths:
           1. CWD (current working directory) - intuitive for users
           2. base_path (workflow file directory) - for self-contained workflows
@@ -108,10 +107,10 @@ class ContextManager:
         cwd_results = self._resolve_pattern_from_base(cwd, pattern)
         if cwd_results:
             return cwd_results
-        
+
         # Fall back to base_path (workflow directory)
         return self._resolve_pattern_from_base(self.base_path, pattern)
-    
+
     def _resolve_pattern_from_base(self, base: Path, pattern: str) -> list[Path]:
         """Resolve a pattern relative to a specific base path."""
         full_pattern = base / pattern
@@ -120,16 +119,16 @@ class ContextManager:
         if "*" in pattern or "?" in pattern or "[" in pattern:
             # Use Python's glob module for proper pattern matching
             import glob as glob_module
-            
+
             pattern_str = str(full_pattern)
-            
+
             # Handle ** recursive patterns
             if "**" in pattern:
                 matches = list(glob_module.glob(pattern_str, recursive=True))
             else:
                 # For patterns like mapping/*/README.md, use glob directly
                 matches = list(glob_module.glob(pattern_str))
-            
+
             return [Path(m) for m in matches if Path(m).is_file()]
         else:
             # Single file
@@ -139,12 +138,12 @@ class ContextManager:
 
     def add_file(self, path: Path) -> Optional[ContextFile]:
         """Add a file to the context.
-        
+
         Respects path_filter if configured (e.g., for DENY-FILES restrictions).
         """
         if not path.exists():
             return None
-        
+
         # Apply path filter if configured
         if self.path_filter is not None:
             if not self.path_filter(str(path)):

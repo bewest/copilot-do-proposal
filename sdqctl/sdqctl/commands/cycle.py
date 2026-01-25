@@ -9,11 +9,11 @@ Session Modes:
     accumulate  Context grows across cycles. Compaction triggered only when
                 approaching context limit. Best for iterative refinement where
                 prior context is valuable.
-                
+
     compact     Summarize conversation after each cycle. Keeps session but
                 reduces token usage. Best for long-running workflows where
                 recent context matters more than full history.
-                
+
     fresh       Start new adapter session each cycle. CONTEXT files are
                 reloaded from disk, picking up any changes. Best for
                 autonomous workflows that modify files between cycles.
@@ -31,12 +31,13 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from ..adapters import get_adapter
 from ..adapters.base import AdapterConfig, InfiniteSessionConfig
 from ..core.conversation import ConversationFile
-from ..core.exceptions import ExitCode, LoopDetected, LoopReason, MissingContextFiles
-from ..core.logging import get_logger, WorkflowContext, set_workflow_context
+from ..core.exceptions import LoopDetected, LoopReason, MissingContextFiles
+from ..core.logging import WorkflowContext, get_logger, set_workflow_context
 from ..core.loop_detector import LoopDetector, generate_nonce, get_stop_file_instruction
-from ..core.progress import progress as progress_print, WorkflowProgress
+from ..core.progress import WorkflowProgress
+from ..core.progress import progress as progress_print
 from ..core.session import Session
-from ..utils.output import PromptWriter, handle_error, print_json_error
+from ..utils.output import PromptWriter, handle_error
 from .utils import run_async
 
 logger = get_logger(__name__)
@@ -61,7 +62,7 @@ def build_infinite_session_config(
     conv_compaction_threshold: Optional[float] = None,
 ) -> InfiniteSessionConfig:
     """Build InfiniteSessionConfig from CLI options and ConversationFile directives.
-    
+
     Priority: CLI options > ConversationFile directives > defaults
     """
     # Enabled: CLI flag takes precedence, then conv directive, then default (True)
@@ -71,7 +72,7 @@ def build_infinite_session_config(
         enabled = conv_infinite_sessions
     else:
         enabled = True
-    
+
     # Min compaction density: CLI > conv > default (30%)
     if min_compaction_density != 30:  # CLI override
         min_density = min_compaction_density / 100.0
@@ -79,7 +80,7 @@ def build_infinite_session_config(
         min_density = conv_compaction_min
     else:
         min_density = 0.30
-    
+
     # Background threshold: CLI > conv > default (80%)
     if compaction_threshold != 80:  # CLI override
         bg_threshold = compaction_threshold / 100.0
@@ -87,10 +88,10 @@ def build_infinite_session_config(
         bg_threshold = conv_compaction_threshold
     else:
         bg_threshold = 0.80
-    
+
     # Buffer exhaustion: CLI > default (95%)
     buf_threshold = buffer_threshold / 100.0
-    
+
     return InfiniteSessionConfig(
         enabled=enabled,
         min_compaction_density=min_density,
@@ -101,10 +102,10 @@ def build_infinite_session_config(
 
 @click.command("cycle")
 @click.argument("workflow", type=click.Path(exists=True), required=False)
-@click.option("--from-json", "from_json", type=click.Path(), 
+@click.option("--from-json", "from_json", type=click.Path(),
               help="Read workflow from JSON file or - for stdin")
 @click.option("--max-cycles", "-n", type=int, default=None, help="Override max cycles")
-@click.option("--session-mode", "-s", type=click.Choice(["accumulate", "compact", "fresh"]), 
+@click.option("--session-mode", "-s", type=click.Choice(["accumulate", "compact", "fresh"]),
               default="accumulate", help="Session handling: accumulate (grow context), compact (summarize each cycle), fresh (new session each cycle)")
 @click.option("--adapter", "-a", default=None, help="AI adapter override")
 @click.option("--model", "-m", default=None, help="Model override")
@@ -160,13 +161,14 @@ def cycle(
         raise click.UsageError("Either WORKFLOW argument or --from-json is required")
     if workflow and from_json:
         raise click.UsageError("Cannot use both WORKFLOW argument and --from-json")
-    
+
     # Handle --render-only by delegating to render logic
     if render_only:
         import json
         import warnings
-        from ..core.renderer import render_workflow, format_rendered_json, format_rendered_markdown
-        
+
+        from ..core.renderer import format_rendered_json, format_rendered_markdown, render_workflow
+
         # Deprecation warning
         warnings.warn(
             "--render-only is deprecated, use 'sdqctl render cycle' instead",
@@ -174,29 +176,29 @@ def cycle(
             stacklevel=2,
         )
         console.print("[yellow]⚠ --render-only is deprecated. Use: sdqctl render cycle workflow.conv[/yellow]")
-        
+
         conv = ConversationFile.from_file(Path(workflow))
-        
+
         # Apply CLI options
         if prologue:
             conv.prologues = list(prologue) + conv.prologues
         if epilogue:
             conv.epilogues = list(epilogue) + conv.epilogues
-        
+
         # Map session mode names for render (accumulate is canonical)
         render_session_mode = session_mode
-        
+
         rendered = render_workflow(
-            conv, 
-            session_mode=render_session_mode, 
+            conv,
+            session_mode=render_session_mode,
             max_cycles=max_cycles or conv.max_cycles
         )
-        
+
         if json_output:
             output_content = json.dumps(format_rendered_json(rendered), indent=2)
         else:
             output_content = format_rendered_markdown(rendered)
-        
+
         if output:
             output_path = Path(output)
             # Handle fresh mode with directory output
@@ -232,28 +234,28 @@ def cycle(
             else:
                 console.print(output_content)
         return
-    
+
     # Handle --from-json input
     if from_json:
         import json as json_module
         import sys
-        
+
         if from_json == "-":
             json_data = json_module.load(sys.stdin)
         else:
             json_data = json_module.loads(Path(from_json).read_text())
-        
+
         # Validate schema version
         schema_version = json_data.get("schema_version", "1.0")
         major_version = int(schema_version.split(".")[0])
         if major_version > 1:
             raise click.UsageError(f"Unsupported schema version: {schema_version} (max: 1.x)")
-        
+
         # Get verbosity and show_prompt from context
         verbosity = ctx.obj.get("verbosity", 0) if ctx.obj else 0
         show_prompt_flag = ctx.obj.get("show_prompt", False) if ctx.obj else False
         json_errors = ctx.obj.get("json_errors", False) if ctx.obj else False
-        
+
         run_async(_cycle_from_json_async(
             json_data, max_cycles, session_mode, adapter, model, checkpoint_dir,
             prologue, epilogue, header, footer,
@@ -262,12 +264,12 @@ def cycle(
             json_errors=json_errors
         ))
         return
-    
+
     # Get verbosity and show_prompt from context
     verbosity = ctx.obj.get("verbosity", 0) if ctx.obj else 0
     show_prompt_flag = ctx.obj.get("show_prompt", False) if ctx.obj else False
     json_errors = ctx.obj.get("json_errors", False) if ctx.obj else False
-    
+
     run_async(_cycle_async(
         workflow, max_cycles, session_mode, adapter, model, checkpoint_dir,
         prologue, epilogue, header, footer,
@@ -307,34 +309,33 @@ async def _cycle_from_json_async(
     json_errors: bool = False,
 ) -> None:
     """Execute workflow from pre-rendered JSON.
-    
+
     Enables external transformation pipelines:
         sdqctl render cycle foo.conv --json | transform.py | sdqctl cycle --from-json -
     """
+    import time
+
     from ..core.conversation import (
-        build_prompt_with_injection,
         build_output_with_injection,
-        get_standard_variables,
         substitute_template_variables,
     )
     from ..core.loop_detector import LoopDetector
-    import time
-    
+
     # Initialize prompt writer for stderr output
     prompt_writer = PromptWriter(enabled=show_prompt)
-    
+
     cycle_start = time.time()
     workflow_name = json_data.get("workflow_name", "json-workflow")
-    
+
     # Extract configuration from JSON
     conv = ConversationFile.from_rendered_json(json_data)
-    
+
     # Override with CLI options if provided
     if adapter_name:
         conv.adapter = adapter_name
     if model:
         conv.model = model
-    
+
     # Apply CLI prologues/epilogues
     if cli_prologues:
         conv.prologues = list(cli_prologues) + conv.prologues
@@ -344,23 +345,23 @@ async def _cycle_from_json_async(
         conv.headers = list(cli_headers)
     if cli_footers:
         conv.footers = list(cli_footers)
-    
+
     max_cycles = max_cycles_override or json_data.get("max_cycles", conv.max_cycles) or 1
-    
+
     progress_print(f"Running from JSON ({max_cycles} cycle(s), session={session_mode})...")
-    
+
     if dry_run:
         console.print(f"[dim]Would execute {len(conv.prompts)} prompt(s) for {max_cycles} cycle(s)[/dim]")
         console.print(f"[dim]Adapter: {conv.adapter}, Model: {conv.model}[/dim]")
         return
-    
+
     # Get adapter
     try:
         ai_adapter = get_adapter(conv.adapter)
     except ValueError as e:
         console.print(f"[red]Adapter error: {e}[/red]")
         return
-    
+
     # Create adapter config with infinite sessions (merge CLI + conv file settings)
     infinite_config = build_infinite_session_config(
         no_infinite_sessions, compaction_threshold, buffer_threshold, min_compaction_density,
@@ -374,55 +375,55 @@ async def _cycle_from_json_async(
         debug_intents=conv.debug_intents,
         infinite_sessions=infinite_config,
     )
-    
+
     # Initialize session
     session = Session(workflow=workflow_name)
-    
+
     # Stop file handling
     stop_file_nonce_value = stop_file_nonce or generate_nonce()
     loop_detector = LoopDetector(
         max_cycles=max_cycles,
         stop_file_nonce=stop_file_nonce_value,
     )
-    
+
     # Create adapter session
     adapter_session = await ai_adapter.create_session(adapter_config)
-    
+
     try:
         responses = []
-        
+
         for cycle_num in range(1, max_cycles + 1):
             progress_print(f"  Cycle {cycle_num}/{max_cycles}")
-            
+
             # Check for stop file
             if loop_detector.check_stop_file():
-                console.print(f"[yellow]Stop file detected, exiting[/yellow]")
+                console.print("[yellow]Stop file detected, exiting[/yellow]")
                 break
-            
+
             # Build prompts for this cycle
             template_vars = json_data.get("template_variables", {}).copy()
             template_vars["CYCLE_NUMBER"] = str(cycle_num)
             template_vars["CYCLE_TOTAL"] = str(max_cycles)
             template_vars["STOP_FILE"] = f"STOPAUTOMATION-{stop_file_nonce_value}.json"
-            
+
             for prompt_idx, prompt_text in enumerate(conv.prompts):
                 # Substitute any remaining template variables
                 final_prompt = substitute_template_variables(prompt_text, template_vars)
-                
+
                 # Add stop file instruction to first prompt
                 if prompt_idx == 0 and cycle_num == 1 and not no_stop_file_prologue:
                     stop_instruction = get_stop_file_instruction(stop_file_nonce_value)
                     final_prompt = f"{stop_instruction}\n\n{final_prompt}"
-                
+
                 # Show prompt if enabled
                 prompt_writer.write_prompt(
-                    final_prompt, 
+                    final_prompt,
                     cycle=cycle_num,
                     total_cycles=max_cycles,
                     prompt_num=prompt_idx + 1,
                     total_prompts=len(conv.prompts)
                 )
-                
+
                 # Execute prompt
                 response = await ai_adapter.run(
                     adapter_session,
@@ -430,39 +431,39 @@ async def _cycle_from_json_async(
                     stream=verbosity >= 2,
                 )
                 responses.append(response)
-                
+
                 # Add to session
                 session.add_message("user", final_prompt)
                 session.add_message("assistant", response)
-            
+
             # Handle session mode
             if session_mode == "compact" and cycle_num < max_cycles:
-                progress_print(f"    Compacting...")
+                progress_print("    Compacting...")
                 await ai_adapter.compact(adapter_session)
             elif session_mode == "fresh" and cycle_num < max_cycles:
-                progress_print(f"    Fresh session...")
+                progress_print("    Fresh session...")
                 adapter_session = await ai_adapter.create_session(adapter_config)
-        
+
         # Output
         session.state.status = "completed"
         total_elapsed = time.time() - cycle_start
-        
+
         raw_output = "\n\n---\n\n".join(responses)
         final_output = build_output_with_injection(
             raw_output, conv.headers, conv.footers,
             base_path=Path.cwd(),
             variables=template_vars
         )
-        
+
         if output_file:
             Path(output_file).parent.mkdir(parents=True, exist_ok=True)
             Path(output_file).write_text(final_output)
             console.print(f"[green]Output written to {output_file}[/green]")
         else:
             console.print(final_output)
-        
+
         progress_print(f"  Completed in {total_elapsed:.1f}s")
-        
+
     finally:
         await ai_adapter.close_session(adapter_session)
 
@@ -493,29 +494,29 @@ async def _cycle_async(
     json_errors: bool = False,
 ) -> None:
     """Execute multi-cycle workflow with session management.
-    
+
     Session modes control how context is managed across cycles:
-    
+
     - accumulate: Keep full conversation history. Compaction only triggers
       when approaching the context limit. Use for iterative refinement.
-      
+
     - compact: Summarize conversation after each cycle to reduce tokens.
       Maintains session continuity while managing context growth.
-      
+
     - fresh: Create new adapter session each cycle. Reloads CONTEXT files
       from disk, so file changes made during cycle N are visible in N+1.
     """
     # Initialize prompt writer for stderr output
     prompt_writer = PromptWriter(enabled=show_prompt)
-    
+
+    import time
+
     from ..core.conversation import (
-        build_prompt_with_injection,
         build_output_with_injection,
+        build_prompt_with_injection,
         get_standard_variables,
         substitute_template_variables,
     )
-    
-    import time
     cycle_start = time.time()
 
     # Load workflow
@@ -526,20 +527,20 @@ async def _cycle_async(
     # Respect VALIDATION-MODE directive from the workflow file
     is_lenient = conv.validation_mode == "lenient"
     errors, warnings = conv.validate_context_files(allow_missing=is_lenient)
-    
+
     # Show warnings
     if warnings:
-        console.print(f"[yellow]Warning: Optional/excluded context files not found:[/yellow]")
+        console.print("[yellow]Warning: Optional/excluded context files not found:[/yellow]")
         for pattern, resolved in warnings:
             console.print(f"[yellow]  - {pattern}[/yellow]")
-    
+
     # Errors are blocking
     if errors:
         patterns = [pattern for pattern, _ in errors]
-        console.print(f"[red]Error: Missing mandatory context files:[/red]")
+        console.print("[red]Error: Missing mandatory context files:[/red]")
         for pattern, resolved in errors:
             console.print(f"[red]  - {pattern} (resolved to {resolved})[/red]")
-        console.print(f"[dim]Tip: Use VALIDATION-MODE lenient in workflow or pass --allow-missing[/dim]")
+        console.print("[dim]Tip: Use VALIDATION-MODE lenient in workflow or pass --allow-missing[/dim]")
         raise MissingContextFiles(patterns, {p: str(r) for p, r in errors})
 
     # Apply overrides
@@ -551,7 +552,7 @@ async def _cycle_async(
         conv.model = model
     if output_file:
         conv.output_file = output_file
-    
+
     # Add CLI-provided prologues/epilogues (prepend to file-defined ones)
     if cli_prologues:
         conv.prologues = list(cli_prologues) + conv.prologues
@@ -561,14 +562,14 @@ async def _cycle_async(
         conv.headers = list(cli_headers) + conv.headers
     if cli_footers:
         conv.footers = list(cli_footers) + conv.footers
-    
+
     # Create session for checkpointing
     session_dir = Path(checkpoint_dir) if checkpoint_dir else None
     session = Session(conv, session_dir=session_dir)
-    
+
     # Generate nonce for stop file (once per command invocation)
     nonce = stop_file_nonce if stop_file_nonce else generate_nonce()
-    
+
     # Get template variables for prompts (excludes WORKFLOW_NAME to avoid Q-001)
     # Includes STOP_FILE for agent stop signaling (Q-002)
     template_vars = get_standard_variables(conv.source_path, stop_file_nonce=nonce)
@@ -604,7 +605,7 @@ async def _cycle_async(
 
     # Initialize loop detector with nonce for stop file detection (Q-002)
     loop_detector = LoopDetector(nonce=nonce)
-    
+
     # Check if stop file already exists (previous run may have requested stop)
     if loop_detector.stop_file_path.exists():
         try:
@@ -614,7 +615,7 @@ async def _cycle_async(
             reason = stop_data.get("reason", "Unknown reason")
         except (json.JSONDecodeError, IOError):
             reason = "Could not read stop file content"
-        
+
         console.print(Panel(
             f"[bold yellow]⚠️  Stop file exists from previous run[/bold yellow]\n\n"
             f"[bold]File:[/bold] {loop_detector.stop_file_name}\n"
@@ -627,7 +628,7 @@ async def _cycle_async(
             border_style="yellow",
         ))
         return
-    
+
     last_reasoning: list[str] = []  # Collect reasoning from callbacks
 
     try:
@@ -645,7 +646,7 @@ async def _cycle_async(
             conv_compaction_min=conv.compaction_min,
             conv_compaction_threshold=conv.compaction_threshold,
         )
-        
+
         adapter_session = await ai_adapter.create_session(
             AdapterConfig(
                 model=conv.model,
@@ -656,11 +657,11 @@ async def _cycle_async(
                 infinite_sessions=infinite_config,
             )
         )
-        
+
         try:
             session.state.status = "running"
             all_responses = []
-            
+
             # Set workflow context for enhanced logging
             workflow_name = conv.source_path.stem if conv.source_path else "workflow"
             workflow_ctx = WorkflowContext(
@@ -670,7 +671,7 @@ async def _cycle_async(
                 total_prompts=len(conv.prompts),
             )
             set_workflow_context(workflow_ctx)
-            
+
             # Initialize enhanced workflow progress tracker
             workflow_progress = WorkflowProgress(
                 name=str(conv.source_path or workflow_path),
@@ -693,17 +694,17 @@ async def _cycle_async(
                 # Run cycles
                 for cycle_num in range(conv.max_cycles):
                     session.state.cycle_number = cycle_num
-                    
+
                     # Update workflow context for logging
                     workflow_ctx.cycle = cycle_num + 1
-                    
+
                     progress.update(
                         cycle_task,
                         description=f"Cycle {cycle_num + 1}/{conv.max_cycles}",
                         completed=cycle_num
                     )
                     progress_print(f"  Cycle {cycle_num + 1}/{conv.max_cycles}...")
-                    
+
                     # Add cycle number to template variables
                     cycle_vars = template_vars.copy()
                     cycle_vars["CYCLE_NUMBER"] = str(cycle_num + 1)
@@ -730,28 +731,28 @@ async def _cycle_async(
                     # Session mode: compact = compact at start of each cycle (after first)
                     if session_mode == "compact" and cycle_num > 0:
                         console.print(f"\n[yellow]Compacting before cycle {cycle_num + 1}...[/yellow]")
-                        progress_print(f"  🗜  Compacting context...")
-                        
+                        progress_print("  🗜  Compacting context...")
+
                         compact_result = await ai_adapter.compact(
                             adapter_session,
                             conv.compact_preserve,
                             session.get_compaction_prompt()
                         )
-                        
+
                         console.print(f"[green]Compacted: {compact_result.tokens_before} → {compact_result.tokens_after} tokens[/green]")
                         progress_print(f"  🗜  Compacted: {compact_result.tokens_before} → {compact_result.tokens_after} tokens")
 
                     # Check for compaction (accumulate mode, or when context limit reached)
                     if session_mode == "accumulate" and session.needs_compaction(min_compaction_density):
-                        console.print(f"\n[yellow]Context near limit, compacting...[/yellow]")
-                        progress_print(f"  🗜  Compacting context...")
-                        
+                        console.print("\n[yellow]Context near limit, compacting...[/yellow]")
+                        progress_print("  🗜  Compacting context...")
+
                         compact_result = await ai_adapter.compact(
                             adapter_session,
                             conv.compact_preserve,
                             session.get_compaction_prompt()
                         )
-                        
+
                         console.print(f"[green]Compacted: {compact_result.tokens_before} → {compact_result.tokens_after} tokens[/green]")
                         progress_print(f"  🗜  Compacted: {compact_result.tokens_before} → {compact_result.tokens_after} tokens")
 
@@ -773,19 +774,19 @@ async def _cycle_async(
                         {"type": "prompt", "content": p} for p in conv.prompts
                     ]
                     total_prompts = len(conv.prompts)
-                    
+
                     prompt_idx = 0
                     for step in steps_to_process:
                         step_type = step.type if hasattr(step, 'type') else step.get('type')
                         step_content = step.content if hasattr(step, 'content') else step.get('content', '')
-                        
+
                         if step_type == "prompt":
                             prompt = step_content
                             session.state.prompt_index = prompt_idx
-                            
+
                             # Update workflow context for logging
                             workflow_ctx.prompt = prompt_idx + 1
-                            
+
                             # Get context usage percentage
                             ctx_status = session.context.get_status()
                             context_pct = ctx_status.get("usage_percent", 0)
@@ -794,28 +795,28 @@ async def _cycle_async(
                             is_first = (prompt_idx == 0)
                             is_last = (prompt_idx == total_prompts - 1)
                             full_prompt = build_prompt_with_injection(
-                                prompt, conv.prologues, conv.epilogues, 
+                                prompt, conv.prologues, conv.epilogues,
                                 conv.source_path.parent if conv.source_path else None,
                                 cycle_vars,
                                 is_first_prompt=is_first,
                                 is_last_prompt=is_last
                             )
-                            
+
                             # Add context to first prompt (always for fresh, only cycle 0 for others)
                             if prompt_idx == 0 and context_content:
                                 full_prompt = f"{context_content}\n\n{full_prompt}"
-                            
+
                             # Add stop file instruction on first prompt of session (Q-002)
                             # For fresh mode: inject each cycle. For accumulate: only cycle 0.
                             should_inject_stop_file = (
-                                not no_stop_file_prologue and 
-                                prompt_idx == 0 and 
+                                not no_stop_file_prologue and
+                                prompt_idx == 0 and
                                 (session_mode == "fresh" or cycle_num == 0)
                             )
                             if should_inject_stop_file:
                                 stop_instruction = get_stop_file_instruction(loop_detector.stop_file_name)
                                 full_prompt = f"{full_prompt}\n\n{stop_instruction}"
-                            
+
                             # On subsequent cycles (accumulate mode), add continuation context
                             if session_mode == "accumulate" and cycle_num > 0 and prompt_idx == 0 and conv.on_context_limit_prompt:
                                 full_prompt = f"{conv.on_context_limit_prompt}\n\n{full_prompt}"
@@ -827,7 +828,7 @@ async def _cycle_async(
                                 context_pct=context_pct,
                                 preview=prompt[:50] if verbosity >= 1 else None
                             )
-                            
+
                             # Write prompt to stderr if --show-prompt / -P enabled
                             prompt_writer.write_prompt(
                                 full_prompt,
@@ -840,27 +841,27 @@ async def _cycle_async(
 
                             # Clear reasoning collector before send
                             last_reasoning.clear()
-                            
+
                             def collect_reasoning(reasoning: str) -> None:
                                 last_reasoning.append(reasoning)
-                            
+
                             response = await ai_adapter.send(
-                                adapter_session, 
+                                adapter_session,
                                 full_prompt,
                                 on_reasoning=collect_reasoning
                             )
-                            
+
                             # Update context usage after response
                             ctx_status = session.context.get_status()
                             new_context_pct = ctx_status.get("usage_percent", 0)
-                            
+
                             # Enhanced progress completion
                             workflow_progress.prompt_complete(
                                 cycle=cycle_num + 1,
                                 prompt=prompt_idx + 1,
                                 context_pct=new_context_pct,
                             )
-                            
+
                             # Check for loop after each response
                             combined_reasoning = " ".join(last_reasoning) if last_reasoning else None
                             if loop_result := loop_detector.check(combined_reasoning, response, cycle_num):
@@ -870,13 +871,13 @@ async def _cycle_async(
                                     console.print(f"[yellow]   Reason: {loop_result.details}[/yellow]")
                                     console.print(f"[yellow]   Session: {session.id}[/yellow]")
                                     console.print(f"[yellow]   Cycle: {cycle_num + 1}/{conv.max_cycles}[/yellow]")
-                                    console.print(f"\n[dim]Review the agent's work and decide next steps.[/dim]")
+                                    console.print("\n[dim]Review the agent's work and decide next steps.[/dim]")
                                     progress_print(f"  ⚠️  Agent stop: {loop_result.details}")
                                 else:
                                     console.print(f"\n[red]⚠️  {loop_result}[/red]")
                                     progress_print(f"  ⚠️  Loop detected: {loop_result.reason.value}")
                                 raise loop_result
-                            
+
                             session.add_message("user", prompt)
                             session.add_message("assistant", response)
                             all_responses.append({
@@ -885,76 +886,76 @@ async def _cycle_async(
                                 "response": response
                             })
                             prompt_idx += 1
-                        
+
                         elif step_type == "compact":
                             # Execute inline COMPACT directive (conditional on threshold)
                             if session.needs_compaction(min_compaction_density):
                                 console.print("[yellow]🗜  Compacting conversation...[/yellow]")
                                 progress_print("  🗜  Compacting conversation...")
-                                
+
                                 preserve = step.preserve if hasattr(step, 'preserve') else []
                                 all_preserve = conv.compact_preserve + preserve
                                 compact_prompt = session.get_compaction_prompt()
                                 if all_preserve:
                                     compact_prompt = f"Preserve these items: {', '.join(all_preserve)}\n\n{compact_prompt}"
-                                
+
                                 compact_response = await ai_adapter.send(adapter_session, compact_prompt)
                                 session.add_message("system", f"[Compaction summary]\n{compact_response}")
-                                
+
                                 console.print("[green]🗜  Compaction complete[/green]")
                                 progress_print("  🗜  Compaction complete")
                             else:
                                 console.print("[dim]📊 Skipping COMPACT - context below threshold[/dim]")
                                 progress_print("  📊 Skipping COMPACT - context below threshold")
-                        
+
                         elif step_type == "checkpoint":
                             # Save checkpoint mid-cycle
                             checkpoint_name = step_content or f"cycle-{cycle_num}-step"
                             checkpoint = session.create_checkpoint(checkpoint_name)
                             console.print(f"[blue]📌 Checkpoint: {checkpoint.name}[/blue]")
                             progress_print(f"  📌 Checkpoint: {checkpoint.name}")
-                        
+
                         elif step_type == "verify_trace":
                             # Run VERIFY-TRACE step (check specific trace link)
                             from ..verifiers.traceability import TraceabilityVerifier
-                            
+
                             verify_options = step.verify_options if hasattr(step, 'verify_options') else step.get('verify_options', {})
                             from_id = verify_options.get('from', '')
                             to_id = verify_options.get('to', '')
-                            
+
                             console.print(f"[cyan]🔍 VERIFY-TRACE: {from_id} -> {to_id}[/cyan]")
-                            
+
                             verify_path = conv.source_path.parent if conv.source_path else Path.cwd()
                             verifier = TraceabilityVerifier()
                             result = verifier.verify_trace(from_id, to_id, verify_path)
-                            
+
                             if result.passed:
                                 console.print(f"  [green]✓ Trace verified: {result.summary}[/green]")
                             else:
                                 console.print(f"  [red]✗ Trace failed: {result.summary}[/red]")
                                 if conv.verify_on_error == "fail":
                                     raise RuntimeError(f"VERIFY-TRACE failed: {from_id} -> {to_id}")
-                        
+
                         elif step_type == "verify_coverage":
                             # Run VERIFY-COVERAGE step (check coverage metrics)
                             from ..verifiers.traceability import TraceabilityVerifier
-                            
+
                             verify_options = step.verify_options if hasattr(step, 'verify_options') else step.get('verify_options', {})
                             report_only = verify_options.get('report_only', False)
                             metric = verify_options.get('metric')
                             op = verify_options.get('op')
                             threshold = verify_options.get('threshold')
-                            
-                            console.print(f"[cyan]🔍 VERIFY-COVERAGE[/cyan]")
-                            
+
+                            console.print("[cyan]🔍 VERIFY-COVERAGE[/cyan]")
+
                             verify_path = conv.source_path.parent if conv.source_path else Path.cwd()
                             verifier = TraceabilityVerifier()
-                            
+
                             if report_only:
                                 result = verifier.verify_coverage(verify_path)
                             else:
                                 result = verifier.verify_coverage(verify_path, metric=metric, op=op, threshold=threshold)
-                            
+
                             if result.passed:
                                 console.print(f"  [green]✓ Coverage: {result.summary}[/green]")
                             else:
@@ -998,11 +999,11 @@ async def _cycle_async(
             else:
                 console.print(f"\n[green]✓ Completed {conv.max_cycles} cycles[/green]")
                 console.print(f"[dim]Total messages: {len(session.state.messages)}[/dim]")
-                
+
                 if conv.output_file:
                     # Substitute template variables in output path (use output_vars with WORKFLOW_NAME)
                     effective_output = substitute_template_variables(conv.output_file, output_vars)
-                    
+
                     # Write final summary with header/footer injection
                     output_content = "\n\n---\n\n".join(
                         f"## Cycle {r['cycle']}, Prompt {r['prompt']}\n\n{r['response']}"
@@ -1017,9 +1018,9 @@ async def _cycle_async(
                     Path(effective_output).write_text(output_content)
                     progress_print(f"  Writing to {effective_output}")
                     console.print(f"[green]Output written to {effective_output}[/green]")
-            
+
             progress_print(f"Done in {cycle_elapsed:.1f}s")
-        
+
         finally:
             # Export events before destroying session (if configured via CLI or workflow)
             if effective_event_log and hasattr(ai_adapter, 'export_events'):
@@ -1027,7 +1028,7 @@ async def _cycle_async(
                 if event_count > 0:
                     logger.info(f"Exported {event_count} events to {effective_event_log}")
                     progress_print(f"  📋 Exported {event_count} events to {effective_event_log}")
-            
+
             # Always destroy session (handles both success and error paths)
             await ai_adapter.destroy_session(adapter_session)
 
@@ -1043,7 +1044,7 @@ async def _cycle_async(
             "checkpoint": str(checkpoint_path),
         })
         sys.exit(exit_code)
-    
+
     except MissingContextFiles as e:
         session.state.status = "failed"
         # Save checkpoint to preserve session state before exit

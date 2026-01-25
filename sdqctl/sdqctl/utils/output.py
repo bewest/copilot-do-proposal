@@ -10,8 +10,8 @@ TTY detection (git-style):
 - When stdout redirected: Plain text, no colors, no progress overwrites
 """
 
-import sys
 import json
+import sys
 from typing import Any, Optional
 
 from rich.console import Console
@@ -19,7 +19,7 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.rule import Rule
 
-from ..core.exceptions import format_json_error, ExitCode
+from ..core.exceptions import ExitCode, format_json_error
 
 # TTY detection for git-style behavior
 _stdout_is_tty = sys.stdout.isatty()
@@ -51,19 +51,19 @@ def is_stderr_tty() -> bool:
 
 class PromptWriter:
     """Write expanded prompts to stderr with cycle/step context.
-    
+
     Used when --show-prompt / -P flag is enabled.
-    
+
     Usage:
         writer = PromptWriter(enabled=ctx.obj.get("show_prompt", False))
-        writer.write_prompt(prompt_text, cycle=1, total_cycles=3, 
+        writer.write_prompt(prompt_text, cycle=1, total_cycles=3,
                            prompt_idx=2, total_prompts=4, context_pct=31.5)
     """
-    
+
     def __init__(self, enabled: bool = False):
         self.enabled = enabled
         self.console = stderr_console
-    
+
     def write_prompt(
         self,
         prompt: str,
@@ -74,7 +74,7 @@ class PromptWriter:
         context_pct: Optional[float] = None,
     ) -> None:
         """Write a prompt to stderr with context information.
-        
+
         Args:
             prompt: The fully expanded prompt text
             cycle: Current cycle number (1-indexed)
@@ -85,16 +85,16 @@ class PromptWriter:
         """
         if not self.enabled:
             return
-        
+
         # Build header
         if total_cycles > 1:
             header = f"[Cycle {cycle}/{total_cycles}, Prompt {prompt_idx}/{total_prompts}]"
         else:
             header = f"[Prompt {prompt_idx}/{total_prompts}]"
-        
+
         if context_pct is not None:
             header += f" (ctx: {context_pct:.0f}%)"
-        
+
         # Output with formatting if TTY, plain if redirected
         if _stderr_is_tty:
             self.console.print()
@@ -111,18 +111,18 @@ class PromptWriter:
 
 def format_output(data: Any, format: str = "markdown", title: str = None) -> str:
     """Format data for output.
-    
+
     Args:
         data: Data to format
         format: Output format (markdown, json, text)
         title: Optional title
-    
+
     Returns:
         Formatted string
     """
     if format == "json":
         return json.dumps(data, indent=2, default=str)
-    
+
     if format == "markdown":
         if isinstance(data, str):
             return data
@@ -148,7 +148,7 @@ def format_output(data: Any, format: str = "markdown", title: str = None) -> str
                 else:
                     lines.append(f"- {item}")
             return "\n".join(lines)
-    
+
     # Default: text
     return str(data)
 
@@ -184,12 +184,12 @@ def handle_error(
     context: Optional[dict[str, Any]] = None,
 ) -> int:
     """Handle an exception with appropriate output format.
-    
+
     Args:
         exc: The exception to handle
         json_errors: If True, output JSON format; otherwise Rich format
         context: Optional additional context (workflow, cycle, etc.)
-    
+
     Returns:
         Exit code to use for sys.exit()
     """
@@ -197,7 +197,7 @@ def handle_error(
         print(format_json_error(exc, context))
     else:
         print_error(str(exc))
-    
+
     # Return appropriate exit code
     if hasattr(exc, "exit_code"):
         return exc.exit_code
@@ -211,7 +211,7 @@ def print_json_error(
     details: Optional[dict[str, Any]] = None,
 ) -> None:
     """Print a structured JSON error without an exception.
-    
+
     Args:
         error_type: Error type name (e.g., "ValidationError")
         message: Human-readable error message

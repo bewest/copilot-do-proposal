@@ -789,7 +789,7 @@ The security model for shell execution and file handling is now documented.
 ### Action Items
 
 - [x] **P0**: Fix 5 F821 undefined name bugs (runtime errors) → ✅ 2026-01-25
-- [ ] **P1**: Run `ruff check --fix` to clean 1,450 auto-fixable issues
+- [x] **P1**: Run `ruff check --fix` to clean 1,785 auto-fixable issues → ✅ 2026-01-25 (197 remaining: 192 E501 line length, 5 F841 unused vars)
 - [ ] **P1**: Split `run()` function into smaller units
 - [ ] **P2**: Fix circular import in renderer→help
 - [x] **P2**: Document security model for shell execution → `docs/SECURITY-MODEL.md` (2026-01-25)

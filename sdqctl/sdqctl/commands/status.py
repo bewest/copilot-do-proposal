@@ -13,14 +13,13 @@ Usage:
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 import click
 from rich.console import Console
 from rich.table import Table
 
 from .. import __version__
-from ..adapters import list_adapters, get_adapter
+from ..adapters import get_adapter, list_adapters
 from .utils import run_async
 
 console = Console()
@@ -56,11 +55,11 @@ def status(
     if (sessions or checkpoints) and not show_all:
         _show_sessions(json_output, show_checkpoints=checkpoints)
         return
-    
+
     if models and not show_all:
         run_async(_show_models_async(adapter, json_output))
         return
-    
+
     if auth and not show_all:
         run_async(_show_auth_async(adapter, json_output))
         return
@@ -86,7 +85,7 @@ async def _show_overview_async(adapter_name: str, json_output: bool) -> None:
             checkpoint_count += len(list(session_dir.glob("checkpoint-*.json")))
 
     available_adapters = list_adapters()
-    
+
     # Try to get CLI and auth status from adapter
     cli_status = {}
     auth_status = {}
@@ -117,13 +116,13 @@ async def _show_overview_async(adapter_name: str, json_output: bool) -> None:
     else:
         console.print(f"\n[bold]sdqctl v{__version__}[/bold]")
         console.print("─" * 35)
-        
+
         # CLI status
         if cli_status:
             version = cli_status.get("version", "unknown")
             protocol = cli_status.get("protocol_version", "?")
             console.print(f"  Copilot CLI:  v{version} (protocol v{protocol})")
-        
+
         # Auth status
         if auth_status:
             if auth_status.get("authenticated"):
@@ -131,8 +130,8 @@ async def _show_overview_async(adapter_name: str, json_output: bool) -> None:
                 auth_type = auth_status.get("auth_type", "?")
                 console.print(f"  Auth:         [green]✓[/green] {login} ({auth_type})")
             else:
-                console.print(f"  Auth:         [red]✗[/red] Not authenticated")
-        
+                console.print("  Auth:         [red]✗[/red] Not authenticated")
+
         console.print(f"  Config:       {SDQCTL_DIR}")
         console.print(f"  Sessions:     {session_count}")
         console.print(f"  Checkpoints:  {checkpoint_count}")
@@ -162,17 +161,17 @@ async def _show_models_async(adapter_name: str, json_output: bool) -> None:
         if not models:
             console.print("[yellow]No models available[/yellow]")
             return
-            
+
         table = Table(title="Available Models")
         table.add_column("Model ID", style="cyan")
         table.add_column("Context", style="green")
         table.add_column("Vision", style="green")
-        
+
         for m in models:
             context = f"{m.get('context_window', 0)//1000}K" if m.get('context_window') else "?"
             vision = "[green]✓[/green]" if m.get("vision") else "[dim]✗[/dim]"
             table.add_row(m.get("id", "unknown"), context, vision)
-        
+
         console.print(table)
 
 
@@ -201,22 +200,22 @@ async def _show_auth_async(adapter_name: str, json_output: bool) -> None:
     else:
         console.print("\n[bold]Authentication Status[/bold]")
         console.print("─" * 35)
-        
+
         if cli_status:
             version = cli_status.get("version", "unknown")
             protocol = cli_status.get("protocol_version", "?")
             console.print(f"  CLI Version:  v{version}")
             console.print(f"  Protocol:     v{protocol}")
-        
+
         if auth_status:
             if auth_status.get("authenticated"):
-                console.print(f"  Status:       [green]✓ Authenticated[/green]")
+                console.print("  Status:       [green]✓ Authenticated[/green]")
                 console.print(f"  Login:        {auth_status.get('login', 'unknown')}")
                 console.print(f"  Auth Type:    {auth_status.get('auth_type', 'unknown')}")
                 if auth_status.get("host"):
                     console.print(f"  Host:         {auth_status.get('host')}")
             else:
-                console.print(f"  Status:       [red]✗ Not authenticated[/red]")
+                console.print("  Status:       [red]✗ Not authenticated[/red]")
                 if auth_status.get("message"):
                     console.print(f"  Message:      {auth_status.get('message')}")
         else:
@@ -237,19 +236,19 @@ async def _show_all_async(adapter_name: str, json_output: bool) -> None:
             checkpoint_count += len(list(session_dir.glob("checkpoint-*.json")))
 
     available_adapters = list_adapters()
-    
+
     # Get adapter info
     cli_status = {}
     auth_status = {}
     models = []
     adapter_info = []
-    
+
     for name in available_adapters:
         try:
             ai_adapter = get_adapter(name)
             info = ai_adapter.get_info()
             adapter_info.append(info)
-            
+
             if name == adapter_name:
                 await ai_adapter.start()
                 try:
@@ -260,7 +259,7 @@ async def _show_all_async(adapter_name: str, json_output: bool) -> None:
                     await ai_adapter.stop()
         except Exception as e:
             adapter_info.append({"name": name, "error": str(e)})
-    
+
     if json_output:
         data = {
             "version": __version__,
@@ -277,13 +276,13 @@ async def _show_all_async(adapter_name: str, json_output: bool) -> None:
         # Header
         console.print(f"\n[bold]sdqctl v{__version__}[/bold]")
         console.print("─" * 35)
-        
+
         # CLI status
         if cli_status:
             version = cli_status.get("version", "unknown")
             protocol = cli_status.get("protocol_version", "?")
             console.print(f"Copilot CLI:    v{version} (protocol v{protocol})")
-        
+
         # Auth status
         if auth_status:
             if auth_status.get("authenticated"):
@@ -293,12 +292,12 @@ async def _show_all_async(adapter_name: str, json_output: bool) -> None:
                 if auth_status.get("host"):
                     console.print(f"Host:           {auth_status.get('host')}")
             else:
-                console.print(f"Auth:           [red]✗[/red] Not authenticated")
-        
+                console.print("Auth:           [red]✗[/red] Not authenticated")
+
         console.print(f"Sessions:       {session_count}")
         console.print(f"Checkpoints:    {checkpoint_count}")
         console.print()
-        
+
         # Adapters
         console.print("[bold]Adapters:[/bold]")
         for info in adapter_info:
@@ -309,7 +308,7 @@ async def _show_all_async(adapter_name: str, json_output: bool) -> None:
                 default = " (default)" if name == "copilot" else ""
                 console.print(f"  {name:14} [green]✓[/green] Available{default}")
         console.print()
-        
+
         # Models
         if models:
             console.print("[bold]Models:[/bold]")
