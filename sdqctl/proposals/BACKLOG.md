@@ -16,7 +16,7 @@ No critical items.
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| **Consolidate run+cycle → iterate** | Medium | See [ITERATE-CONSOLIDATION.md](ITERATE-CONSOLIDATION.md) - Phase 1-5 |
+| **Consolidate run+cycle → iterate** | Medium | See [ITERATE-CONSOLIDATION.md](ITERATE-CONSOLIDATION.md) - **Phase 1 complete (8bcefb5)**, Phase 2-5 remaining |
 | **Mixed prompt/file CLI support** | Medium | Variadic targets, see ITERATE-CONSOLIDATION.md Phase 6 |
 | **`---` separator syntax** | Low | Force turn boundaries in mixed mode |
 
