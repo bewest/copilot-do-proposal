@@ -27,7 +27,6 @@ No critical items.
 | **Document-based elision logic** | Medium | Default merge, `---` breaks - part of iterate Phase 6 |
 | Extract StepExecutor from iterate.py | Medium | See [Architecture Roadmap](#architecture-roadmap) |
 | Create shared ExecutionContext dataclass | Low | Unify adapter initialization |
-| Audit refcat.py path handling | Low | Verify traversal prevention |
 | Add RUN-ENV secret masking | Low | Mask env vars in logs |
 | CONSULT-DIRECTIVE Phase 4 | Low | Timeout, partial save refinements |
 | claude/openai adapter stubs | Medium | Implement or clarify scope in ADAPTERS.md |
@@ -221,7 +220,7 @@ Documented in [`docs/SECURITY-MODEL.md`](../docs/SECURITY-MODEL.md).
 | Issue | Severity | Notes |
 |-------|----------|-------|
 | Shell injection via ALLOW-SHELL | HIGH | Documented; disabled by default |
-| Path traversal (refcat.py) | MEDIUM | Audit pending (P2) |
+| ~~Path traversal (refcat.py)~~ | ~~MEDIUM~~ | ✅ AUDITED (2026-01-25) - Not a vuln; CLI reads with user perms like cat/grep |
 | RUN_ENV allows LD_PRELOAD | MEDIUM | Consider whitelist |
 | OUTPUT-FILE path injection | LOW | Validate paths |
 | ~~RUN-ASYNC resource leak~~ | ~~MEDIUM~~ | ✅ FIXED (2026-01-25) - Cleanup in finally block |
