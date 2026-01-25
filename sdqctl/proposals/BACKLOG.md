@@ -125,7 +125,7 @@ Handler uses session-level `_send_*` state that resets each `send()` call.
 | **P3** | Test quality improvements | Testing |
 | **P3** | Troubleshooting guide | Documentation |
 | ~~**P3**~~ | ~~Session modes comparison table~~ | ~~Documentation~~ | ✅ 2026-01-25 |
-| **P3** | Verbose logging quick reference | Documentation |
+| ~~**P3**~~ | ~~Verbose logging quick reference~~ | ~~Documentation~~ | ✅ 2026-01-25 |
 
 ---
 
@@ -756,7 +756,7 @@ The security model for shell execution and file handling is now documented.
 |-----|----------|-------|--------|
 | Troubleshooting guide | P3 | Common errors + fixes; currently scattered across QUIRKS.md | 🔲 Open |
 | ~~Session modes comparison table~~ | ~~P3~~ | ~~`accumulate` vs `compact` vs `fresh` decision guide with use cases~~ | ✅ 2026-01-25 |
-| Verbose logging quick reference | P3 | One-page reference for `-v` through `-vvv` with what each shows | 🔲 Open |
+| ~~Verbose logging quick reference~~ | ~~P3~~ | ~~One-page reference for `-v` through `-vvv` with what each shows~~ | ✅ 2026-01-25 |
 
 ---
 

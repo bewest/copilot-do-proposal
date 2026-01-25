@@ -69,6 +69,55 @@ Suppresses all output except errors:
 sdqctl -q run workflow.conv  # Errors only
 ```
 
+### Verbosity Quick Reference
+
+What you'll see at each level:
+
+| Level | Errors | Warnings | Progress | Tools | Reasoning | Raw Events |
+|-------|--------|----------|----------|-------|-----------|------------|
+| `-q` (quiet) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| (default) | ✅ | ✅ | Final only | ❌ | ❌ | ❌ |
+| `-v` (INFO) | ✅ | ✅ | Cycle/prompt | Summary | ❌ | ❌ |
+| `-vv` (DEBUG) | ✅ | ✅ | Detailed | Names + timing | Summaries | ❌ |
+| `-vvv` (TRACE) | ✅ | ✅ | All | Full args/output | Full text | ✅ |
+
+**Example output at each level:**
+
+```
+# -q (quiet): Nothing unless error
+(no output)
+
+# (default): Just the final result
+Analysis complete. 3 issues found.
+
+# -v (INFO): Progress + context
+[Cycle 1/3] Prompt 1/4 (ctx: 23%): Sending...
+[Cycle 1/3] Prompt 1/4 (ctx: 31%): Complete (3.2s)
+🔧 Tool: view
+✓ view (0.8s)
+
+# -vv (DEBUG): Streaming + tool details
+[Cycle 1/3] Prompt 1/4 (ctx: 23%): "Analyze authentication..."
+Agent: I'll examine the authentication module...
+🔧 Tool: view → path="/lib/auth.py"
+✓ view (0.8s) → 2,341 chars
+
+# -vvv (TRACE): Everything including raw SDK events
+[SDK] turn.started: turn_id=abc123
+[SDK] tool.execution_started: tool=view, id=xyz789
+[SDK] tool.execution_complete: duration=0.8s
+Agent reasoning: The authentication module uses...
+```
+
+**When to use each:**
+
+| Use Case | Recommended |
+|----------|-------------|
+| CI/CD pipelines | `-q` or default |
+| Normal development | `-v` |
+| Debugging workflows | `-vv` |
+| SDK troubleshooting | `-vvv` |
+
 ## Progress Indicators
 
 Progress messages show cycle, prompt, and context usage:
