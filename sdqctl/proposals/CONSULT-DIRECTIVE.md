@@ -1,10 +1,11 @@
 # Proposal: CONSULT Directive - Human Consultation Workflow
 
 **Date:** 2026-01-25  
-**Status:** Partial (Phase 1-3 Complete)  
+**Status:** ✅ Verified (Phase 1-3 Complete, End-to-End Tested)  
 **Author:** bewest + sdqctl planning session  
 **Related:** PAUSE directive, SDK-SESSION-PERSISTENCE, session resume  
-**Example:** [`examples/workflows/consult-design.conv`](../examples/workflows/consult-design.conv)
+**Example:** [`examples/workflows/consult-design.conv`](../examples/workflows/consult-design.conv)  
+**Test Report:** [`reports/consult-test-report-2026-01-25.md`](../reports/consult-test-report-2026-01-25.md)
 
 ---
 
@@ -343,11 +344,14 @@ CONSULT "..."
 
 ## Success Criteria
 
-1. Workflow pauses at CONSULT directive
-2. Human can resume with `copilot --resume session-name`
-3. Agent proactively presents open questions on resume
-4. Agent uses `ask_user` for structured question collection
-5. Workflow continues after questions answered
+1. ✅ Workflow pauses at CONSULT directive
+2. ✅ Human can resume with `copilot --resume session-name` (via UUID, see Q-018)
+3. ✅ Agent proactively presents open questions on resume
+4. ✅ Agent uses `ask_user` for structured question collection
+5. ✅ Workflow continues after questions answered
+
+> **Verified**: 2026-01-25 - All success criteria met. See [test report](../reports/consult-test-report-2026-01-25.md).
+> **Q-018 Fixed**: Resume messages now show correct SDK session UUID (2026-01-25).
 
 ---
 

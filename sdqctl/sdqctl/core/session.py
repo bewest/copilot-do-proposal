@@ -69,6 +69,7 @@ class Session:
         self.conversation = conversation
         self.adapter = adapter
         self.session_dir = session_dir or Path.home() / ".sdqctl" / "sessions" / self.id
+        self.sdk_session_id: Optional[str] = None  # SDK's session UUID for resume (Q-018)
 
         # Initialize state
         self.state = SessionState(
@@ -205,6 +206,7 @@ class Session:
             "status": self.state.status,  # Include session status (e.g., "consulting")
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "session_id": self.id,
+            "sdk_session_id": self.sdk_session_id,  # SDK's UUID for resume (Q-018)
             "conversation_file": str(self.conversation.source_path) if self.conversation.source_path else None,
             "conversation_inline": self.conversation.to_string() if not self.conversation.source_path else None,
             "cycle_number": self.state.cycle_number,
@@ -247,6 +249,7 @@ class Session:
         # Create session
         session = cls(conv, session_dir=checkpoint_path.parent)
         session.id = data["session_id"]
+        session.sdk_session_id = data.get("sdk_session_id")  # Restore SDK UUID (Q-018)
         session.state.cycle_number = data["cycle_number"]
         session.state.prompt_index = data["prompt_index"]
 

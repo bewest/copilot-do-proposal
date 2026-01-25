@@ -16,6 +16,7 @@ This document catalogs non-obvious behaviors discovered while developing and usi
 
 | ID | Quirk | Status | Resolution |
 |----|-------|--------|------------|
+| Q-018 | Session ID mismatch between checkpoint and SDK | ✅ FIXED | Store SDK session UUID in checkpoint (2026-01-25) |
 | Q-016 | 5 undefined name bugs (F821) | ✅ FIXED | Variables corrected, TYPE_CHECKING import added (2026-01-25) |
 | Q-013 | Tool name shows "unknown" in completion logs | ✅ FIXED | Root cause was Q-014; handler fix resolves (2026-01-25) |
 | Q-014 | Event handler multiplexing in accumulate mode | ✅ FIXED | Handler registered once per session (2026-01-25) |
@@ -96,6 +97,49 @@ All 5 bugs fixed with minimal changes:
 ```bash
 $ ruff check sdqctl/ --select F821
 All checks passed!
+```
+
+---
+
+## Q-018: Session ID Mismatch Between Checkpoint and SDK
+
+**Priority:** P2 - Medium (UX friction)  
+**Discovered:** 2026-01-25 (CONSULT feature testing)  
+**Status:** ✅ FIXED (2026-01-25)
+
+### Description
+
+When a workflow pauses at CONSULT (or PAUSE), sdqctl saves a checkpoint with a short session ID (e.g., `8b41b034`), but the Copilot SDK session uses a full UUID (e.g., `9859f571-b938-4b72-a8d0-472c4c3304e3`). The resume commands don't work with the checkpoint ID.
+
+### Resolution
+
+Implemented Option A: Store SDK session UUID in checkpoint metadata.
+
+**Changes:**
+1. Added `sdk_session_id` field to `AdapterSession` dataclass in `adapters/base.py`
+2. Capture `copilot_session.session_id` in `CopilotAdapter.create_session()`
+3. Store `sdk_session_id` in `pause.json` checkpoint via `Session.save_pause_checkpoint()`
+4. Resume messages now show the correct SDK session ID for `sdqctl sessions resume`
+
+**Files modified:**
+- `sdqctl/adapters/base.py` - Added `sdk_session_id: Optional[str]` field
+- `sdqctl/adapters/copilot.py` - Capture SDK session ID on session creation
+- `sdqctl/core/session.py` - Store/load `sdk_session_id` in checkpoint
+- `sdqctl/commands/run.py` - Wire up SDK session ID, update resume messages
+- `sdqctl/commands/cycle.py` - Wire up SDK session ID
+
+**Before:**
+```bash
+# Checkpoint shows short ID that doesn't work for resume
+Checkpoint saved: ~/.sdqctl/sessions/8b41b034/pause.json
+To resume: copilot --resume consult-test  # Fails
+```
+
+**After:**
+```bash
+# Checkpoint shows full SDK UUID that works
+Checkpoint saved: ~/.sdqctl/sessions/8b41b034/pause.json
+To resume: sdqctl sessions resume 9859f571-b938-4b72-a8d0-472c4c3304e3  # Works
 ```
 
 ---

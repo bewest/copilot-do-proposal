@@ -338,11 +338,14 @@ class CopilotAdapter(AdapterBase):
         copilot_session = await self.client.create_session(session_config)
 
         session_id = str(uuid.uuid4())[:8]
+        # Capture SDK's session UUID for checkpoint resume (Q-018 fix)
+        sdk_session_id = getattr(copilot_session, 'session_id', None)
         session = AdapterSession(
             id=session_id,
             adapter=self,
             config=config,
             _internal=copilot_session,
+            sdk_session_id=sdk_session_id,
         )
 
         self.sessions[session_id] = copilot_session

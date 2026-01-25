@@ -750,6 +750,9 @@ async def _run_async(
         else:
             adapter_session = await ai_adapter.create_session(adapter_config)
 
+        # Store SDK session ID for checkpoint resume (Q-018)
+        session.sdk_session_id = adapter_session.sdk_session_id
+
         try:
             session.state.status = "running"
             responses = []
@@ -880,7 +883,11 @@ async def _run_async(
 
                         console.print(f"\n[yellow]⏸  PAUSED: {pause_msg}[/yellow]")
                         console.print(f"[dim]Checkpoint saved: {checkpoint_path}[/dim]")
-                        console.print(f"\n[bold]To resume:[/bold] sdqctl resume {checkpoint_path}")
+                        # Show resume with SDK session ID (Q-018)
+                        if session.sdk_session_id:
+                            console.print(f"\n[bold]To resume:[/bold] sdqctl sessions resume {session.sdk_session_id}")
+                        else:
+                            console.print(f"\n[bold]To resume:[/bold] sdqctl resume {checkpoint_path}")
                         return  # Session cleanup handled by finally blocks
 
                     # Check for CONSULT after this prompt
@@ -894,8 +901,10 @@ async def _run_async(
                         console.print("[dim]Session paused for human consultation.[/dim]")
                         console.print(f"[dim]Checkpoint saved: {checkpoint_path}[/dim]")
 
-                        # Show session name for resume if available
-                        if conv.session_name:
+                        # Show resume instructions with SDK session ID (Q-018)
+                        if session.sdk_session_id:
+                            console.print(f"\n[bold]To resume:[/bold] sdqctl sessions resume {session.sdk_session_id}")
+                        elif conv.session_name:
                             console.print(f"\n[bold]To resume:[/bold] copilot --resume {conv.session_name}")
                         else:
                             console.print(f"\n[bold]To resume:[/bold] sdqctl resume {checkpoint_path}")

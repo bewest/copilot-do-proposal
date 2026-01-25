@@ -16,13 +16,16 @@ No critical items.
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| ~~Split `run()` function (~1000 lines)~~ | ~~High~~ | Superseded by iterate consolidation |
+| **Consolidate run+cycle → iterate** | Medium | See [ITERATE-CONSOLIDATION.md](ITERATE-CONSOLIDATION.md) - Phase 1-5 |
+| **Mixed prompt/file CLI support** | Medium | Variadic targets, see ITERATE-CONSOLIDATION.md Phase 6 |
+| **`---` separator syntax** | Low | Force turn boundaries in mixed mode |
 
 ### P2: Medium
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| **Consolidate run+cycle → iterate** | Medium | See [ITERATE-CONSOLIDATION.md](ITERATE-CONSOLIDATION.md) ✅ Ready |
+| **Document-based elision logic** | Medium | Default merge, `---` breaks - part of iterate Phase 6 |
+| **Create docs/CONVERSATION-LIFECYCLE.md** | Medium | Lifecycle phases, turn structure, injection points |
 | Extract StepExecutor from iterate.py | Medium | See [Architecture Roadmap](#architecture-roadmap) |
 | Create shared ExecutionContext dataclass | Low | Unify adapter initialization |
 | Audit refcat.py path handling | Low | Verify traversal prevention |
@@ -38,6 +41,7 @@ No critical items.
 
 | Item | Effort | Notes |
 |------|--------|-------|
+| **Groom QUIRKS.md** | Low | Archive resolved, extract learnings to docs. See [below](#quirks-grooming) |
 | Fix E501 lint issues (192 remaining) | Low | Refactor during normal development |
 | Review F841 unused variables (5) | Low | Needs manual review |
 | Split conversation.py (~1768 lines) | High | parser.py, validator.py, directives.py |
@@ -157,6 +161,39 @@ adapters/copilot/
 | Integration test files | 1 | 5+ |
 | Code duplication (run/cycle) | ~500 lines | <100 lines |
 
+### QUIRKS Grooming (P3)
+
+**Problem**: `docs/QUIRKS.md` has grown to 889 lines with 14 quirks. Resolved quirks have detailed sections that could be archived.
+
+**Current State**:
+- 1 active quirk (Q-017)
+- 13 resolved quirks with full investigation details
+- Valuable learnings embedded in resolved quirk descriptions
+
+**Proposed Structure**:
+
+| File | Purpose |
+|------|---------|
+| `docs/QUIRKS.md` | Active quirks only (status tracker) |
+| `archive/quirks/` | Archived resolved quirks with full details |
+| `docs/SDK-LEARNINGS.md` | Extracted patterns/learnings from resolved quirks |
+
+**Tasks**:
+
+| Task | Effort | Status |
+|------|--------|--------|
+| Create `archive/quirks/` directory | Low | 🔲 Open |
+| Move resolved Q-001 to Q-005 to archive | Low | 🔲 Open |
+| Move resolved Q-010 to Q-016 to archive | Low | 🔲 Open |
+| Extract SDK learnings to `docs/SDK-LEARNINGS.md` | Medium | 🔲 Open |
+| Update QUIRKS.md to reference archive | Low | 🔲 Open |
+| Keep quick reference table with archive links | Low | 🔲 Open |
+
+**Target State**:
+- QUIRKS.md: <200 lines (active quirks + quick reference)
+- Resolved quirks archived with full context preserved
+- SDK learnings extracted for future reference
+
 ---
 
 ## Proposals Status
@@ -168,9 +205,9 @@ adapters/copilot/
 | [PIPELINE-ARCHITECTURE](PIPELINE-ARCHITECTURE.md) | ✅ Complete | --from-json + schema_version |
 | [STPA-INTEGRATION](STPA-INTEGRATION.md) | ✅ Complete | Templates + traceability verifier |
 | [CLI-ERGONOMICS](CLI-ERGONOMICS.md) | ✅ Complete | Help implemented |
-| [ITERATE-CONSOLIDATION](ITERATE-CONSOLIDATION.md) | 🟡 Ready | run+cycle → iterate |
+| [ITERATE-CONSOLIDATION](ITERATE-CONSOLIDATION.md) | 🟡 Ready | run+cycle → iterate + mixed prompts (Phase 6) |
 | [MODEL-REQUIREMENTS](MODEL-REQUIREMENTS.md) | ✅ Complete | All 4 phases |
-| [CONSULT-DIRECTIVE](CONSULT-DIRECTIVE.md) | Partial | Phase 4 pending (timeout, partial save) |
+| [CONSULT-DIRECTIVE](CONSULT-DIRECTIVE.md) | ✅ Verified | Phase 1-3 complete, tested. Phase 4 optional |
 | [ARTIFACT-TAXONOMY](ARTIFACT-TAXONOMY.md) | ✅ Complete | Taxonomy + CLI |
 | [ERROR-HANDLING](ERROR-HANDLING.md) | ✅ Complete | All phases |
 | [SDK-INFINITE-SESSIONS](SDK-INFINITE-SESSIONS.md) | ✅ Complete | Native SDK compaction |

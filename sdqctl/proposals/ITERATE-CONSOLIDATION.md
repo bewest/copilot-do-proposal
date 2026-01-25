@@ -786,9 +786,157 @@ def iterate(ctx, target, from_json, max_cycles, session_mode, ...):
 
 ---
 
+## Phase 6: Mixed Prompt List Support
+
+> **Added**: 2026-01-25  
+> **Status**: Designed  
+> **Depends on**: Phases 1-5 complete
+
+### Problem
+
+Current CLI accepts only ONE target (either a .conv file OR an inline prompt). Users need to:
+1. Mix inline prompts with .conv file content
+2. Control where CLI prologues/epilogues inject relative to .conv content
+3. Explicitly control elision vs separate turns
+
+### Solution: Variadic Targets with Separator Syntax
+
+Change `target` argument to variadic `targets`:
+
+```python
+@click.argument("targets", nargs=-1)  # Variadic: prompts and/or one .conv
+```
+
+**Mixed prompt example:**
+```bash
+sdqctl iterate --prologue "A" "promptB" work.conv "promptC" --epilogue "D"
+```
+
+**Turn structure (document-based elision by default):**
+```
+Turn 1: [CLI prologue A] + [.conv prologues] + [promptB] + [first .conv prompt]
+Turn 2..N-1: remaining .conv prompts (each gets own turn as defined in file)
+Turn N: [last .conv prompt] + [.conv epilogues] + [promptC] + [CLI epilogue D]
+```
+
+### Separator Syntax: `---`
+
+Use `---` to force turn boundaries:
+
+```bash
+sdqctl iterate --prologue "A" --- "promptB" --- work.conv "promptC"
+```
+
+**Turn structure with separators:**
+```
+Turn 1: [CLI prologue A]
+Turn 2: [promptB]
+Turn 3+: work.conv prompts with promptC elided into final turn
+```
+
+### Constraints
+
+- Maximum ONE .conv file in mixed mode
+- `---` is reserved (cannot be used as prompt content)
+- Mixed mode requires at least one item
+
+### Implementation
+
+```python
+@dataclass
+class TurnGroup:
+    """A group of items that will be elided into a single turn."""
+    items: list[str]  # Each item is a prompt string or .conv path
+    
+def parse_targets(targets: tuple[str, ...]) -> list[TurnGroup]:
+    """Parse mixed targets into turn groups separated by ---."""
+    groups = []
+    current = []
+    for t in targets:
+        if t == "---":
+            if current:
+                groups.append(TurnGroup(current))
+                current = []
+        else:
+            current.append(t)
+    if current:
+        groups.append(TurnGroup(current))
+    return groups
+
+def validate_targets(groups: list[TurnGroup]) -> None:
+    """Validate mixed target constraints."""
+    conv_files = []
+    for group in groups:
+        for item in group.items:
+            if Path(item).exists() and Path(item).suffix in (".conv", ".copilot"):
+                conv_files.append(item)
+    if len(conv_files) > 1:
+        raise click.UsageError(
+            f"Mixed mode allows only ONE .conv file, found {len(conv_files)}: {conv_files}"
+        )
+```
+
+### Updated CLI Signature
+
+```python
+@click.command("iterate")
+@click.argument("targets", nargs=-1)  # Changed from "target"
+# ... existing options ...
+def iterate(ctx, targets, from_json, max_cycles, session_mode, ...):
+    """Execute a workflow with optional multi-cycle iteration.
+    
+    TARGETS can be a mix of .conv file paths and inline prompt strings.
+    Use --- between items to force separate turns (default: adjacent items elide).
+    Maximum one .conv file allowed in mixed mode.
+    
+    Examples:
+    
+    \b
+    # Single .conv file
+    sdqctl iterate workflow.conv
+    
+    \b
+    # Inline prompt
+    sdqctl iterate "Audit authentication module"
+    
+    \b
+    # Mixed: prompts + .conv (items elide at boundaries)
+    sdqctl iterate "Setup context" workflow.conv "Final summary"
+    
+    \b
+    # Mixed with separators (force separate turns)
+    sdqctl iterate "First task" --- workflow.conv --- "Separate final task"
+    
+    \b
+    # With prologues/epilogues
+    sdqctl iterate --prologue "You are an auditor" workflow.conv --epilogue "Summarize"
+    """
+```
+
+### Phase 6 Checklist
+
+- [ ] Change `target` to variadic `targets` argument
+- [ ] Implement `parse_targets()` separator parsing
+- [ ] Implement `validate_targets()` constraint checking
+- [ ] Update turn building logic for elision
+- [ ] Add unit tests for separator parsing
+- [ ] Add integration tests for mixed mode
+- [ ] Update help text and examples
+
+### Documentation
+
+Create `docs/CONVERSATION-LIFECYCLE.md` to document:
+- Lifecycle phases (parse → validate → render → execute → compact)
+- Turn structure and elision semantics
+- Prologue/epilogue injection points
+- Mixed prompt mode with examples
+
+---
+
 ## References
 
 - [CLI-ERGONOMICS.md](CLI-ERGONOMICS.md) - Original investigation
 - [RUN-RENAME-ANALYSIS.md](RUN-RENAME-ANALYSIS.md) - Candidate analysis (superseded)
 - [PHILOSOPHY.md](../docs/PHILOSOPHY.md) - Design principles
 - [BACKLOG.md](BACKLOG.md) - Priority tracking
+- [CONVERSATION-LIFECYCLE.md](../docs/CONVERSATION-LIFECYCLE.md) - Lifecycle documentation (planned)

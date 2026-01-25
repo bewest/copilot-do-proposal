@@ -388,6 +388,7 @@ async def _cycle_from_json_async(
 
     # Create adapter session
     adapter_session = await ai_adapter.create_session(adapter_config)
+    session.sdk_session_id = adapter_session.sdk_session_id  # Q-018 fix
 
     try:
         responses = []
@@ -657,6 +658,7 @@ async def _cycle_async(
                 infinite_sessions=infinite_config,
             )
         )
+        session.sdk_session_id = adapter_session.sdk_session_id  # Q-018 fix
 
         try:
             session.state.status = "running"

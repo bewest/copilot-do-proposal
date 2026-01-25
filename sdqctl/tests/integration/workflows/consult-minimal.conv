@@ -1,0 +1,55 @@
+# Minimal CONSULT Directive Test
+# Tests the core CONSULT functionality in isolation
+#
+# Run: ./test-consult.sh --minimal
+# Or:  sdqctl run tests/integration/workflows/consult-minimal.conv
+#
+# Expected behavior:
+# 1. Agent analyzes and identifies 2-3 simple questions
+# 2. Workflow pauses at CONSULT
+# 3. On resume, agent presents questions via ask_user
+# 4. After answers, workflow continues to final prompt
+
+MODEL gpt-4
+ADAPTER copilot
+SESSION-NAME consult-test
+MODE analyze
+
+MAX-CYCLES 1
+CONTEXT-LIMIT 50%
+ON-CONTEXT-LIMIT compact
+
+# Setup: Give agent a simple task with clear decision points
+PROLOGUE You are testing the CONSULT directive feature.
+PROLOGUE Your job is to identify open questions and present them on resume.
+
+PROMPT |
+  We are designing a simple TODO app feature. Consider these requirements:
+  
+  1. Users can create tasks with a title
+  2. Tasks can be marked complete
+  3. Tasks should have some organization system
+  
+  Identify exactly 3 design decisions that need human input:
+  - Question 1: How should tasks be organized? (by date, by project, by priority)
+  - Question 2: Should completed tasks be hidden or shown?
+  - Question 3: Any additional field for tasks? (notes, due date, tags)
+  
+  List these as "Open Questions" that need human consultation.
+
+# This is the CONSULT point - workflow pauses here
+# On resume, agent should present the questions interactively
+CONSULT "TODO App Design Decisions"
+
+# This prompt runs AFTER the human answers questions
+PROMPT |
+  The design decisions have been made. Summarize:
+  
+  1. What organization method was chosen?
+  2. How are completed tasks handled?
+  3. What additional fields were added?
+  
+  Create a brief implementation spec based on these decisions.
+  Keep the summary under 200 words.
+
+OUTPUT-FORMAT markdown

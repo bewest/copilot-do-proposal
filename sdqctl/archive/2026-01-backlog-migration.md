@@ -202,8 +202,15 @@ All verifiers implemented:
 
 ## Quirks Resolved
 
-All quirks Q-001 through Q-016 resolved as of 2026-01-25.
+All quirks Q-001 through Q-018 resolved as of 2026-01-25.
 See [docs/QUIRKS.md](../docs/QUIRKS.md) for details.
+
+| Quirk | Resolution | Date |
+|-------|------------|------|
+| Q-018 | SDK session UUID stored in checkpoint for resume | 2026-01-25 |
+| Q-016 | Undefined name bugs fixed | 2026-01-25 |
+| Q-014/Q-015 | Event handler leak and duplicate tools | 2026-01-25 |
+| Q-013 | Tool name "unknown" in logs | 2026-01-25 |
 
 ---
 

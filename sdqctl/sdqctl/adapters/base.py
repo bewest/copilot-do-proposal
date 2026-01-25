@@ -67,6 +67,7 @@ class AdapterSession:
     adapter: "AdapterBase"
     config: AdapterConfig
     _internal: Any = None  # Adapter-specific session object
+    sdk_session_id: Optional[str] = None  # SDK's session UUID for resume
 
 
 class AdapterBase(ABC):

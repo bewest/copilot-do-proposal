@@ -1,0 +1,24 @@
+{
+  "reason": "Design decisions require human consultation before proceeding",
+  "needs_review": true,
+  "open_questions": [
+    {
+      "id": 1,
+      "question": "How should tasks be organized?",
+      "options": ["by date", "by project", "by priority"],
+      "context": "Organization system affects UX and data model design"
+    },
+    {
+      "id": 2,
+      "question": "Should completed tasks be hidden or shown?",
+      "options": ["hidden by default", "shown by default", "user toggle"],
+      "context": "Affects default view and UI complexity"
+    },
+    {
+      "id": 3,
+      "question": "Any additional fields for tasks?",
+      "options": ["notes", "due date", "tags", "none"],
+      "context": "Impacts task schema and feature scope"
+    }
+  ]
+}
