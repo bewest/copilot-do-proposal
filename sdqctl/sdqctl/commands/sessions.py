@@ -297,3 +297,84 @@ async def _cleanup_sessions_async(cutoff: datetime, dry_run: bool, adapter_name:
             await ai_adapter.stop()
     except Exception as e:
         console.print(f"[red]Error during cleanup: {e}[/red]")
+
+
+@sessions.command("resume")
+@click.argument("session_id")
+@click.option("--prompt", "-p", help="Send an immediate prompt after resuming")
+@click.option("--adapter", "-a", default="copilot", help="Adapter to use (default: copilot)")
+@click.option("--model", "-m", help="Model to use for resumed session")
+@click.option("--streaming/--no-streaming", default=True, help="Enable/disable streaming output")
+def resume_session_cmd(
+    session_id: str,
+    prompt: Optional[str],
+    adapter: str,
+    model: Optional[str],
+    streaming: bool,
+):
+    """Resume a previous conversation session.
+    
+    Restores conversation history and continues from where you left off.
+    Use --prompt to send an immediate message.
+    
+    \b
+    Examples:
+      sdqctl sessions resume security-audit-2026-01
+      sdqctl sessions resume my-session --prompt "Continue with auth module"
+    """
+    run_async(_resume_session_async(
+        session_id=session_id,
+        prompt=prompt,
+        adapter_name=adapter,
+        model=model,
+        streaming=streaming,
+    ))
+
+
+async def _resume_session_async(
+    session_id: str,
+    prompt: Optional[str],
+    adapter_name: str,
+    model: Optional[str],
+    streaming: bool,
+):
+    """Async implementation of resume session command."""
+    from ..adapters.base import AdapterConfig
+    from rich.markdown import Markdown
+    from rich.panel import Panel
+    
+    try:
+        ai_adapter = get_adapter(adapter_name)
+        await ai_adapter.start()
+        
+        try:
+            # Build config for resumed session
+            config = AdapterConfig(
+                model=model or "gpt-4",
+                streaming=streaming,
+            )
+            
+            # Resume the session
+            console.print(f"[dim]Resuming session: {session_id}[/dim]")
+            session = await ai_adapter.resume_session(session_id, config)
+            console.print(f"[green]✓[/green] Session resumed")
+            
+            # Send prompt if provided
+            if prompt:
+                console.print(Panel(prompt, title="Prompt", border_style="blue"))
+                
+                response = await ai_adapter.send(session, prompt)
+                
+                # Display response
+                if response:
+                    md = Markdown(response)
+                    console.print(Panel(md, title="Response", border_style="green"))
+            else:
+                console.print(
+                    "\n[dim]Session resumed. Use --prompt to send a message.[/dim]"
+                )
+        finally:
+            await ai_adapter.stop()
+            
+    except Exception as e:
+        console.print(f"[red]Error resuming session: {e}[/red]")

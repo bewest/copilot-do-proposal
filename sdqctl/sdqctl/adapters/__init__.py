@@ -1,12 +1,13 @@
 """Adapter interface for AI providers."""
 
-from .base import AdapterBase, AdapterConfig, CompactionResult
+from .base import AdapterBase, AdapterConfig, CompactionResult, InfiniteSessionConfig
 from .registry import get_adapter, list_adapters, register_adapter
 
 __all__ = [
     "AdapterBase",
     "AdapterConfig",
     "CompactionResult",
+    "InfiniteSessionConfig",
     "get_adapter",
     "list_adapters",
     "register_adapter",

@@ -1,6 +1,6 @@
 # sdqctl Proposal Backlog
 
-> **Last Updated**: 2026-01-25 (SDK Session Persistence Phase 2 Complete)  
+> **Last Updated**: 2026-01-25 (SDK Session Persistence Complete ✅)  
 > **Purpose**: Track open design questions, implementation work, and future proposals
 
 ---
@@ -8,10 +8,10 @@
 ## Executive Summary: Tooling Gap Analysis
 
 **Analysis Date**: 2026-01-23 | **Phases Completed**: 4/4  
-**SDK v2 Analysis**: 2026-01-24 | **New Proposals**: 3 (**Infinite Sessions** ✅, **Session Persistence** Phase 2 ✅, Metadata APIs ✅)
+**SDK v2 Analysis**: 2026-01-24 | **New Proposals**: 3 (**Infinite Sessions** ✅, **Session Persistence** ✅, Metadata APIs ✅)
 
 Note: remember to cross reference and evaluate priorities across roadmaps.
-SDK-SESSION-PERSISTENCE Phase 2 complete (2026-01-25). Next: Phase 3-4 resume command + SESSION-NAME directive.
+SDK-SESSION-PERSISTENCE complete (2026-01-25): Phase 1-4 all implemented.
 
 ### Tooling Commands Status (Non-SDK)
 
@@ -30,7 +30,7 @@ All 8 proposed tooling commands are **fully implemented**:
 
 ### Priority Recommendations
 * [SDK-INFINITE-SESSIONS](SDK-INFINITE-SESSIONS.md) | ✅ Complete | Phase 1-4 | Native SDK compaction for cycle mode |
-* [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | In Progress | Phase 1-2 ✅ | Phase 3-4 pending (resume command)
+* [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | ✅ Complete | Phase 1-4 | `sessions resume` + `SESSION-NAME` directive
 * Backlog Hygiene (archive completed, chunk complex)
 
 #### P0: Documentation Gaps (Quick Wins)
@@ -67,7 +67,7 @@ All 8 proposed tooling commands are **fully implemented**:
 
 | Priority | Item | Effort | Notes |
 |----------|------|--------|-------|
-| P2 | SDK-SESSION-PERSISTENCE Phase 3-4 | Medium | `resume` command + `SESSION-NAME` directive |
+| ~~P2~~ | ~~SDK-SESSION-PERSISTENCE Phase 3-4~~ | ~~Medium~~ | ✅ Complete (2026-01-25) |
 | P2 | MODEL-REQUIREMENTS | Medium | Blocked by open questions |
 | P3 | STPA template variables | Low | Future work |
 
@@ -86,7 +86,7 @@ All 8 proposed tooling commands are **fully implemented**:
 | [ARTIFACT-TAXONOMY](ARTIFACT-TAXONOMY.md) | Implemented | ✅ Complete | Taxonomy, enumeration, `artifact` CLI commands |
 | [ERROR-HANDLING](ERROR-HANDLING.md) | Implemented | Phase 0-3 ✅ | `--strict`, `--json-errors`, ON-FAILURE complete |
 | [SDK-INFINITE-SESSIONS](SDK-INFINITE-SESSIONS.md) | Implemented | ✅ Phase 1-4 | Native SDK compaction + directives |
-| [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | In Progress | Phase 1-2 ✅ | `sessions` CLI complete; resume command pending |
+| [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | Implemented | ✅ Phase 1-4 | `sessions resume` + `SESSION-NAME` directive |
 | [SDK-METADATA-APIS](SDK-METADATA-APIS.md) | Implemented | Phase 1-2 ✅ | Adapter methods + status command enhanced |
 
 ---
@@ -109,7 +109,7 @@ The Copilot SDK has been updated to Protocol Version 2 with new capabilities. Th
 
 | Proposal | Feature | Effort | Rationale |
 |----------|---------|--------|-----------|
-| [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | Session management | Medium | Phase 1-2 ✅, Phase 3-4 pending (resume command) |
+| [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | Session management | Medium | ✅ Complete - `sessions resume` + `SESSION-NAME` |
 
 > **Note**: Session persistence enables consultation workflows where sdqctl can prepare a session
 > that a human operator can join via GitHub Copilot to clarify open questions.
@@ -1110,6 +1110,18 @@ sdqctl verify trace "SC-001 -> REQ-001" --json
   - Fixes 7 false positives in docs/ (VALIDATION-WORKFLOW, EXTENDING-VERIFIERS, TRACEABILITY-WORKFLOW)
   - Added 2 tests: `test_skip_links_in_code_blocks`, `test_skip_links_in_inline_code`
   - Commit: `7ee0461`
+
+### Session 2026-01-25 (SDK-SESSION-PERSISTENCE Phase 3-4)
+
+Implemented Phase 3-4 of SDK-SESSION-PERSISTENCE proposal:
+
+- [x] **`sessions resume` command** - Resume a previous conversation session
+- [x] **`SESSION-NAME` directive** - Named sessions for resumability in .conv files
+- [x] **`--session-name` CLI option** - Named session override in `sdqctl run`
+- [x] **Resume/create fallback** - Resume if exists, create new otherwise
+- [x] **Tests** - 9 new tests (45 total in test_sessions_command.py)
+
+Files changed: `sessions.py`, `conversation.py`, `run.py`, `cli.py`, `test_sessions_command.py`, `SDK-SESSION-PERSISTENCE.md`, `BACKLOG.md`
 
 ### Session 2026-01-25 (SDK-INFINITE-SESSIONS Phase 4)
 

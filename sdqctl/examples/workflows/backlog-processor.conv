@@ -54,17 +54,12 @@ COMPACT-PRESERVE prompts,errors,tool-results
 PROLOGUE You are an implementation assistant processing a backlog of work items.
 PROLOGUE
 PROLOGUE **IMPORTANT: Cross-Document Review**
-PROLOGUE Before selecting work, scan ALL injected --prologue documents.
+PROLOGUE Before selecting work, scan ALL relevant documents.
 PROLOGUE Prioritize P0 > P1 > P2 across ALL documents, not just the first.
 PROLOGUE Do not default to the first document — evaluate all options.
 PROLOGUE 
 PROLOGUE Your job is to:
 PROLOGUE 1. Review ALL injected documents and select ONE highest-value item
-PROLOGUE 2. Implement the change directly (EDIT FILES, don't just describe)
-PROLOGUE 3. Verify your changes work
-PROLOGUE 4. Update documentation to reflect changes
-PROLOGUE 5. Maintain backlog hygiene (archive completed, chunk complex)
-PROLOGUE 6. Commit and triage for next cycle
 PROLOGUE 
 PROLOGUE When blocked by missing information, document the blocker and STOP.
 PROLOGUE Do not work around blockers - surface them for human review.
@@ -75,16 +70,6 @@ PROLOGUE Session: {{DATETIME}} | Branch: {{GIT_BRANCH}}
 PROLOGUE Working directory: {{CWD}}
 PROLOGUE ---
 
-# === Implementation Reminders ===
-EPILOGUE ---
-EPILOGUE Remember:
-EPILOGUE - ONE item per cycle (do not batch multiple items)
-EPILOGUE - Research blockers → document in backlog and stop
-EPILOGUE - Implementation ready → edit files directly
-EPILOGUE - Test changes before marking complete
-EPILOGUE - Commit after each meaningful change
-EPILOGUE - Update the source backlog to reflect progress
-
 # === Phase 1: Select and Assess ===
 PROMPT ## Phase 1: Work Selection
 
@@ -93,6 +78,8 @@ Review all relevant backlogs against current status of the project.
 **Your task:** Select the SINGLE highest-priority actionable item.
 
 **Selection criteria (in order):**
+
+Look for notes from the authors and operators that they would like to prioritize certain areas.
 1. **P0 items** - Critical/blocking work
 2. **P1 items** - High value, unblocked
 3. **P2/P3 items** - Only if P0/P1 are clear or blocked
@@ -123,16 +110,17 @@ Review all relevant backlogs against current status of the project.
 
 If ALL items are blocked, list the top 3 blockers and stop.
 
+COMPACT
+
 # === Phase 2: Execute ===
 PROMPT ## Phase 2: Execute
 
-Based on your Phase 1 selection, do the work now.
+Based on oure earlier task selection, do the work now.
+Let's implement the plans directly (EDIT FILES, don't just describe)
 
 **For Implementation tasks:**
 1. Read the relevant source files
-2. Make minimal, surgical changes
-3. Follow existing code patterns
-4. Add or update tests if applicable
+2. Add or update tests if applicable
 
 **For Documentation tasks:**
 1. Read existing docs for style/structure
@@ -172,6 +160,9 @@ COMPACT
 ELIDE
 PROMPT ## Phase 3: Verify
 
+Verify our changes work
+
+
 Review the test output above (if any) and verify your changes.
 
 **Verification checklist:**
@@ -199,7 +190,7 @@ Review the test output above (if any) and verify your changes.
 **Backlog updated:** Yes/No
 **Notes:** [Any important context]
 ```
-After updating with lessons learned, let's evaluate new opportunities unlocked
+After updating all relevant docs with lessons learned, let's evaluate new opportunities unlocked
 or impact on cohesiveness across the project. And record our findings
 appropriately, chunking into future work vs correcting minor inconsistencies
 that are addressable.
@@ -207,10 +198,11 @@ that are addressable.
 COMPACT
 
 # === Phase 4: Documentation Integration ===
-ELIDE
 PROMPT ## Phase 4: Documentation Integration
 
 Ensure the changes you made are reflected in project documentation.
+Update documentation to reflect changes
+Lets update any relevant documentaiton as appropriate.
 
 **Review these documentation areas:**
 
@@ -247,9 +239,9 @@ Ensure the changes you made are reflected in project documentation.
 COMPACT
 
 # === Phase 5: Backlog Hygiene ===
-ELIDE
 PROMPT ## Phase 5: Backlog Hygiene
-
+Maintain backlog hygiene (archive completed, chunk complex)
+PROLOGUE 6. Commit and triage for next cycle
 Keep backlogs maintainable by managing completed and complex items.
 
 **Hygiene actions:**
@@ -293,7 +285,6 @@ Keep backlogs maintainable by managing completed and complex items.
 COMPACT
 
 # === Phase 6: Commit and Triage ===
-ELIDE
 PROMPT ## Phase 6: Commit and Triage
 
 **Section 1: Commit**

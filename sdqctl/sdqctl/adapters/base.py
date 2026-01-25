@@ -10,6 +10,25 @@ from typing import Any, AsyncIterator, Callable, Optional
 
 
 @dataclass
+class InfiniteSessionConfig:
+    """Configuration for SDK infinite sessions with automatic context compaction.
+    
+    When enabled, the SDK automatically manages context window limits through
+    background compaction, without requiring manual COMPACT directives.
+    
+    Attributes:
+        enabled: Whether infinite sessions are enabled (default: True for cycle mode)
+        min_compaction_density: Skip compaction if context below this % (default: 0.30)
+        background_threshold: Start background compaction at this % (default: 0.80)
+        buffer_exhaustion: Block until compaction complete at this % (default: 0.95)
+    """
+    enabled: bool = True
+    min_compaction_density: float = 0.30
+    background_threshold: float = 0.80
+    buffer_exhaustion: float = 0.95
+
+
+@dataclass
 class AdapterConfig:
     """Configuration for an adapter."""
 
@@ -22,6 +41,9 @@ class AdapterConfig:
     debug_categories: list[str] = field(default_factory=list)  # session, tool, intent, event, all
     debug_intents: bool = False  # Verbose intent tracking
     event_log: Optional[str] = None  # Path for event export
+    
+    # Infinite sessions configuration (SDK v2)
+    infinite_sessions: Optional[InfiniteSessionConfig] = None
 
 
 @dataclass

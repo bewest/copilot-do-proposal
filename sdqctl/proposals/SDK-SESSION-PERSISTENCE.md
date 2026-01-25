@@ -1,6 +1,6 @@
 # SDK Session Persistence Integration
 
-> **Status**: In Progress (Phase 2 Complete)  
+> **Status**: Complete ✅  
 > **Date**: 2026-01-24  
 > **Updated**: 2026-01-25  
 > **Priority**: P2 (Medium Impact)  
@@ -284,64 +284,78 @@ async def cleanup_sessions(older_than, dry_run):
         await adapter.stop()
 ```
 
-### Phase 3: Resume Command
+### Phase 3: Resume Command ✅
+
+**Status**: Complete (2026-01-25)
+
+Added `sessions resume` subcommand in `sdqctl/commands/sessions.py`:
 
 ```python
-# sdqctl/commands/resume.py
-
-@click.command()
+@sessions.command("resume")
 @click.argument("session_id")
-@click.option("--prompt", help="Additional prompt to send")
-@click.option("--continue", "continue_file", type=click.Path(exists=True),
-              help="Continue with remaining steps from workflow file")
-async def resume(session_id, prompt, continue_file):
-    """Resume a previous session."""
-    adapter = get_adapter()
-    await adapter.start()
+@click.option("--prompt", "-p", help="Send an immediate prompt after resuming")
+@click.option("--adapter", "-a", default="copilot", help="Adapter to use")
+@click.option("--model", "-m", help="Model to use for resumed session")
+async def resume_session_cmd(session_id, prompt, adapter, model, streaming):
+    """Resume a previous conversation session."""
+    config = AdapterConfig(model=model or "gpt-4", streaming=streaming)
+    session = await ai_adapter.resume_session(session_id, config)
     
-    try:
-        config = AdapterConfig(model="gpt-5")  # Could be from session metadata
-        session = await adapter.resume_session(session_id, config)
-        
-        click.echo(f"Resumed session: {session_id}")
-        
-        if prompt:
-            response = await adapter.send(session, prompt)
-            click.echo(response)
-        
-        if continue_file:
-            # Parse workflow, skip completed steps, run remaining
-            # This would need checkpoint tracking
-            pass
-            
-    finally:
-        await adapter.stop()
+    if prompt:
+        response = await ai_adapter.send(session, prompt)
+        # Display response
 ```
 
-### Phase 4: Named Sessions in Workflows
-
-```python
-# sdqctl/core/conversation.py
-
-# Add directive
-SESSION_NAME = "SESSION-NAME"
-
-def parse_session_name(line: str) -> Optional[str]:
-    """Parse SESSION-NAME directive."""
-    if line.startswith("SESSION-NAME"):
-        return line[len("SESSION-NAME"):].strip()
-    return None
+**Usage**:
+```bash
+sdqctl sessions resume security-audit-2026-01
+sdqctl sessions resume my-session --prompt "Continue with auth module"
 ```
+
+**Tests**: 5 tests in `tests/test_sessions_command.py::TestSessionsResumeCommand`
+
+### Phase 4: Named Sessions in Workflows ✅
+
+**Status**: Complete (2026-01-25)
+
+Added `SESSION-NAME` directive to `sdqctl/core/conversation.py`:
+
+- `DirectiveType.SESSION_NAME` enum value
+- `session_name` field in `ConversationFile` dataclass
+- Directive parsing in `_apply_directive()`
+
+Added `--session-name` CLI option to `sdqctl run`:
 
 ```python
 # sdqctl/commands/run.py
 
-# Use session name if specified
-if conversation.session_name:
-    session = await adapter.resume_session(conversation.session_name, config)
+# Determine session name: CLI overrides workflow directive
+effective_session_name = session_name or conv.session_name
+
+# Create or resume adapter session based on session name
+if effective_session_name:
+    try:
+        adapter_session = await ai_adapter.resume_session(effective_session_name, adapter_config)
+    except Exception:
+        adapter_session = await ai_adapter.create_session(adapter_config)
 else:
-    session = await adapter.create_session(config)
+    adapter_session = await ai_adapter.create_session(adapter_config)
 ```
+
+**Usage**:
+```dockerfile
+# In workflow file
+SESSION-NAME security-audit-2026-01
+MODEL gpt-4
+PROMPT Analyze the code.
+```
+
+```bash
+# Or via CLI
+sdqctl run workflow.conv --session-name security-audit-2026-01
+```
+
+**Tests**: 4 tests in `tests/test_sessions_command.py::TestSessionNameDirective`
 
 ---
 

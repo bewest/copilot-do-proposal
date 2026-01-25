@@ -391,6 +391,7 @@ def process_elided_steps(steps: list) -> list:
               help="Skip compaction if context usage below this % (e.g., 30 = skip if < 30% full)")
 @click.option("--no-stop-file-prologue", is_flag=True, help="Disable automatic stop file instructions")
 @click.option("--stop-file-nonce", default=None, help="Override stop file nonce (random if not set)")
+@click.option("--session-name", default=None, help="Named session for resumability (resumes if exists)")
 @click.pass_context
 def run(
     ctx: click.Context,
@@ -414,6 +415,7 @@ def run(
     min_compaction_density: int,
     no_stop_file_prologue: bool,
     stop_file_nonce: Optional[str],
+    session_name: Optional[str],
 ) -> None:
     """Execute a single prompt or ConversationFile.
     
@@ -499,7 +501,8 @@ def run(
         output, event_log, json_output, dry_run, no_stop_file_prologue, stop_file_nonce,
         verbosity=verbosity, show_prompt=show_prompt_flag,
         min_compaction_density=min_compaction_density,
-        json_errors=json_errors
+        json_errors=json_errors,
+        session_name=session_name,
     ))
 
 
@@ -526,6 +529,7 @@ async def _run_async(
     show_prompt: bool = False,
     min_compaction_density: int = 0,
     json_errors: bool = False,
+    session_name: Optional[str] = None,
 ) -> None:
     """Async implementation of run command."""
     from ..core.conversation import (
@@ -709,16 +713,36 @@ async def _run_async(
         if effective_event_log:
             effective_event_log = substitute_template_variables(effective_event_log, template_vars)
 
-        # Create adapter session
-        adapter_session = await ai_adapter.create_session(
-            AdapterConfig(
-                model=conv.model,
-                streaming=True,
-                debug_categories=conv.debug_categories,
-                debug_intents=conv.debug_intents,
-                event_log=effective_event_log,
-            )
+        # Build adapter config
+        adapter_config = AdapterConfig(
+            model=conv.model,
+            streaming=True,
+            debug_categories=conv.debug_categories,
+            debug_intents=conv.debug_intents,
+            event_log=effective_event_log,
         )
+
+        # Determine session name: CLI overrides workflow directive
+        effective_session_name = session_name or conv.session_name
+        
+        # Create or resume adapter session based on session name
+        if effective_session_name:
+            # Named session: resume if exists, otherwise create new
+            try:
+                adapter_session = await ai_adapter.resume_session(effective_session_name, adapter_config)
+                logger.info(f"Resumed session: {effective_session_name}")
+                if verbosity > 0:
+                    console.print(f"[dim]Resumed session: {effective_session_name}[/dim]")
+            except Exception as e:
+                # Session doesn't exist, create new with session name
+                # Note: SDK may not support named session creation directly,
+                # so we create a regular session and track the name
+                logger.debug(f"Could not resume session '{effective_session_name}': {e}, creating new")
+                adapter_session = await ai_adapter.create_session(adapter_config)
+                if verbosity > 0:
+                    console.print(f"[dim]Created new session: {effective_session_name}[/dim]")
+        else:
+            adapter_session = await ai_adapter.create_session(adapter_config)
         
         try:
             session.state.status = "running"

@@ -29,6 +29,7 @@ class DirectiveType(Enum):
     MODE = "MODE"
     MAX_CYCLES = "MAX-CYCLES"
     CWD = "CWD"
+    SESSION_NAME = "SESSION-NAME"  # Named session for resumability
 
     # Context
     CONTEXT = "CONTEXT"
@@ -266,6 +267,7 @@ class ConversationFile:
     mode: str = "full"
     max_cycles: int = 1
     cwd: Optional[str] = None
+    session_name: Optional[str] = None  # Named session for resumability
 
     # Context - context_limit default loaded from config
     context_files: list[str] = field(default_factory=list)
@@ -1067,6 +1069,8 @@ def _apply_directive(conv: ConversationFile, directive: Directive) -> None:
             conv.max_cycles = int(directive.value)
         case DirectiveType.CWD:
             conv.cwd = directive.value
+        case DirectiveType.SESSION_NAME:
+            conv.session_name = directive.value
         case DirectiveType.CONTEXT:
             conv.context_files.append(directive.value)
         case DirectiveType.CONTEXT_OPTIONAL:
