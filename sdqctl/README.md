@@ -184,11 +184,16 @@ OUTPUT-FILE security-report.md
 | `RUN-CWD` | Working directory for RUN commands |
 | `ALLOW-SHELL` | Enable shell features like pipes (true/false) |
 | `PAUSE` | Checkpoint and exit for human review |
+| `CONSULT` | Pause with proactive question presentation on resume |
+| `SESSION-NAME` | Named session for easier resume: `SESSION-NAME my-feature` |
 | `CHECKPOINT-AFTER` | When to checkpoint (each-cycle, each-prompt) |
 | `COMPACT` | Trigger compaction (with optional preserve list) |
 | `COMPACT-PRESERVE` | What to preserve during compaction |
 | `COMPACT-PROLOGUE` | Content before compacted summary |
 | `COMPACT-EPILOGUE` | Content after compacted summary |
+| `INFINITE-SESSIONS` | Enable SDK native compaction (enabled/disabled) |
+| `COMPACTION-MIN` | Min context % to trigger compaction (default: 30%) |
+| `COMPACTION-THRESHOLD` | Background compaction threshold (default: 80%) |
 | `ELIDE` | Merge adjacent elements into single prompt |
 | `VERIFY` | Run static verification (refs, traceability) |
 | `VERIFY-ON-ERROR` | Behavior on verification failure (stop, continue) |
@@ -198,6 +203,9 @@ OUTPUT-FILE security-report.md
 | `FOOTER` | Append to output (inline or @file) |
 | `OUTPUT-FORMAT` | Output format (markdown, json) |
 | `OUTPUT-FILE` | Output destination |
+| `DEBUG` | Enable debug output |
+| `DEBUG-INTENTS` | Log agent intents |
+| `EVENT-LOG` | Log all SDK events to file |
 
 ### Template Variables
 

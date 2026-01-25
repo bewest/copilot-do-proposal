@@ -608,8 +608,9 @@ All 12 design decisions are documented in [`archive/DECISIONS.md`](../archive/DE
 ### Actionable Next Steps
 
 1. **Quick wins** (< 30 min each):
-   - Add CONSULT/SESSION-NAME to README directive table
-   - Add DEBUG directives to README
+   - ~~Add CONSULT/SESSION-NAME to README directive table~~ ✅ 2026-01-25
+   - ~~Add DEBUG directives to README~~ ✅ 2026-01-25
+   - ~~Add INFINITE-SESSIONS directives to README~~ ✅ 2026-01-25
    - Add `refcat` section to GETTING-STARTED.md
    
 2. **Medium effort** (1-2 hours):
