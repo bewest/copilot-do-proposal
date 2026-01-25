@@ -70,12 +70,17 @@ All 8 proposed tooling commands are **fully implemented**:
 
 | Priority | Item | Effort | Notes |
 |----------|------|--------|-------|
-| P2 | Document `artifact` command | Medium | User-facing docs for traceability IDs |
+| P2 | Model selection guide | Medium | When to use gpt-4 vs claude vs sonnet |
 | P2 | [CONSULT-DIRECTIVE Phase 4](CONSULT-DIRECTIVE.md) | Low | Refinements (timeout, partial save) - needs design review |
-| P3 | STPA template variables | Low | Future work |
-| P3 | CI/CD workflow examples | Low | GitHub Actions integration |
+| P3 | HELP directive examples | Low | Add to GETTING-STARTED.md |
+| P3 | ON-FAILURE/ON-SUCCESS tutorial | Low | Branching directives need tutorial |
+| P3 | `validate` command tutorial | Low | CI/CD integration section |
+| P3 | Copilot skill files docs | Low | Explain purpose of init-created skills |
 
-**Completed this session:**
+**Completed this session (2026-01-25):**
+- ~~Document `artifact` command~~ ✅ Added to GETTING-STARTED.md
+- ~~`flow` command full documentation~~ ✅ Enhanced in COMMANDS.md
+- ~~`resume` vs `sessions resume` clarity~~ ✅ Clarified in COMMANDS.md
 - ~~Add `refcat` to GETTING-STARTED.md~~ ✅ (already present)
 - ~~Create `docs/COMMANDS.md`~~ ✅ (already complete)
 - ~~Create `docs/ADAPTERS.md`~~ ✅ 2026-01-25
@@ -657,12 +662,12 @@ All 12 design decisions are documented in [`archive/DECISIONS.md`](../archive/DE
 | ~~HELP directive not in GETTING-STARTED examples~~ | P3 | Duplicate of §P3 Cross-Reference | See above |
 | ~~Adapter env vars not documented~~ | P2 | COPILOT_SDK_AUTH, ANTHROPIC_API_KEY, OPENAI_API_KEY | ✅ docs/ADAPTERS.md |
 | ~~Q-014/Q-015 research blockers~~ | P0 | **FIXED**: Handler registered once per session | ✅ 2026-01-25 |
-| `ON-FAILURE`/`ON-SUCCESS` not in GETTING-STARTED | P3 | Branching directives implemented but not in tutorials | 🔲 Open |
+| ~~`ON-FAILURE`/`ON-SUCCESS` not in GETTING-STARTED~~ | P3 | Duplicate of §P3 Cross-Reference (line 622) | See above |
 | ~~Accumulate mode stability warning~~ | P2 | Q-014 fixed - accumulate mode now stable | ✅ 2026-01-25 |
 | ~~Event handler lifecycle docs~~ | P2 | Fix documented in QUIRKS.md Q-014 section | ✅ 2026-01-25 |
 | ~~Q-013 verification after Q-014 fix~~ | P1 | Root cause confirmed as Q-014 handler leak - now fixed | ✅ 2026-01-25 |
-| `validate` command not in GETTING-STARTED | P3 | Referenced in CI/CD but no tutorial section | 🔲 Open |
-| Copilot skill files not documented | P3 | `sdqctl init` creates skills but purpose not explained | 🔲 Open |
+| ~~`validate` command not in GETTING-STARTED~~ | P3 | Duplicate of §P3 Cross-Reference (line 623) | See above |
+| ~~Copilot skill files not documented~~ | P3 | Duplicate of §P3 Cross-Reference (line 624) | See above |
 
 ### Gaps Added (2026-01-25 Deep Review)
 
