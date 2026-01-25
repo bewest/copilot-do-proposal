@@ -47,8 +47,8 @@ def cli(ctx: click.Context, verbose: int, quiet: bool, show_prompt: bool, json_e
 
     \b
     Commands:
+      iterate  Execute workflow with optional multi-cycle iteration
       run      Execute single prompt or ConversationFile
-      cycle    Run multi-cycle workflow with compaction
       flow     Execute batch/parallel workflows
       apply    Apply workflow to multiple components
       status   Show session and system status
@@ -70,15 +70,13 @@ def cli(ctx: click.Context, verbose: int, quiet: bool, show_prompt: bool, json_e
 
     \b
     Examples:
-      sdqctl run "Audit authentication module"
-      sdqctl run workflow.conv --adapter copilot
-      sdqctl -vv run workflow.conv  # with debug output
-      sdqctl -P run workflow.conv   # show prompts on stderr
-      sdqctl -P run workflow.conv 2>prompts.log  # capture prompts
-      sdqctl cycle workflow.conv --max-cycles 5
+      sdqctl iterate workflow.conv              # single execution
+      sdqctl iterate workflow.conv -n 5         # multi-cycle
+      sdqctl run "Audit authentication module"  # inline prompt
+      sdqctl -vv iterate workflow.conv          # with debug output
       sdqctl flow workflows/*.conv --parallel 4
       sdqctl apply workflow.conv --components "lib/*.js" --progress progress.md
-      sdqctl --json-errors run workflow.conv 2>&1 | jq .error  # CI mode
+      sdqctl --json-errors iterate workflow.conv 2>&1 | jq .error  # CI mode
     """
     ctx.ensure_object(dict)
     ctx.obj["verbosity"] = verbose

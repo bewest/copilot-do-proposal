@@ -11,7 +11,7 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 from click.testing import CliRunner
 
-from sdqctl.commands.cycle import cycle
+from sdqctl.commands.iterate import iterate
 from sdqctl.commands.run import run
 from sdqctl.commands.apply import apply
 
@@ -47,7 +47,7 @@ def stop_file_content():
 
 
 class TestCycleStopFileCheck:
-    """Test that cycle command checks for existing stop file."""
+    """Test that iterate command checks for existing stop file."""
 
     def test_cycle_refuses_when_stop_file_exists(self, runner, temp_workflow, stop_file_content, tmp_path):
         """Cycle should refuse to run when stop file exists."""
@@ -64,7 +64,7 @@ class TestCycleStopFileCheck:
             stop_file_cwd = Path(f"STOPAUTOMATION-{nonce}.json")
             stop_file_cwd.write_text(json.dumps(stop_file_content))
             
-            result = runner.invoke(cycle, [
+            result = runner.invoke(iterate, [
                 str(workflow_path),
                 f"--stop-file-nonce={nonce}",
             ])
@@ -83,7 +83,7 @@ class TestCycleStopFileCheck:
             workflow_path.write_text(temp_workflow.read_text())
             
             # No stop file - should proceed (will fail on adapter but that's ok)
-            result = runner.invoke(cycle, [
+            result = runner.invoke(iterate, [
                 str(workflow_path),
                 f"--stop-file-nonce={nonce}",
                 "--dry-run",
@@ -198,7 +198,7 @@ class TestStopFileContentParsing:
                 "needs_review": True
             }))
             
-            result = runner.invoke(cycle, [
+            result = runner.invoke(iterate, [
                 str(workflow_path),
                 f"--stop-file-nonce={nonce}",
             ])
@@ -216,7 +216,7 @@ class TestStopFileContentParsing:
             stop_file = Path(f"STOPAUTOMATION-{nonce}.json")
             stop_file.write_text("not valid json {{{")
             
-            result = runner.invoke(cycle, [
+            result = runner.invoke(iterate, [
                 str(workflow_path),
                 f"--stop-file-nonce={nonce}",
             ])
