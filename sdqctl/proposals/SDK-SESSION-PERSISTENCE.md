@@ -3,7 +3,8 @@
 > **Status**: Draft  
 > **Date**: 2026-01-24  
 > **Priority**: P2 (Medium Impact)  
-> **Scope**: Resume, list, and delete sessions
+> **Scope**: Resume, list, and delete sessions  
+> **SDK Available**: ✅ Yes - `../../copilot-sdk/python` (Protocol Version 2)
 
 ---
 

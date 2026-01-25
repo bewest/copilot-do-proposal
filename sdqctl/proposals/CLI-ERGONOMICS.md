@@ -1,7 +1,8 @@
 # Proposal: CLI Ergonomics & Help System
 
-> **Status**: Draft (Naming Assessment Complete)  
+> **Status**: Implemented ✅  
 > **Date**: 2026-01-23  
+> **Updated**: 2026-01-25  
 > **Author**: Ben West  
 > **Scope**: Help system, command taxonomy, naming investigation  
 > **Assessment Date**: 2026-01-23

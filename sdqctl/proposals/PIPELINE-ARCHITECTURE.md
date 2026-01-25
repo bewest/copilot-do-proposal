@@ -1,7 +1,8 @@
 # Proposal: Pipeline Architecture for Workflow Composition
 
-> **Status**: Ready for Implementation  
+> **Status**: Implemented ✅  
 > **Date**: 2026-01-23  
+> **Updated**: 2026-01-25  
 > **Author**: sdqctl development  
 > **Scope**: Round-trip JSON workflows, external transformation, stdin execution  
 > **Decision**: Add schema_version field, support --from-json
