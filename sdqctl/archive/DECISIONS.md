@@ -21,6 +21,9 @@ For detailed rationale, see the linked ADRs or proposals.
 | D-010 | LSP/semantic extraction: Deferred to future work | Deferred | 2026-01-24 | — |
 | D-011 | Documentation reorganization (human vs AI): Deferred | Deferred | 2026-01-24 | — |
 | D-012 | Time-based estimates replaced with complexity labels | Accepted | 2026-01-25 | — |
+| D-013 | Feature interactions: ELIDE incompatible with branching | Accepted | 2026-01-25 | — |
+| D-014 | Code complexity thresholds: >500 lines = plan split, >1000 = required | Accepted | 2026-01-25 | — |
+| D-015 | Backlog organization: Completed work archived, active items only | Accepted | 2026-01-25 | — |
 
 ---
 
@@ -205,6 +208,53 @@ Proposed split into `reference/` (AI-optimized), `guides/` (human-optimized), an
 - **High**: Many files, architectural changes
 
 Replaced hours/days/weeks in 10 documentation files.
+
+---
+
+### D-013: Feature Interaction Matrix
+
+**Status**: Accepted  
+**Date**: 2026-01-25  
+**Document**: [docs/FEATURE-INTERACTIONS.md](../docs/FEATURE-INTERACTIONS.md)
+
+**Decision**: Document and enforce feature interaction rules.
+
+Key interactions:
+- ELIDE + RUN-BRANCHING: ❌ Parse error (branching not allowed in ELIDE chains)
+- COMPACT + VERIFY: ✅ VERIFY output treated as normal context
+- RUN-RETRY + MAX-CYCLES: ✅ Retry counts separately from cycle limit
+
+---
+
+### D-014: Code Complexity Thresholds
+
+**Status**: Accepted  
+**Date**: 2026-01-25  
+**Document**: [docs/CODE-QUALITY.md](../docs/CODE-QUALITY.md)
+
+**Decision**: Establish file size thresholds for maintainability.
+
+| Threshold | Action |
+|-----------|--------|
+| >300 lines | Consider if logic can be split |
+| >500 lines | Plan refactoring |
+| >1000 lines | Split required |
+
+---
+
+### D-015: Backlog Organization
+
+**Status**: Accepted  
+**Date**: 2026-01-25
+
+**Decision**: Keep BACKLOG.md focused on active work only.
+
+- Completed work → `archive/` (session logs, migration snapshots)
+- Design decisions → `archive/DECISIONS.md`
+- Reference material → `docs/` (DIRECTIVE-REFERENCE.md, CODE-QUALITY.md)
+- Active items only remain in BACKLOG.md
+
+Target: <300 lines in BACKLOG.md
 
 ---
 
