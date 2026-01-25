@@ -218,6 +218,7 @@ OUTPUT-FILE report.md          # Save output
 | `COMPACT` | Trigger context compaction |
 | `ELIDE` | Merge adjacent elements into single prompt |
 | `VERIFY` | Run static verification (refs, etc.) |
+| `MODEL-REQUIRES` | Abstract model selection (e.g., `context:50k`) |
 
 > **Efficiency Tip:** Use `ELIDE` to combine test output with fix instructions:
 > ```dockerfile

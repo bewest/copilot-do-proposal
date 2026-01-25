@@ -17,7 +17,10 @@ import re
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .models import ModelRequirements
 
 
 class DirectiveType(Enum):
@@ -30,6 +33,11 @@ class DirectiveType(Enum):
     MAX_CYCLES = "MAX-CYCLES"
     CWD = "CWD"
     SESSION_NAME = "SESSION-NAME"  # Named session for resumability
+    
+    # Model requirements (abstract model selection)
+    MODEL_REQUIRES = "MODEL-REQUIRES"  # Capability requirement: MODEL-REQUIRES context:50k
+    MODEL_PREFERS = "MODEL-PREFERS"    # Soft preference: MODEL-PREFERS vendor:anthropic
+    MODEL_POLICY = "MODEL-POLICY"      # Resolution policy: MODEL-POLICY cheapest
 
     # Context
     CONTEXT = "CONTEXT"
@@ -269,6 +277,10 @@ class ConversationFile:
     max_cycles: int = 1
     cwd: Optional[str] = None
     session_name: Optional[str] = None  # Named session for resumability
+    
+    # Model requirements (abstract model selection)
+    # Lazy import to avoid circular dependency
+    model_requirements: Optional["ModelRequirements"] = None
 
     # Context - context_limit default loaded from config
     context_files: list[str] = field(default_factory=list)
@@ -1073,6 +1085,24 @@ def _apply_directive(conv: ConversationFile, directive: Directive) -> None:
             conv.cwd = directive.value
         case DirectiveType.SESSION_NAME:
             conv.session_name = directive.value
+        
+        # Model requirements (abstract model selection)
+        case DirectiveType.MODEL_REQUIRES:
+            from .models import ModelRequirements
+            if conv.model_requirements is None:
+                conv.model_requirements = ModelRequirements()
+            conv.model_requirements.add_requirement(directive.value)
+        case DirectiveType.MODEL_PREFERS:
+            from .models import ModelRequirements
+            if conv.model_requirements is None:
+                conv.model_requirements = ModelRequirements()
+            conv.model_requirements.add_preference(directive.value)
+        case DirectiveType.MODEL_POLICY:
+            from .models import ModelRequirements
+            if conv.model_requirements is None:
+                conv.model_requirements = ModelRequirements()
+            conv.model_requirements.set_policy(directive.value)
+        
         case DirectiveType.CONTEXT:
             conv.context_files.append(directive.value)
         case DirectiveType.CONTEXT_OPTIONAL:

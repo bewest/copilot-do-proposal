@@ -1,7 +1,7 @@
 # Proposal: Model Requirements - Abstract Model Selection
 
 **Date:** 2026-01-23  
-**Status:** Draft - Open Questions Resolved (2026-01-25)  
+**Status:** Partial (Phase 1 Complete)  
 **Author:** Generated via sdqctl planning session  
 **Related:** Metadata directives (MODEL, ADAPTER)
 
@@ -344,17 +344,20 @@ MODEL @reasoning @100k-context
 
 ## Phased Implementation
 
-### Phase 0: Discussion
+### Phase 0: Discussion ✅ (2026-01-25)
 
-- [ ] Decide on Q1-Q5 design questions
-- [ ] Validate use cases with operators/authors
-- [ ] Finalize directive syntax
+- [x] Decide on Q1-Q5 design questions
+- [x] Validate use cases with operators/authors
+- [x] Finalize directive syntax
 
-### Phase 1: Core Registry
+### Phase 1: Core Registry ✅ (2026-01-25)
 
-- [ ] Create `sdqctl/core/models.py` with capability registry
-- [ ] Add `MODEL-REQUIRES` directive parsing
-- [ ] Implement basic resolution logic
+- [x] Create `sdqctl/core/models.py` with capability registry
+- [x] Add `MODEL-REQUIRES` directive parsing
+- [x] Add `MODEL-PREFERS` directive parsing
+- [x] Add `MODEL-POLICY` directive parsing
+- [x] Implement basic resolution logic
+- [x] Tests: 24 new tests passing
 
 ### Phase 2: CLI Integration
 

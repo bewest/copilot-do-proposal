@@ -1,6 +1,6 @@
 # sdqctl Proposal Backlog
 
-> **Last Updated**: 2026-01-25 (CONSULT Directive Phase 2-3 ✅)  
+> **Last Updated**: 2026-01-25 (MODEL-REQUIREMENTS Phase 1 ✅)  
 > **Purpose**: Track open design questions, implementation work, and future proposals  
 > **Archive**: Completed session logs and design decisions → [`archive/`](../archive/)
 
@@ -68,8 +68,8 @@ All 8 proposed tooling commands are **fully implemented**:
 
 | Priority | Item | Effort | Notes |
 |----------|------|--------|-------|
+| P2 | [MODEL-REQUIREMENTS Phase 2](MODEL-REQUIREMENTS.md) | Low | CLI integration (status --models) |
 | P2 | [CONSULT-DIRECTIVE Phase 4](CONSULT-DIRECTIVE.md) | Low | Refinements (timeout, partial save) |
-| P2 | MODEL-REQUIREMENTS | Medium | ✅ Open questions resolved (2026-01-25) |
 | P3 | STPA template variables | Low | Future work |
 
 ---
@@ -83,7 +83,7 @@ All 8 proposed tooling commands are **fully implemented**:
 | [PIPELINE-ARCHITECTURE](PIPELINE-ARCHITECTURE.md) | Implemented | ✅ Complete | --from-json + schema_version implemented |
 | [STPA-INTEGRATION](STPA-INTEGRATION.md) | Partial | ✅ Core complete | Templates + traceability verifier done |
 | [CLI-ERGONOMICS](CLI-ERGONOMICS.md) | Implemented | N/A | Help implemented, no gaps remaining |
-| [MODEL-REQUIREMENTS](MODEL-REQUIREMENTS.md) | Draft | ✅ Open Questions Resolved | Abstract model selection by capability |
+| [MODEL-REQUIREMENTS](MODEL-REQUIREMENTS.md) | Partial | Phase 1 ✅ | Core registry + directive parsing |
 | [CONSULT-DIRECTIVE](CONSULT-DIRECTIVE.md) | Partial | Phase 1-3 ✅ | CONSULT directive + prompt injection on resume |
 | [ARTIFACT-TAXONOMY](ARTIFACT-TAXONOMY.md) | Implemented | ✅ Complete | Taxonomy, enumeration, `artifact` CLI commands |
 | [ERROR-HANDLING](ERROR-HANDLING.md) | Implemented | Phase 0-3 ✅ | `--strict`, `--json-errors`, ON-FAILURE complete |
@@ -201,9 +201,10 @@ See [COPILOT-SDK-INTEGRATION.md](../COPILOT-SDK-INTEGRATION.md) for detailed API
 
 ## Directive Candidates Analysis
 
-### Currently Implemented (70 directives)
+### Currently Implemented (73 directives)
 
 **Metadata**: `MODEL`, `ADAPTER`, `MODE`, `MAX-CYCLES`, `CWD`  
+**Model Requirements**: `MODEL-REQUIRES`, `MODEL-PREFERS`, `MODEL-POLICY`  
 **Context**: `CONTEXT`, `CONTEXT-OPTIONAL`, `CONTEXT-EXCLUDE`, `CONTEXT-LIMIT`, `ON-CONTEXT-LIMIT`, `VALIDATION-MODE`, `REFCAT`  
 **File Control**: `ALLOW-FILES`, `DENY-FILES`, `ALLOW-DIR`, `DENY-DIR`  
 **Injection**: `PROLOGUE`, `EPILOGUE`, `HEADER`, `FOOTER`, `HELP`  

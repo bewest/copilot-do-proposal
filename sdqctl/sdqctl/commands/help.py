@@ -33,6 +33,16 @@ Directives control workflow behavior in `.conv` files.
 | `SESSION-NAME` | Named session for resumability | `SESSION-NAME audit-2026-01` |
 | `PROMPT` | Prompt to send | `PROMPT Analyze the code` |
 
+## Model Requirements (Abstract Selection)
+
+| Directive | Purpose | Example |
+|-----------|---------|---------|
+| `MODEL-REQUIRES` | Capability requirement | `MODEL-REQUIRES context:50k` |
+| `MODEL-PREFERS` | Soft preference (hint) | `MODEL-PREFERS vendor:anthropic` |
+| `MODEL-POLICY` | Resolution strategy | `MODEL-POLICY cheapest` |
+
+Requirements: `context:Nk`, `tier:economy|standard|premium`, `speed:fast|standard|deliberate`, `capability:code|reasoning|general`
+
 ## Context Directives
 
 | Directive | Purpose | Example |
