@@ -1519,4 +1519,19 @@ Please analyze the error and make necessary fixes. After fixing, the command wil
         raise
 
     finally:
+        # Cleanup RUN-ASYNC background processes to prevent orphans
+        if conv.async_processes:
+            for cmd, proc in conv.async_processes:
+                if proc.poll() is None:  # Still running
+                    logger.info(f"Terminating background process PID {proc.pid}: {cmd[:50]}")
+                    try:
+                        proc.terminate()
+                        proc.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        logger.warning(f"Force killing PID {proc.pid}")
+                        proc.kill()
+                    except Exception as cleanup_err:
+                        logger.warning(f"Failed to cleanup PID {proc.pid}: {cleanup_err}")
+            conv.async_processes.clear()
+
         await ai_adapter.stop()

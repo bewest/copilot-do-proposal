@@ -197,6 +197,7 @@ All verifiers implemented:
 | Q-014 Event handler leak | Handler registered once per session | 2026-01-25 |
 | Q-015 Duplicate tool calls | Fixed by Q-014 | 2026-01-25 |
 | Q-013 Unknown tool names | Root cause was Q-014 | 2026-01-25 |
+| RUN-ASYNC orphan processes | Added finally block cleanup | 2026-01-25 |
 
 ---
 

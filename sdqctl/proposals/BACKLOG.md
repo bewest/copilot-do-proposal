@@ -25,14 +25,12 @@ No critical items.
 | Item | Effort | Notes |
 |------|--------|-------|
 | **Document-based elision logic** | Medium | Default merge, `---` breaks - part of iterate Phase 6 |
-| **Create docs/CONVERSATION-LIFECYCLE.md** | Medium | Lifecycle phases, turn structure, injection points |
 | Extract StepExecutor from iterate.py | Medium | See [Architecture Roadmap](#architecture-roadmap) |
 | Create shared ExecutionContext dataclass | Low | Unify adapter initialization |
 | Audit refcat.py path handling | Low | Verify traversal prevention |
 | Add RUN-ENV secret masking | Low | Mask env vars in logs |
 | CONSULT-DIRECTIVE Phase 4 | Low | Timeout, partial save refinements |
 | claude/openai adapter stubs | Medium | Implement or clarify scope in ADAPTERS.md |
-| Fix RUN-ASYNC process cleanup leak | Low | Add finally block to terminate orphan processes |
 | Extract common utilities (`utils/io.py`) | Low | Deduplicate ~50 JSON output + 65 file I/O patterns |
 | Enhance VerifierBase with shared scanning | Low | Move repeated file scanning logic to base class |
 | Add error handling decorator pattern | Low | `@handle_io_errors` for common exception wrapping |
@@ -226,7 +224,7 @@ Documented in [`docs/SECURITY-MODEL.md`](../docs/SECURITY-MODEL.md).
 | Path traversal (refcat.py) | MEDIUM | Audit pending (P2) |
 | RUN_ENV allows LD_PRELOAD | MEDIUM | Consider whitelist |
 | OUTPUT-FILE path injection | LOW | Validate paths |
-| RUN-ASYNC resource leak | MEDIUM | Orphan processes; fix pending (P2) |
+| ~~RUN-ASYNC resource leak~~ | ~~MEDIUM~~ | ✅ FIXED (2026-01-25) - Cleanup in finally block |
 
 ---
 
