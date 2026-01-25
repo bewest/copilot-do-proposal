@@ -95,6 +95,7 @@ The Copilot SDK has been updated to Protocol Version 2 with new capabilities. Th
 | Proposal | Feature | Effort | Rationale |
 |----------|---------|--------|-----------|
 | [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | Session management | Medium | Multi-day workflows, resume capability |
+This is highly desirable as this may create the ability to have an consultation workflow where iterating over open questions with sdqctl can transition to a human operator using github copilot?  We've discussed a directive that could ensure that the session we instruct the operator to join will interview/consult and clarify open questions in reasonable chunks?
 
 ### Key SDK Changes
 
@@ -1126,6 +1127,56 @@ sdqctl cycle examples/workflows/backlog-processor.conv \
 1. "EVALUATE ALL" prefix counters first-prologue bias effectively
 2. Fresh session mode with prologue injection is sustainable for 90+ min
 3. Documentation and backlog hygiene need dedicated phases, not afterthoughts
+
+---
+
+### P2: Replace Time-Based Effort Estimates
+
+**Status**: Open  
+**Discovered**: 2026-01-25
+
+**Issue**: Documentation uses hours/days/weeks/months to estimate effort, which is inappropriate for software. Replace with complexity and size indicators.
+
+**Affected Files** (14 total):
+
+| File | Lines | Issue |
+|------|-------|-------|
+| `proposals/STPA-INTEGRATION.md` | 261-275 | "Week 1-6" phase headings |
+| `INTEGRATION-PROPOSAL.md` | 500-562 | "Week 1-7" phase headings |
+| `INTEGRATION-SUMMARY.md` | 29, 101-117, 189 | "7-week roadmap" references |
+| `proposals/ERROR-HANDLING.md` | 175-179 | "1-4 hours" in task table |
+| `proposals/BACKLOG.md` | 36-45, 742-746 | Hour estimates in tables |
+| `proposals/RUN-RENAME-ANALYSIS.md` | 100 | "6 months" deprecation |
+| `proposals/CLI-ERGONOMICS.md` | 109-110 | "Minutes to hours" duration |
+| `examples/templates/artifacts/PROP-template.md` | 77-79 | "{hours/days}" placeholders |
+| `examples/templates/artifacts/GAP-template.md` | 45 | "{X hours/days}" placeholder |
+| `reports/cycle-improvements-focus.md` | 131 | "6 months" deprecation |
+
+**Replacement Strategy**:
+
+| Old Pattern | New Pattern |
+|-------------|-------------|
+| "1 hour" | "Low complexity (single file)" |
+| "2-4 hours" | "Moderate complexity (few files)" |
+| "Week 1" | "Phase 1" (remove time label) |
+| "7 weeks" | "7 phases" or list deliverables |
+| "6 months" | "2 major releases" or version target |
+
+**Complexity Spectrum**:
+- **Very Low**: Single function/file, straightforward
+- **Low**: Few files, well-understood pattern
+- **Moderate**: Multiple files/components
+- **High**: Many files, architectural changes
+- **Very High**: Cross-cutting, unclear scope
+
+**Size Indicators**:
+- Lines: ~10-50 (small), ~50-200 (medium), ~200-500 (large), 500+ (very large)
+- Files: 1-2 (small), 3-5 (medium), 6-10 (large), 10+ (very large)
+
+**Notes**:
+- Historical reports with factual timing (session durations) are preserved
+- Feature descriptions like "multi-day workflows" are acceptable
+- HAZ-template "exposure duration" is medical domain - keep as-is
 
 ---
 
