@@ -105,6 +105,7 @@ This is useful for:
 | `apply` | Apply workflow to multiple components | Batch processing |
 | `render` | Preview prompts without AI calls | Debugging, validation |
 | `verify` | Static verification suite | Pre-flight checks |
+| `refcat` | Extract file content with line ranges | Precise context injection |
 | `status` | Show session/adapter status | Troubleshooting |
 | `sessions` | Manage conversation sessions | List, delete, cleanup sessions |
 
@@ -136,6 +137,45 @@ sdqctl cycle workflow.conv -n 10 --session-mode compact   # Summarize between cy
 - Auditing multiple files
 - Batch transformations
 - Generating per-component reports
+
+### Precise Context with refcat
+
+The `refcat` command extracts file content with line-level precision:
+
+```bash
+# Extract specific lines (more efficient than full file injection)
+sdqctl refcat @path/file.py#L10-L50
+
+# Single line
+sdqctl refcat @path/file.py#L42
+
+# Pattern search (first match)
+sdqctl refcat @path/file.py#/def my_func/
+
+# Multiple refs
+sdqctl refcat @file1.py#L10 @file2.py#L20-L30
+```
+
+**Output includes metadata** for agent disambiguation:
+
+```markdown
+## From: sdqctl/core/context.py:182-194 (relative to /home/user/project)
+```python
+182 |     def get_context_content(self) -> str:
+183 |         """Get formatted context content..."""
+...
+```
+```
+
+**When to use refcat vs CONTEXT:**
+
+| Scenario | Use | Why |
+|----------|-----|-----|
+| Small config file (<100 lines) | `CONTEXT @config.yaml` | Agent needs full file |
+| Specific function in large file | `sdqctl refcat @lib/auth.py#L50-L80` | Save tokens |
+| Cross-repo reference | `sdqctl refcat loop:LoopKit/Algorithm.swift#L100` | Alias support |
+
+See [CONTEXT-MANAGEMENT.md](CONTEXT-MANAGEMENT.md#precise-extraction-with-refcat) for more patterns.
 
 ---
 
@@ -345,6 +385,10 @@ sdqctl apply workflow.conv --components "lib/*.py"
 # Static verification
 sdqctl verify refs
 sdqctl verify all --json
+
+# Extract file content with line ranges
+sdqctl refcat @file.py#L10-L50              # Lines 10-50
+sdqctl refcat @file.py#/def main/           # Pattern search
 
 # Check status
 sdqctl status --adapters

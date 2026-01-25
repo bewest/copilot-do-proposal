@@ -68,7 +68,7 @@ All 8 proposed tooling commands are **fully implemented**:
 
 | Priority | Item | Effort | Notes |
 |----------|------|--------|-------|
-| P2 | Add `refcat` to GETTING-STARTED.md | Low | Last quick win from doc gap analysis |
+| P2 | ~~Add `refcat` to GETTING-STARTED.md~~ | Low | ✅ 2026-01-25 |
 | P2 | [MODEL-REQUIREMENTS Phase 3](MODEL-REQUIREMENTS.md) | Medium | Adapter integration |
 | P2 | [CONSULT-DIRECTIVE Phase 4](CONSULT-DIRECTIVE.md) | Low | Refinements (timeout, partial save) |
 | P2 | Create `docs/COMMANDS.md` | Medium | Detailed command reference |
