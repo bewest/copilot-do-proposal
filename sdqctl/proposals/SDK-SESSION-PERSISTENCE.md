@@ -427,9 +427,17 @@ def test_session_resume():
 
 ## Open Questions
 
-1. **Session naming conflicts** - What if session name already exists? (warn/error)
-2. **Cross-machine sessions** - Can `isRemote` sessions be resumed? (Answer: Defer for now).
-3. **Session expiration** - Should sdqctl auto-cleanup very old sessions? (Answer: Defer for now).
+1. **Session naming conflicts** - What if session name already exists?
+   - ✅ **DECIDED (2026-01-25)**: Resume existing session automatically. This supports multi-day workflows where users want to pick up where they left off. Named sessions are explicitly for resumability.
+
+2. **Cross-machine sessions** - Can `isRemote` sessions be resumed?
+   - ✅ **DECIDED (2026-01-25)**: No - skip remote sessions silently in listings. Focus on local session management first; remote session handling deferred to future work.
+
+3. **Session expiration** - Should sdqctl auto-cleanup very old sessions?
+   - ✅ **DECIDED (2026-01-25)**: Two-pronged approach:
+     - Add manual `sdqctl sessions cleanup --older-than 30d` command
+     - Prompt user when sessions >30 days exist (during `sessions list`), offer cleanup
+     - No silent auto-deletion; user always in control
 
 ---
 
