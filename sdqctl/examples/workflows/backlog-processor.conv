@@ -52,7 +52,7 @@ COMPACT-PRESERVE prompts,errors,tool-results
 
 # === Role Clarification ===
 PROLOGUE You are an implementation assistant processing a backlog of work items.
-PROLOGUE 
+PROLOGUE
 PROLOGUE **IMPORTANT: Cross-Document Review**
 PROLOGUE Before selecting work, scan ALL injected --prologue documents.
 PROLOGUE Prioritize P0 > P1 > P2 across ALL documents, not just the first.
@@ -88,7 +88,7 @@ EPILOGUE - Update the source backlog to reflect progress
 # === Phase 1: Select and Assess ===
 PROMPT ## Phase 1: Work Selection
 
-Review the backlog content injected via --prologue above.
+Review all relevant backlogs against current status of the project.
 
 **Your task:** Select the SINGLE highest-priority actionable item.
 
@@ -262,8 +262,9 @@ Keep backlogs maintainable by managing completed and complex items.
    - Keep recent completions (last 2-3 cycles) visible for context
 
 2. **Chunk complex items**:
-   - If an item is too large (estimated > 2 hours), break it down
-   - If an item has been attempted multiple times without completion, restructure
+   - If working materials are too large for single context window, break it down
+   - If an item has been attempted multiple times without completion, make sure
+     open question and barriers get are documented clearly in more detail.
    - If an item needs design discussion, move to a dedicated proposal file
 
 3. **Consolidate duplicates**:
