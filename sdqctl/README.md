@@ -177,6 +177,8 @@ OUTPUT-FILE security-report.md
 | `RUN` | Execute shell command |
 | `RUN-RETRY` | Retry with AI fix: `RUN-RETRY N "prompt"` |
 | `RUN-ON-ERROR` | Behavior on command failure (stop, continue) |
+| `ON-FAILURE` | Block executed if preceding RUN fails (non-zero exit) |
+| `ON-SUCCESS` | Block executed if preceding RUN succeeds (zero exit) |
 | `RUN-OUTPUT` | When to include output (always, on-error, never) |
 | `RUN-OUTPUT-LIMIT` | Max output chars (10K, 50K, 1M, none) |
 | `RUN-ENV` | Set environment variable (KEY=value) |
