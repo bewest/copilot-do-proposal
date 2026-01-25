@@ -36,7 +36,6 @@ No critical items.
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| **Groom QUIRKS.md** | Low | Archive resolved, extract learnings to docs. See [below](#quirks-grooming) |
 | Fix E501 lint issues (192 remaining) | Low | Refactor during normal development |
 | Review F841 unused variables (5) | Low | Needs manual review |
 | Update "cycle command" comments to "iterate" | Low | GETTING-STARTED.md, VALIDATION-WORKFLOW.md |
@@ -66,6 +65,7 @@ No critical items.
 
 | Item | Date | Notes |
 |------|------|-------|
+| **Groom QUIRKS.md** | 2026-01-25 | 960 → 135 lines. Archived 13 resolved quirks. Created SDK-LEARNINGS.md |
 | **Consolidate run+cycle → iterate** | 2026-01-25 | [ITERATE-CONSOLIDATION.md](ITERATE-CONSOLIDATION.md) Phase 1-5 complete. `cycle` renamed to `iterate`, deprecated alias added. |
 
 ---
@@ -165,38 +165,20 @@ adapters/copilot/
 | Integration test files | 1 | 5+ |
 | Code duplication (run/cycle) | ~500 lines | <100 lines |
 
-### QUIRKS Grooming (P3)
+### QUIRKS Grooming (P3) - ✅ COMPLETE
 
-**Problem**: `docs/QUIRKS.md` has grown to 889 lines with 14 quirks. Resolved quirks have detailed sections that could be archived.
+**Completed:** 2026-01-25
 
-**Current State**:
-- 1 active quirk (Q-017)
-- 13 resolved quirks with full investigation details
-- Valuable learnings embedded in resolved quirk descriptions
-
-**Proposed Structure**:
+**Result**:
+- `docs/QUIRKS.md`: 960 → 135 lines (86% reduction)
+- `archive/quirks/2026-01-resolved-quirks.md`: Full context preserved
+- `docs/SDK-LEARNINGS.md`: Extracted actionable patterns
 
 | File | Purpose |
 |------|---------|
-| `docs/QUIRKS.md` | Active quirks only (status tracker) |
+| `docs/QUIRKS.md` | Active quirks only (Q-017, Q-019A) + quick reference |
 | `archive/quirks/` | Archived resolved quirks with full details |
 | `docs/SDK-LEARNINGS.md` | Extracted patterns/learnings from resolved quirks |
-
-**Tasks**:
-
-| Task | Effort | Status |
-|------|--------|--------|
-| Create `archive/quirks/` directory | Low | 🔲 Open |
-| Move resolved Q-001 to Q-005 to archive | Low | 🔲 Open |
-| Move resolved Q-010 to Q-016 to archive | Low | 🔲 Open |
-| Extract SDK learnings to `docs/SDK-LEARNINGS.md` | Medium | 🔲 Open |
-| Update QUIRKS.md to reference archive | Low | 🔲 Open |
-| Keep quick reference table with archive links | Low | 🔲 Open |
-
-**Target State**:
-- QUIRKS.md: <200 lines (active quirks + quick reference)
-- Resolved quirks archived with full context preserved
-- SDK learnings extracted for future reference
 
 ---
 
@@ -257,6 +239,8 @@ Documented in [`docs/SECURITY-MODEL.md`](../docs/SECURITY-MODEL.md).
 - [docs/DIRECTIVE-REFERENCE.md](../docs/DIRECTIVE-REFERENCE.md) - Complete directive catalog
 - [docs/CODE-QUALITY.md](../docs/CODE-QUALITY.md) - Code quality standards
 - [docs/PHILOSOPHY.md](../docs/PHILOSOPHY.md) - Workflow design principles
-- [docs/QUIRKS.md](../docs/QUIRKS.md) - Known quirks (2 active: Q-019A, Q-017)
+- [docs/QUIRKS.md](../docs/QUIRKS.md) - Active quirks only (Q-017, Q-019A)
+- [docs/SDK-LEARNINGS.md](../docs/SDK-LEARNINGS.md) - Patterns from resolved quirks
+- [archive/quirks/](../archive/quirks/) - Archived resolved quirks
 
 **Future ideas**: LSP support for refcat, interactive help system
