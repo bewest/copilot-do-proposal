@@ -1,7 +1,7 @@
 # Proposal: Model Requirements - Abstract Model Selection
 
 **Date:** 2026-01-23  
-**Status:** Draft - Open Questions  
+**Status:** Draft - Open Questions Resolved (2026-01-25)  
 **Author:** Generated via sdqctl planning session  
 **Related:** Metadata directives (MODEL, ADAPTER)
 
@@ -379,14 +379,19 @@ MODEL @reasoning @100k-context
 ## Open Questions for Discussion
 
 1. **Syntax**: Is `MODEL-REQUIRES key:value` the right syntax, or would `MODEL context>=50k tier=standard` be clearer?
+   - ✅ **DECIDED (2026-01-25)**: Use colon syntax `MODEL-REQUIRES key:value`. More Dockerfile-like, one requirement per line.
 
 2. **Scope**: Should this cover *all* model selection concerns, or just the common ones (context, cost, speed)?
+   - ✅ **DECIDED (2026-01-25)**: Full coverage from the start. Include context, tier, speed, capability, vendor, family.
 
 3. **Defaults**: Should workflows without MODEL or MODEL-REQUIRES get a default? What default?
+   - ✅ **DECIDED (2026-01-25)**: Default to adapter's default model. No error for missing MODEL.
 
 4. **Verification**: Should `sdqctl verify` check that resolved models actually have claimed capabilities (e.g., by testing context limits)?
+   - ✅ **DECIDED (2026-01-25)**: Defer. Trust registry/adapter for now. Revisit when we have real usage data.
 
 5. **Dynamic Requirements**: Should context requirements be computable from CONTEXT directives? E.g., "context window must fit all CONTEXT files"?
+   - ✅ **DECIDED (2026-01-25)**: No. Keep requirements explicit. Author knows their workflow needs.
 
 ---
 

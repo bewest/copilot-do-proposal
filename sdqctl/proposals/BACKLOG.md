@@ -68,7 +68,7 @@ All 8 proposed tooling commands are **fully implemented**:
 | Priority | Item | Effort | Notes |
 |----------|------|--------|-------|
 | P2 | [CONSULT-DIRECTIVE](CONSULT-DIRECTIVE.md) | Medium | Human consultation workflow |
-| P2 | MODEL-REQUIREMENTS | Medium | Blocked by open questions |
+| P2 | MODEL-REQUIREMENTS | Medium | ✅ Open questions resolved (2026-01-25) |
 | P3 | STPA template variables | Low | Future work |
 
 ---
@@ -82,7 +82,7 @@ All 8 proposed tooling commands are **fully implemented**:
 | [PIPELINE-ARCHITECTURE](PIPELINE-ARCHITECTURE.md) | Implemented | ✅ Complete | --from-json + schema_version implemented |
 | [STPA-INTEGRATION](STPA-INTEGRATION.md) | Partial | ✅ Core complete | Templates + traceability verifier done |
 | [CLI-ERGONOMICS](CLI-ERGONOMICS.md) | Implemented | N/A | Help implemented, no gaps remaining |
-| [MODEL-REQUIREMENTS](MODEL-REQUIREMENTS.md) | Draft | ❌ Open Questions | Abstract model selection by capability |
+| [MODEL-REQUIREMENTS](MODEL-REQUIREMENTS.md) | Draft | ✅ Open Questions Resolved | Abstract model selection by capability |
 | [CONSULT-DIRECTIVE](CONSULT-DIRECTIVE.md) | Draft | ❌ Not started | PAUSE + proactive question presentation |
 | [ARTIFACT-TAXONOMY](ARTIFACT-TAXONOMY.md) | Implemented | ✅ Complete | Taxonomy, enumeration, `artifact` CLI commands |
 | [ERROR-HANDLING](ERROR-HANDLING.md) | Implemented | Phase 0-3 ✅ | `--strict`, `--json-errors`, ON-FAILURE complete |
