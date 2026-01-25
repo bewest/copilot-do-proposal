@@ -480,7 +480,7 @@ sdqctl validate workflow.conv --exclude "*.yaml"
 # Strict mode
 sdqctl validate workflow.conv --strict
 
-# Check MODEL-REQUIRES resolution
+# Check MODEL-REQUIRES resolution (see ADAPTERS.md §Model Selection Guide)
 sdqctl validate workflow.conv --check-model
 
 # JSON output

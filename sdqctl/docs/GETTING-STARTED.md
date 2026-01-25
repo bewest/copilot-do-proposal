@@ -303,7 +303,7 @@ See [IO-ARCHITECTURE.md](IO-ARCHITECTURE.md) for full details.
 
 ```dockerfile
 # comment
-MODEL gpt-4                    # AI model
+MODEL gpt-4                    # AI model (see ADAPTERS.md §Model Selection Guide)
 ADAPTER copilot                # Provider (copilot, mock, claude, openai)
 MODE audit                     # Execution mode
 
@@ -332,7 +332,7 @@ OUTPUT-FILE report.md          # Save output
 | `COMPACT` | Trigger context compaction |
 | `ELIDE` | Merge adjacent elements into single prompt |
 | `VERIFY` | Run static verification (refs, etc.) |
-| `MODEL-REQUIRES` | Abstract model selection (e.g., `context:50k`) |
+| `MODEL-REQUIRES` | Abstract model selection (e.g., `context:50k`). See [Model Selection Guide](ADAPTERS.md#model-selection-guide) |
 | `HELP` | Inject built-in help topics into prompts |
 
 > **Efficiency Tip:** Use `ELIDE` to combine test output with fix instructions:
