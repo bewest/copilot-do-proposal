@@ -1,0 +1,86 @@
+# Comprehensive reference and link verification
+#
+# Runs full verification suite including:
+# - @file reference validation
+# - Markdown link checking
+# - Traceability chain verification (STPA)
+# - Terminology consistency
+#
+# Copy to: .github/workflows/verify-refs.yml
+
+name: Verify References
+
+on:
+  pull_request:
+    paths:
+      - '**.md'
+      - '**.conv'
+      - 'docs/**'
+  schedule:
+    # Run weekly to catch broken external links
+    - cron: '0 0 * * 0'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install sdqctl
+        run: pip install sdqctl
+        
+      - name: Verify @-references
+        run: |
+          echo "Checking @file references..."
+          sdqctl verify refs --json > refs-report.json
+          cat refs-report.json
+          
+      - name: Verify markdown links
+        run: |
+          echo "Checking markdown links..."
+          sdqctl verify links --json > links-report.json
+          cat links-report.json
+          
+      - name: Verify traceability (if applicable)
+        run: |
+          echo "Checking traceability chains..."
+          sdqctl verify traceability --json > traceability-report.json || true
+          cat traceability-report.json
+          
+      - name: Combine reports
+        run: |
+          echo "Generating combined report..."
+          jq -s '{
+            refs: .[0],
+            links: .[1],
+            traceability: .[2]
+          }' refs-report.json links-report.json traceability-report.json > full-report.json
+          
+      - name: Check for failures
+        run: |
+          # Count total errors across all reports
+          errors=$(jq '[.refs.errors // [], .links.errors // []] | add | length' full-report.json)
+          
+          if [ "$errors" -gt 0 ]; then
+            echo "Found $errors verification errors"
+            jq '.' full-report.json
+            exit 1
+          fi
+          
+          echo "All verifications passed!"
+          
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-reports
+          path: |
+            refs-report.json
+            links-report.json
+            traceability-report.json
+            full-report.json

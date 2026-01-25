@@ -1,0 +1,66 @@
+# Validate sdqctl workflows on pull requests
+#
+# This workflow validates .conv workflow files without making AI calls.
+# Safe to run on every PR - no tokens or authentication required.
+#
+# Copy to: .github/workflows/validate-workflows.yml
+
+name: Validate Workflows
+
+on:
+  pull_request:
+    paths:
+      - '**.conv'
+      - 'workflows/**'
+  push:
+    branches: [main]
+    paths:
+      - '**.conv'
+      - 'workflows/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install sdqctl
+        run: pip install sdqctl
+        
+      - name: Validate workflow syntax
+        run: |
+          echo "Validating .conv files..."
+          failed=0
+          for f in $(find . -name "*.conv" -type f); do
+            echo "Checking: $f"
+            if ! sdqctl validate "$f" --strict; then
+              failed=1
+            fi
+          done
+          exit $failed
+          
+      - name: Run static verification
+        run: |
+          echo "Running verification suite..."
+          sdqctl verify all --json > verification-report.json
+          
+          # Check for errors
+          if jq -e '.errors | length > 0' verification-report.json > /dev/null; then
+            echo "Verification errors found:"
+            jq '.errors' verification-report.json
+            exit 1
+          fi
+          
+          echo "All verifications passed!"
+          
+      - name: Upload verification report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-report
+          path: verification-report.json

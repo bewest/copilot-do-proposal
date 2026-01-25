@@ -119,7 +119,7 @@ Handler uses session-level `_send_*` state that resets each `send()` call.
 | **P3** | E501 line too long (192 issues) | Code quality |
 | **P3** | F841 unused variables (5 issues) | Code quality |
 | ~~**P3**~~ | ~~CONSULT workflow example~~ | ~~Documentation~~ | ✅ 2026-01-25 |
-| **P3** | CI/CD integration examples | Documentation |
+| ~~**P3**~~ | ~~CI/CD integration examples~~ | ~~Documentation~~ | ✅ 2026-01-25 |
 | **P3** | ELIDE chains example | Documentation |
 | **P3** | Default verbosity key actions | Feature |
 | **P3** | Test quality improvements | Testing |
@@ -743,7 +743,7 @@ The security model for shell execution and file handling is now documented.
 | Split `run()` function | P1 | ~1000 lines, extract step handlers | 🔲 Open |
 | Circular import renderer→help | P2 | Move TOPICS to core/constants | ✅ 2026-01-25 |
 | CONSULT workflow example | P3 | Show human-in-loop consultation pattern | ✅ 2026-01-25 |
-| CI/CD integration examples | P3 | GitHub Actions / GitLab CI using verify + render | 🔲 Open |
+| ~~CI/CD integration examples~~ | ~~P3~~ | ~~GitHub Actions / GitLab CI using verify + render~~ | ✅ 2026-01-25 |
 | FEATURE-INTERACTIONS.md status | P3 | Says "Draft" but content is complete; update to "Complete" | ✅ 2026-01-25 |
 | claude/openai adapter stubs | P2 | ADAPTERS.md documents as "Planned" - either implement or clarify scope | 🔲 Open |
 | ELIDE chains example | P3 | Multi-ELIDE optimized workflows example in examples/workflows | 🔲 Open |
