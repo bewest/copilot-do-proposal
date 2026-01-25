@@ -547,7 +547,7 @@ Ideas moved from QUIRKS.md "Future Considerations":
 |------|----------|---------------------|
 | 2026-01-23 | 5 sessions | Tooling gap analysis, VERIFY directive (4 phases), RUN-RETRY, --from-json |
 | 2026-01-24 | 16 sessions | Artifact taxonomy, verify CLI commands, ON-FAILURE blocks, INCLUDE directive |
-| 2026-01-25 | 7 sessions | CONSULT directive, SDK session persistence, documentation gap analysis |
+| 2026-01-25 | 8 sessions | CONSULT directive, SDK session persistence, doc gaps + refcat docs |
 | Earlier | — | Terminology updates, regulatory context, GLOSSARY.md |
 
 For detailed session logs, see:
