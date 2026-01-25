@@ -1164,6 +1164,20 @@ sdqctl cycle examples/workflows/backlog-processor.conv \
   - Fix: Fall back to `tool_info["name"]` when direct extraction returns "unknown"
   - All quirks now resolved (QUIRKS.md shows no active quirks)
 
+### Session 2026-01-25 (SDK Session Persistence Phase 1)
+
+- [x] **SDK-SESSION-PERSISTENCE Phase 1** - Adapter methods implemented
+  - Added `list_sessions()` to CopilotAdapter
+  - Added `resume_session(session_id, config)` to CopilotAdapter  
+  - Added `delete_session(session_id)` to CopilotAdapter
+  - 8 new tests in `TestSessionPersistence` class (51 total tests pass)
+  - Commits: `df87699`, `e096f5c`
+
+**Remaining work (Phase 2-4):**
+- `sdqctl sessions list/delete/cleanup` CLI commands
+- `sdqctl resume SESSION_ID` command
+- `SESSION-NAME` directive for workflow files
+
 ---
 
 ### P2: Replace Time-Based Effort Estimates
