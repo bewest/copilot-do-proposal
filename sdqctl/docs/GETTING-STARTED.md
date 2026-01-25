@@ -402,6 +402,28 @@ sdqctl run security-audit.conv --adapter copilot
 
 ---
 
+## Artifact ID Management
+
+For traceability workflows (STPA, IEC 62304), use `artifact` to manage unique IDs:
+
+```bash
+# Get next available ID
+sdqctl artifact next REQ           # → REQ-001
+sdqctl artifact next UCA-BOLUS     # → UCA-BOLUS-001
+
+# List existing artifacts by type
+sdqctl artifact list REQ
+
+# Rename and update all references
+sdqctl artifact rename REQ-001 REQ-AUTH-001
+```
+
+**Supported categories:** `LOSS`, `HAZ`, `UCA`, `SC` (STPA), `REQ`, `SPEC`, `TEST`, `GAP` (Requirements), `BUG`, `PROP`, `Q` (Development)
+
+See [TRACEABILITY-WORKFLOW.md](TRACEABILITY-WORKFLOW.md) for full traceability patterns.
+
+---
+
 ## Next Steps
 
 Once comfortable with `run`, explore:

@@ -603,7 +603,7 @@ All 12 design decisions are documented in [`archive/DECISIONS.md`](../archive/DE
 | Gap | Location | Notes | Status |
 |-----|----------|-------|--------|
 | ~~`refcat` command not in GETTING-STARTED.md~~ | `docs/GETTING-STARTED.md` | Has "Precise Context with refcat" section | ✅ 2026-01-25 |
-| `artifact` command undocumented | README.md, docs/ | ARTIFACT-TAXONOMY.md proposal exists but no user-facing docs | 🔲 Open |
+| ~~`artifact` command undocumented~~ | README.md, docs/ | Added section in GETTING-STARTED.md | ✅ 2026-01-25 |
 | ~~`resume` command separate from `sessions`~~ | README.md, docs/COMMANDS.md | Clarified difference with comparison notes | ✅ 2026-01-25 |
 | ~~`flow` command minimal docs~~ | docs/COMMANDS.md | Enhanced with options table, use cases, tips | ✅ 2026-01-25 |
 | ~~`init` command not documented~~ | docs/GETTING-STARTED.md | Added "Initialize a Project" section with config example | ✅ 2026-01-25 |
@@ -670,7 +670,7 @@ All 12 design decisions are documented in [`archive/DECISIONS.md`](../archive/DE
 |-----|----------|-------|--------|
 | ~~`flow` command full documentation~~ | P2 | Enhanced in docs/COMMANDS.md with options table, use cases | ✅ 2026-01-25 |
 | ~~`resume` vs `sessions resume` clarity~~ | P2 | Clarified in docs/COMMANDS.md with comparison notes | ✅ 2026-01-25 |
-| `artifact` user-facing guide | P2 | COMMANDS.md has reference; needs GETTING-STARTED section | 🔲 Open |
+| ~~`artifact` user-facing guide~~ | P2 | Added section in docs/GETTING-STARTED.md | ✅ 2026-01-25 |
 | QUIRKS.md → all resolved | - | All quirks Q-001 through Q-015 now ✅ FIXED | ✅ 2026-01-25 |
 
 ---
