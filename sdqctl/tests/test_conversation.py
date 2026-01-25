@@ -321,6 +321,17 @@ RUN-RETRY 1 Fix build errors
         assert pause_index == 0  # After first prompt
         assert "Review findings" in message
 
+    def test_parse_consult(self, consult_conv_content):
+        """Test parsing CONSULT directive with topic."""
+        conv = ConversationFile.parse(consult_conv_content)
+        
+        assert len(conv.consult_points) == 1
+        consult_index, topic = conv.consult_points[0]
+        assert consult_index == 0  # After first prompt
+        assert "Design Decisions" in topic
+        # CONSULT works with SESSION-NAME
+        assert conv.session_name == "feature-design"
+
     def test_parse_debug_directives(self):
         """Test parsing DEBUG, DEBUG-INTENTS, and EVENT-LOG directives."""
         content = """MODEL gpt-4

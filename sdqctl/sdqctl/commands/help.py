@@ -72,6 +72,7 @@ Directives control workflow behavior in `.conv` files.
 | Directive | Purpose | Example |
 |-----------|---------|---------|
 | `PAUSE` | Checkpoint and exit | `PAUSE Review findings` |
+| `CONSULT` | Pause for human consultation | `CONSULT Design Decisions` |
 | `ELIDE` | Merge adjacent elements | `ELIDE` |
 | `COMPACT` | Trigger compaction | `COMPACT` |
 | `REQUIRE` | Pre-flight checks | `REQUIRE @file.py cmd:git` |
@@ -405,6 +406,25 @@ PAUSE "Approve remediation plan"
 
 PROMPT Implement approved changes.
 ```
+
+## Human Consultation Workflow
+
+```dockerfile
+# consultation-workflow.conv
+MODEL gpt-4
+SESSION-NAME feature-design
+
+PROMPT Analyze this proposal and identify open questions.
+  Add questions to the document's "## Open Questions" section.
+CONSULT "Design Decisions"
+
+PROMPT Now that the design decisions are resolved,
+  update the proposal with the decisions and create tasks.
+```
+
+The CONSULT directive pauses like PAUSE, but when the human resumes
+with `copilot --resume SESSION`, the agent proactively presents
+open questions and guides the human through answering them.
 """,
 
     "validation": """

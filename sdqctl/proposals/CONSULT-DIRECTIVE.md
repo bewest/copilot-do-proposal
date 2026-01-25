@@ -1,7 +1,7 @@
 # Proposal: CONSULT Directive - Human Consultation Workflow
 
 **Date:** 2026-01-25  
-**Status:** Draft  
+**Status:** Partial (Phase 1 Complete)  
 **Author:** bewest + sdqctl planning session  
 **Related:** PAUSE directive, SDK-SESSION-PERSISTENCE, session resume
 
@@ -298,12 +298,12 @@ CONSULT "..."
 
 ## Phased Implementation
 
-### Phase 1: Basic CONSULT
+### Phase 1: Basic CONSULT ✅ (2026-01-25)
 
-- [ ] Add `CONSULT` directive type
-- [ ] Parse like PAUSE, store as `type="consult"`
-- [ ] On consult: checkpoint + pause + print instructions
-- [ ] Document the directive
+- [x] Add `CONSULT` directive type
+- [x] Parse like PAUSE, store as `type="consult"`
+- [x] On consult: checkpoint + pause + print instructions
+- [x] Document the directive
 
 ### Phase 2: Consultation Prompt Injection
 

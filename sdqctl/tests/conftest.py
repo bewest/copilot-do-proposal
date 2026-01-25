@@ -123,6 +123,19 @@ PROMPT Generate final report.
 """
 
 
+@pytest.fixture
+def consult_conv_content():
+    """Conversation file with CONSULT directive."""
+    return """MODEL gpt-4
+ADAPTER mock
+SESSION-NAME feature-design
+
+PROMPT Analyze this proposal and identify open questions.
+CONSULT Design Decisions
+PROMPT Implement the resolved design.
+"""
+
+
 # CLI test fixtures
 from click.testing import CliRunner
 

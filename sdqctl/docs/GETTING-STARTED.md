@@ -214,6 +214,7 @@ OUTPUT-FILE report.md          # Save output
 | `PROLOGUE` | Prepend to first prompt of cycle |
 | `EPILOGUE` | Append to last prompt of cycle |
 | `PAUSE` | Checkpoint for human review |
+| `CONSULT` | Pause with proactive question presentation |
 | `COMPACT` | Trigger context compaction |
 | `ELIDE` | Merge adjacent elements into single prompt |
 | `VERIFY` | Run static verification (refs, etc.) |

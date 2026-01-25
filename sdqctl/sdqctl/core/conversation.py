@@ -116,6 +116,7 @@ class DirectiveType(Enum):
 
     # Flow control
     PAUSE = "PAUSE"
+    CONSULT = "CONSULT"  # Pause with proactive question presentation on resume
     
     # Branching on RUN result
     ON_FAILURE = "ON-FAILURE"  # Block executed if previous RUN fails
@@ -218,7 +219,7 @@ class FileRestrictions:
 class ConversationStep:
     """A step in the conversation flow (PROMPT, COMPACT, NEW-CONVERSATION, etc.)."""
     
-    type: str  # "prompt", "compact", "new_conversation", "checkpoint", "run", "run_retry", "verify"
+    type: str  # "prompt", "compact", "new_conversation", "checkpoint", "run", "run_retry", "verify", "pause", "consult"
     content: str = ""  # Prompt text or checkpoint name
     preserve: list[str] = field(default_factory=list)  # For compact
     retry_count: int = 0  # For run_retry: max retries
@@ -348,6 +349,7 @@ class ConversationFile:
 
     # Flow control
     pause_points: list[tuple[int, str]] = field(default_factory=list)  # (after_prompt_index, message)
+    consult_points: list[tuple[int, str]] = field(default_factory=list)  # (after_prompt_index, topic)
 
     # Debug configuration
     debug_categories: list[str] = field(default_factory=list)  # session, tool, intent, event, all
@@ -1383,6 +1385,11 @@ def _apply_directive(conv: ConversationFile, directive: Directive) -> None:
             pause_index = len(conv.prompts) - 1 if conv.prompts else 0
             conv.pause_points.append((pause_index, directive.value))
         
+        case DirectiveType.CONSULT:
+            # CONSULT after the last prompt - like PAUSE but with proactive question presentation
+            consult_index = len(conv.prompts) - 1 if conv.prompts else 0
+            conv.consult_points.append((consult_index, directive.value))
+        
         # Debug directives
         case DirectiveType.DEBUG:
             # Comma-separated debug categories
@@ -1424,6 +1431,8 @@ def _apply_directive_to_block(steps: list[ConversationStep], directive: Directiv
                     break
         case DirectiveType.PAUSE:
             steps.append(ConversationStep(type="pause"))
+        case DirectiveType.CONSULT:
+            steps.append(ConversationStep(type="consult", content=directive.value))
         case DirectiveType.NEW_CONVERSATION:
             steps.append(ConversationStep(type="new_conversation"))
         case _:

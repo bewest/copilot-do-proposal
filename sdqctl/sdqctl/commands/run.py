@@ -192,6 +192,12 @@ async def _execute_block_steps(
         elif step_type == "pause":
             console.print("[yellow]⏸  Paused by ON-FAILURE/ON-SUCCESS block. Press Enter to continue...[/yellow]")
             input()
+        
+        elif step_type == "consult":
+            topic = step_content or "Open Questions"
+            console.print(f"[yellow]⏸  CONSULT: {topic}[/yellow]")
+            console.print("[dim]Consultation required. Press Enter to continue...[/dim]")
+            input()
 
 
 def git_commit_checkpoint(
@@ -753,6 +759,9 @@ async def _run_async(
 
             # Build pause point lookup: {prompt_index: message}
             pause_after = {idx: msg for idx, msg in conv.pause_points}
+            
+            # Build consult point lookup: {prompt_index: topic}
+            consult_after = {idx: topic for idx, topic in conv.consult_points}
 
             # Process steps (includes prompts, checkpoints, compact, etc.)
             # Fall back to prompts list if no steps defined (backward compat)
@@ -872,6 +881,26 @@ async def _run_async(
                         console.print(f"\n[yellow]⏸  PAUSED: {pause_msg}[/yellow]")
                         console.print(f"[dim]Checkpoint saved: {checkpoint_path}[/dim]")
                         console.print(f"\n[bold]To resume:[/bold] sdqctl resume {checkpoint_path}")
+                        return  # Session cleanup handled by finally blocks
+                    
+                    # Check for CONSULT after this prompt
+                    if prompt_idx in consult_after:
+                        topic = consult_after[prompt_idx]
+                        session.state.prompt_index = prompt_count  # Next prompt to resume from
+                        session.state.status = "consulting"  # Mark as awaiting consultation
+                        checkpoint_path = session.save_pause_checkpoint(f"CONSULT: {topic}")
+                        
+                        console.print(f"\n[yellow]⏸  CONSULT: {topic}[/yellow]")
+                        console.print("[dim]Session paused for human consultation.[/dim]")
+                        console.print(f"[dim]Checkpoint saved: {checkpoint_path}[/dim]")
+                        
+                        # Show session name for resume if available
+                        if conv.session_name:
+                            console.print(f"\n[bold]To resume:[/bold] copilot --resume {conv.session_name}")
+                        else:
+                            console.print(f"\n[bold]To resume:[/bold] sdqctl resume {checkpoint_path}")
+                        
+                        console.print("[dim]On resume, the agent will proactively present open questions.[/dim]")
                         return  # Session cleanup handled by finally blocks
             
                 elif step_type == "merged_prompt":

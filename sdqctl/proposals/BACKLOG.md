@@ -1,6 +1,6 @@
 # sdqctl Proposal Backlog
 
-> **Last Updated**: 2026-01-25 (SDK Session Persistence Complete ✅)  
+> **Last Updated**: 2026-01-25 (CONSULT Directive Phase 1 ✅)  
 > **Purpose**: Track open design questions, implementation work, and future proposals
 
 ---
@@ -67,7 +67,7 @@ All 8 proposed tooling commands are **fully implemented**:
 
 | Priority | Item | Effort | Notes |
 |----------|------|--------|-------|
-| P2 | [CONSULT-DIRECTIVE](CONSULT-DIRECTIVE.md) | Medium | Human consultation workflow |
+| P2 | [CONSULT-DIRECTIVE Phase 2](CONSULT-DIRECTIVE.md) | Medium | Consultation prompt injection on resume |
 | P2 | MODEL-REQUIREMENTS | Medium | ✅ Open questions resolved (2026-01-25) |
 | P3 | STPA template variables | Low | Future work |
 
@@ -83,7 +83,7 @@ All 8 proposed tooling commands are **fully implemented**:
 | [STPA-INTEGRATION](STPA-INTEGRATION.md) | Partial | ✅ Core complete | Templates + traceability verifier done |
 | [CLI-ERGONOMICS](CLI-ERGONOMICS.md) | Implemented | N/A | Help implemented, no gaps remaining |
 | [MODEL-REQUIREMENTS](MODEL-REQUIREMENTS.md) | Draft | ✅ Open Questions Resolved | Abstract model selection by capability |
-| [CONSULT-DIRECTIVE](CONSULT-DIRECTIVE.md) | Draft | ❌ Not started | PAUSE + proactive question presentation |
+| [CONSULT-DIRECTIVE](CONSULT-DIRECTIVE.md) | Partial | Phase 1 ✅ | CONSULT directive parsing + checkpoint + help |
 | [ARTIFACT-TAXONOMY](ARTIFACT-TAXONOMY.md) | Implemented | ✅ Complete | Taxonomy, enumeration, `artifact` CLI commands |
 | [ERROR-HANDLING](ERROR-HANDLING.md) | Implemented | Phase 0-3 ✅ | `--strict`, `--json-errors`, ON-FAILURE complete |
 | [SDK-INFINITE-SESSIONS](SDK-INFINITE-SESSIONS.md) | Implemented | ✅ Phase 1-4 | Native SDK compaction + directives |
@@ -200,7 +200,7 @@ See [COPILOT-SDK-INTEGRATION.md](../COPILOT-SDK-INTEGRATION.md) for detailed API
 
 ## Directive Candidates Analysis
 
-### Currently Implemented (69 directives)
+### Currently Implemented (70 directives)
 
 **Metadata**: `MODEL`, `ADAPTER`, `MODE`, `MAX-CYCLES`, `CWD`  
 **Context**: `CONTEXT`, `CONTEXT-OPTIONAL`, `CONTEXT-EXCLUDE`, `CONTEXT-LIMIT`, `ON-CONTEXT-LIMIT`, `VALIDATION-MODE`, `REFCAT`  
@@ -209,7 +209,7 @@ See [COPILOT-SDK-INTEGRATION.md](../COPILOT-SDK-INTEGRATION.md) for detailed API
 **Prompts**: `PROMPT`, `ON-CONTEXT-LIMIT-PROMPT`  
 **Compaction**: `COMPACT`, `COMPACT-PRESERVE`, `COMPACT-SUMMARY`, `COMPACT-PROLOGUE`, `COMPACT-EPILOGUE`, `NEW-CONVERSATION`, `ELIDE`  
 **Infinite Sessions**: `INFINITE-SESSIONS`, `COMPACTION-MIN`, `COMPACTION-THRESHOLD`  
-**Checkpoints**: `CHECKPOINT`, `CHECKPOINT-AFTER`, `CHECKPOINT-NAME`, `PAUSE`  
+**Checkpoints**: `CHECKPOINT`, `CHECKPOINT-AFTER`, `CHECKPOINT-NAME`, `PAUSE`, `CONSULT`  
 **Output**: `OUTPUT`, `OUTPUT-FORMAT`, `OUTPUT-FILE`, `OUTPUT-DIR`  
 **RUN**: `RUN`, `RUN-ON-ERROR`, `RUN-OUTPUT`, `RUN-OUTPUT-LIMIT`, `RUN-ENV`, `RUN-CWD`, `RUN-TIMEOUT`, `ALLOW-SHELL`, `RUN-ASYNC`, `RUN-WAIT`, `RUN-RETRY`  
 **Branching**: `ON-FAILURE`, `ON-SUCCESS`, `END`  
@@ -1114,6 +1114,19 @@ sdqctl verify trace "SC-001 -> REQ-001" --json
   - Fixes 7 false positives in docs/ (VALIDATION-WORKFLOW, EXTENDING-VERIFIERS, TRACEABILITY-WORKFLOW)
   - Added 2 tests: `test_skip_links_in_code_blocks`, `test_skip_links_in_inline_code`
   - Commit: `7ee0461`
+
+### Session 2026-01-25 (CONSULT Directive Phase 1)
+
+Implemented Phase 1 of CONSULT-DIRECTIVE proposal:
+
+- [x] **`CONSULT` directive type** - Added to DirectiveType enum in conversation.py
+- [x] **Parsing** - CONSULT parsed like PAUSE, stored in `consult_points` list
+- [x] **Execution** - Checkpoints with "consulting" status, shows resume instructions
+- [x] **Block support** - CONSULT works inside ON-FAILURE/ON-SUCCESS blocks
+- [x] **Tests** - 1 new test for CONSULT parsing (957 total tests pass)
+- [x] **Help documentation** - Added to directives topic and workflow examples
+
+Files changed: `conversation.py`, `run.py`, `help.py`, `conftest.py`, `test_conversation.py`, `CONSULT-DIRECTIVE.md`, `BACKLOG.md`
 
 ### Session 2026-01-25 (SDK-SESSION-PERSISTENCE Phase 3-4)
 
