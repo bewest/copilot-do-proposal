@@ -223,6 +223,8 @@ What's your workflow doing?
 └── Unsure → start with accumulate (default)
 ```
 
+> **More detail:** See [CONTEXT-MANAGEMENT.md §Session Modes](CONTEXT-MANAGEMENT.md#session-modes) for advanced patterns.
+
 **`apply`** — Iterate over components, good for:
 - Auditing multiple files
 - Batch transformations

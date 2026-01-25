@@ -257,6 +257,12 @@ See [SDK-INFINITE-SESSIONS proposal](../proposals/SDK-INFINITE-SESSIONS.md) for 
 
 ## Session Modes
 
+| Mode | Context Behavior | Token Usage | Best For |
+|------|------------------|-------------|----------|
+| **accumulate** (default) | Grows across cycles; compacts only at limit | Medium-High | Iterative refinement |
+| **compact** | Summarizes after each cycle | Low | Long workflows (10+ cycles) |
+| **fresh** | New session each cycle | High (no reuse) | Autonomous file editing |
+
 ### Fresh Mode
 
 ```bash
