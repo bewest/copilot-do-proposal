@@ -52,32 +52,20 @@
 
 | Item | Date | Notes |
 |------|------|-------|
-| **iterate.py Phase 5 (P2)** | 2026-01-26 | Modularize complete: 857 → 792 (-65 lines). Added 4 helpers to iterate_helpers.py. Target <800 ✅ |
-| **iterate.py Phase 4 (P2)** | 2026-01-26 | Modularize: 932 → 857 (-75 lines). Created output_steps.py. +7 tests. Total 1240 tests. |
-| **iterate.py Phase 3 (P2)** | 2026-01-26 | Modularize: 1120 → 932 (-188 lines). Created json_pipeline.py. +4 tests. Total 1233 tests. |
-| **iterate.py Phase 2 (P2)** | 2026-01-26 | Modularize: 1180 → 1120 (-60 lines). Created prompt_steps.py. +15 tests. Total 1229 tests. |
-| **Integration tests Phase 2 (P2)** | 2026-01-26 | +30 tests for iterate_helpers.py (23) and compact_steps.py (7). Total 1214 tests. |
-| **iterate.py Phase 1 (P2)** | 2026-01-26 | Modularize: 1397 → 1180 (-217 lines). Created iterate_helpers.py, compact_steps.py. |
-| **Modularize run.py (P2)** | 2026-01-26 | Complete: 1523 → 973 lines (-550 lines, 36%). Extracted elide.py, blocks.py, verify_steps.py, run_steps.py. Target <1000 ✅ |
-| **run_steps.py extraction (P2)** | 2026-01-26 | Modularize run.py Phase 4: Extract RUN handlers (-211 lines, 973 total). 4 new tests. |
-| **verify_steps.py extraction (P2)** | 2026-01-26 | Modularize run.py Phase 3: Extract verify handlers (-115 lines). 5 new tests. |
-| **Observability metrics (P3)** | 2026-01-26 | SESSION-RESILIENCE Phase 1: CompactionEvent, timing props, 5 new tests. |
-| **Metrics instrumentation (P2)** | 2026-01-26 | SESSION-RESILIENCE Phase 0-0.5: Parse quota_snapshots, rate limit detection. 6 new tests. |
-| **StepExecutor reassessed (P2)** | 2026-01-26 | Analyzed: ~100 lines shared (not ~500). Extracted resolve_run_directory(). 6 tests. Full StepExecutor deferred. |
+| **iterate.py Modularization (P2)** | 2026-01-26 | Complete: 1397 → 791 lines (-606, 43%). Extracted 5 modules: iterate_helpers.py, compact_steps.py, prompt_steps.py, json_pipeline.py, output_steps.py. +26 tests. Target <800 ✅ |
+| **run.py Modularization (P2)** | 2026-01-26 | Complete: 1523 → 973 lines (-550, 36%). Extracted elide.py, blocks.py, verify_steps.py, run_steps.py. +9 tests. Target <1000 ✅ |
+| **Integration tests Phase 2 (P2)** | 2026-01-26 | +30 tests for iterate_helpers.py (23) and compact_steps.py (7). Total 1240 tests. |
+| **SESSION-RESILIENCE Phase 0-1 (P2/P3)** | 2026-01-26 | Metrics instrumentation, CompactionEvent, timing props. +11 tests. |
+| **StepExecutor reassessed (P2)** | 2026-01-26 | Analyzed: ~100 lines shared (not ~500). Extracted resolve_run_directory(). Full StepExecutor deferred. |
 | **CONSULT-TIMEOUT (P2)** | 2026-01-26 | Phase 4: Timeout directive, expiration check on resume, clear error. 10 new tests. |
 | **Compaction Simplification (P1)** | 2026-01-26 | Phase 5: Remove default prologue/epilogue. SDK-INFINITE-SESSIONS now complete. |
-| **E501 run.py clean** | 2026-01-26 | Fixed 45 issues in run.py (now 0). Core commands E501 clean. |
-| **E501 iterate.py clean** | 2026-01-26 | Fixed 14 issues in iterate.py (now 0). run.py 51→45. |
+| **E501 lint cleanup** | 2026-01-26 | Fixed 69 issues in run.py, iterate.py, file.py. Core commands E501 clean. |
 | **Loop detection: tool-aware** | 2026-01-26 | Skip minimal response check if tools called in turn. 2 new tests. |
-| **E501 file.py lint (P2)** | 2026-01-26 | Fixed 10 issues in file.py. Core E501: 172→94 (45% reduction). |
-| **claude/openai adapter stubs (P2)** | 2026-01-26 | Created claude.py and openai.py stubs with NotImplementedError. Registered in registry. |
+| **claude/openai adapter stubs (P2)** | 2026-01-26 | Created stubs with NotImplementedError. Registered in registry. |
 | **Q-020 Context % fix (P0)** | 2026-01-26 | Sync tokens after each `ai_adapter.send()` in run.py and iterate.py. |
 | **ARCHITECTURE.md (P1)** | 2026-01-26 | Created docs/ARCHITECTURE.md: module structure, data flow, key abstractions, extension points. |
-| **ConversationFile Split (P0)** | 2026-01-26 | Modularized 1819-line file into 7 modules: types.py, parser.py, applicator.py, templates.py, utilities.py, file.py, __init__.py. Largest file now 858 lines. |
-| **Error handling decorator** | 2026-01-26 | @handle_io_errors, @handle_io_errors_async. 16 new tests. |
-| **VerifierBase scan_files utility** | 2026-01-26 | Consolidated 7 duplicate file scanning patterns. 5 new tests. |
-| **I/O Utilities** | 2026-01-26 | print_json, write_json_file, read_json_file, write_text_file. 7 new tests. |
-| **ExecutionContext dataclass** | 2026-01-26 | Unified context for workflow execution. In core/session.py. 4 new tests. |
+| **ConversationFile Split (P0)** | 2026-01-26 | Modularized 1819-line file into 7 modules. Largest file now 858 lines. |
+| **Shared utilities extraction** | 2026-01-26 | Error handling decorators, I/O utilities, VerifierBase scan_files, ExecutionContext. +32 tests. |
 | **Phase 6: Mixed Prompt Support** | 2026-01-26 | Variadic targets, `---` separator, elision into boundaries. 16 new tests. |
 
 *Older items archived to [`archive/2026-01-backlog-migration.md`](../archive/2026-01-backlog-migration.md)*
