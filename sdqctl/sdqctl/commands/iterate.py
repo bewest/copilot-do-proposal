@@ -21,7 +21,6 @@ Session Modes:
                 autonomous workflows that modify files between cycles.
 """
 
-import sys
 from pathlib import Path
 from typing import Optional
 
@@ -31,11 +30,11 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from ..adapters import get_adapter
-from ..adapters.base import AdapterConfig, InfiniteSessionConfig
+from ..adapters.base import AdapterConfig
 from ..core.conversation import ConversationFile
 from ..core.exceptions import LoopDetected, MissingContextFiles
 from ..core.logging import WorkflowContext, get_logger, set_workflow_context
-from ..core.loop_detector import LoopDetector, generate_nonce, get_stop_file_instruction
+from ..core.loop_detector import LoopDetector, generate_nonce
 from ..core.progress import WorkflowProgress
 from ..core.progress import progress as progress_print
 from ..core.session import Session
@@ -46,8 +45,12 @@ from .iterate_helpers import (
     TURN_SEPARATOR,
     TurnGroup,
     build_infinite_session_config,
+    check_existing_stop_file,
+    create_or_resume_session,
     is_workflow_file,
     parse_targets,
+    perform_compaction,
+    recreate_fresh_session,
     validate_targets,
 )
 from .json_pipeline import execute_json_pipeline
@@ -502,26 +505,7 @@ async def _cycle_async(
     loop_detector = LoopDetector(nonce=nonce)
 
     # Check if stop file already exists (previous run may have requested stop)
-    if loop_detector.stop_file_path.exists():
-        try:
-            content = loop_detector.stop_file_path.read_text()
-            import json
-            stop_data = json.loads(content)
-            reason = stop_data.get("reason", "Unknown reason")
-        except (json.JSONDecodeError, IOError):
-            reason = "Could not read stop file content"
-
-        console.print(Panel(
-            f"[bold yellow]⚠️  Stop file exists from previous run[/bold yellow]\n\n"
-            f"[bold]File:[/bold] {loop_detector.stop_file_name}\n"
-            f"[bold]Reason:[/bold] {reason}\n\n"
-            f"A previous automation run requested human review.\n"
-            f"Please review the agent's work before continuing.\n\n"
-            f"[dim]To continue: Remove the stop file and run again[/dim]\n"
-            f"[dim]    rm {loop_detector.stop_file_name}[/dim]",
-            title="🛑 Review Required",
-            border_style="yellow",
-        ))
+    if check_existing_stop_file(loop_detector, console):
         return
 
     last_reasoning: list[str] = []  # Collect reasoning from callbacks
@@ -554,27 +538,11 @@ async def _cycle_async(
         # Determine session name: CLI overrides workflow directive
         effective_session_name = session_name or conv.session_name
 
-        # Create or resume adapter session based on session name
-        if effective_session_name:
-            # Named session: resume if exists, otherwise create new
-            try:
-                adapter_session = await ai_adapter.resume_session(
-                    effective_session_name, adapter_config
-                )
-                logger.info(f"Resumed session: {effective_session_name}")
-                if verbosity > 0:
-                    console.print(f"[dim]Resumed session: {effective_session_name}[/dim]")
-            except Exception as e:
-                # Session doesn't exist, create new with session name
-                logger.debug(
-                    f"Could not resume session '{effective_session_name}': {e}, "
-                    "creating new"
-                )
-                adapter_session = await ai_adapter.create_session(adapter_config)
-                if verbosity > 0:
-                    console.print(f"[dim]Created new session: {effective_session_name}[/dim]")
-        else:
-            adapter_session = await ai_adapter.create_session(adapter_config)
+        # Create or resume adapter session
+        adapter_session = await create_or_resume_session(
+            ai_adapter, adapter_config, effective_session_name,
+            verbosity, console, logger
+        )
         session.sdk_session_id = adapter_session.sdk_session_id  # Q-018 fix
 
         try:
@@ -632,59 +600,25 @@ async def _cycle_async(
 
                     # Session mode: fresh = new session each cycle
                     if session_mode == "fresh" and cycle_num > 0:
-                        await ai_adapter.destroy_session(adapter_session)
-                        adapter_session = await ai_adapter.create_session(
-                            AdapterConfig(
-                                model=conv.model,
-                                streaming=True,
-                                debug_categories=conv.debug_categories,
-                                debug_intents=conv.debug_intents,
-                                event_log=effective_event_log,
-                                infinite_sessions=infinite_config,
-                            )
+                        adapter_session = await recreate_fresh_session(
+                            ai_adapter, adapter_session, adapter_config,
+                            session, cycle_num, progress_print
                         )
-                        # Reload CONTEXT files from disk (pick up any changes)
-                        session.reload_context()
-                        progress_print(f"  🔄 New session for cycle {cycle_num + 1}")
 
                     # Session mode: compact = compact at start of each cycle (after first)
                     if session_mode == "compact" and cycle_num > 0:
-                        console.print(
-                            f"\n[yellow]Compacting before cycle {cycle_num + 1}...[/yellow]"
+                        await perform_compaction(
+                            ai_adapter, adapter_session, conv, session,
+                            f"before cycle {cycle_num + 1}", console, progress_print
                         )
-                        progress_print("  🗜  Compacting context...")
-
-                        compact_result = await ai_adapter.compact(
-                            adapter_session,
-                            conv.compact_preserve,
-                            session.get_compaction_prompt()
-                        )
-
-                        tokens_msg = (
-                            f"{compact_result.tokens_before} → "
-                            f"{compact_result.tokens_after} tokens"
-                        )
-                        console.print(f"[green]Compacted: {tokens_msg}[/green]")
-                        progress_print(f"  🗜  Compacted: {tokens_msg}")
 
                     # Check for compaction (accumulate mode, or when context limit reached)
                     needs_compact = session.needs_compaction(min_compaction_density)
                     if session_mode == "accumulate" and needs_compact:
-                        console.print("\n[yellow]Context near limit, compacting...[/yellow]")
-                        progress_print("  🗜  Compacting context...")
-
-                        compact_result = await ai_adapter.compact(
-                            adapter_session,
-                            conv.compact_preserve,
-                            session.get_compaction_prompt()
+                        await perform_compaction(
+                            ai_adapter, adapter_session, conv, session,
+                            "context near limit", console, progress_print
                         )
-
-                        tokens_msg = (
-                            f"{compact_result.tokens_before} → "
-                            f"{compact_result.tokens_after} tokens"
-                        )
-                        console.print(f"[green]Compacted: {tokens_msg}[/green]")
-                        progress_print(f"  🗜  Compacted: {tokens_msg}")
 
                     # Checkpoint if configured
                     if session.should_checkpoint():

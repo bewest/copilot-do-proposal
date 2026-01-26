@@ -7,11 +7,20 @@ Provides target parsing, validation, and configuration builders.
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import click
 
 from ..adapters.base import InfiniteSessionConfig
+
+if TYPE_CHECKING:
+    from logging import Logger
+
+    from rich.console import Console
+
+    from ..adapters.base import AdapterBase, AdapterConfig, AdapterSession
+    from ..core.loop_detector import LoopDetector
+    from ..core.session import Session
 
 logger = logging.getLogger("sdqctl.commands.iterate_helpers")
 
@@ -161,3 +170,149 @@ def build_infinite_session_config(
         background_threshold=bg_threshold,
         buffer_exhaustion=buf_threshold,
     )
+
+
+def check_existing_stop_file(
+    loop_detector: "LoopDetector",
+    console: "Console",
+) -> bool:
+    """Check if a stop file exists from a previous run.
+
+    Args:
+        loop_detector: LoopDetector with stop file path
+        console: Rich Console for output
+
+    Returns:
+        True if stop file exists and user should not continue, False otherwise
+    """
+    import json
+
+    from rich.panel import Panel
+
+    if not loop_detector.stop_file_path.exists():
+        return False
+
+    try:
+        content = loop_detector.stop_file_path.read_text()
+        stop_data = json.loads(content)
+        reason = stop_data.get("reason", "Unknown reason")
+    except (json.JSONDecodeError, IOError):
+        reason = "Could not read stop file content"
+
+    console.print(Panel(
+        f"[bold yellow]⚠️  Stop file exists from previous run[/bold yellow]\n\n"
+        f"[bold]File:[/bold] {loop_detector.stop_file_name}\n"
+        f"[bold]Reason:[/bold] {reason}\n\n"
+        f"A previous automation run requested human review.\n"
+        f"Please review the agent's work before continuing.\n\n"
+        f"[dim]To continue: Remove the stop file and run again[/dim]\n"
+        f"[dim]    rm {loop_detector.stop_file_name}[/dim]",
+        title="🛑 Review Required",
+        border_style="yellow",
+    ))
+    return True
+
+
+async def create_or_resume_session(
+    ai_adapter: "AdapterBase",
+    adapter_config: "AdapterConfig",
+    session_name: Optional[str],
+    verbosity: int,
+    console: "Console",
+    logger: "Logger",
+) -> "AdapterSession":
+    """Create or resume an adapter session.
+
+    Args:
+        ai_adapter: The AI adapter
+        adapter_config: Configuration for the session
+        session_name: Optional named session to resume
+        verbosity: Verbosity level for output
+        console: Rich Console for output
+        logger: Logger for debug output
+
+    Returns:
+        The created or resumed adapter session
+    """
+    if session_name:
+        # Named session: resume if exists, otherwise create new
+        try:
+            adapter_session = await ai_adapter.resume_session(session_name, adapter_config)
+            logger.info(f"Resumed session: {session_name}")
+            if verbosity > 0:
+                console.print(f"[dim]Resumed session: {session_name}[/dim]")
+        except Exception as e:
+            # Session doesn't exist, create new with session name
+            logger.debug(f"Could not resume session '{session_name}': {e}, creating new")
+            adapter_session = await ai_adapter.create_session(adapter_config)
+            if verbosity > 0:
+                console.print(f"[dim]Created new session: {session_name}[/dim]")
+    else:
+        adapter_session = await ai_adapter.create_session(adapter_config)
+
+    return adapter_session
+
+
+async def recreate_fresh_session(
+    ai_adapter: "AdapterBase",
+    adapter_session: "AdapterSession",
+    adapter_config: "AdapterConfig",
+    session: "Session",
+    cycle_num: int,
+    progress_print,
+) -> "AdapterSession":
+    """Destroy and recreate session for 'fresh' mode (new session each cycle).
+
+    Args:
+        ai_adapter: The adapter instance
+        adapter_session: Current adapter session to destroy
+        adapter_config: Config for new session
+        session: The iteration session (for reload_context)
+        cycle_num: Current cycle number (for logging)
+        progress_print: Function to print progress messages
+
+    Returns:
+        New adapter session
+    """
+    from ..core.session import Session  # noqa: F401 - used in TYPE_CHECKING
+
+    await ai_adapter.destroy_session(adapter_session)
+    new_session = await ai_adapter.create_session(adapter_config)
+    # Reload CONTEXT files from disk (pick up any changes)
+    session.reload_context()
+    progress_print(f"  🔄 New session for cycle {cycle_num + 1}")
+    return new_session
+
+
+async def perform_compaction(
+    ai_adapter: "AdapterBase",
+    adapter_session: "AdapterSession",
+    conv,
+    session: "Session",
+    reason: str,
+    console: "Console",
+    progress_print,
+) -> None:
+    """Perform context compaction and log result.
+
+    Args:
+        ai_adapter: The adapter instance
+        adapter_session: Current adapter session
+        conv: Conversation with compact_preserve setting
+        session: The session with compaction prompt
+        reason: Human-readable reason (e.g., "before cycle 2", "context near limit")
+        console: Console for output
+        progress_print: Function for progress messages
+    """
+    console.print(f"\n[yellow]Compacting {reason}...[/yellow]")
+    progress_print("  🗜  Compacting context...")
+
+    compact_result = await ai_adapter.compact(
+        adapter_session,
+        conv.compact_preserve,
+        session.get_compaction_prompt()
+    )
+
+    tokens_msg = f"{compact_result.tokens_before} → {compact_result.tokens_after} tokens"
+    console.print(f"[green]Compacted: {tokens_msg}[/green]")
+    progress_print(f"  🗜  Compacted: {tokens_msg}")

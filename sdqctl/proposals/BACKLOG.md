@@ -25,7 +25,6 @@
 | Item | Effort | Notes |
 |------|--------|-------|
 | Add integration tests | Medium | Phase 2 done: +30 tests for iterate_helpers, compact_steps. Total 1240 tests. |
-| Modularize iterate.py (~857 lines) | Medium | Phase 4 done: -75 lines. Created output_steps.py (+7 tests). Target <800 needs ~57 more lines. |
 | Performance benchmark suite | Medium | **Blocked by OQ-005** - needs scope decision. Track regressions. |
 
 ### P3: Low
@@ -52,6 +51,7 @@
 
 | Item | Date | Notes |
 |------|------|-------|
+| **iterate.py Phase 5 (P2)** | 2026-01-26 | Modularize complete: 857 → 792 (-65 lines). Added 4 helpers to iterate_helpers.py. Target <800 ✅ |
 | **iterate.py Phase 4 (P2)** | 2026-01-26 | Modularize: 932 → 857 (-75 lines). Created output_steps.py. +7 tests. Total 1240 tests. |
 | **iterate.py Phase 3 (P2)** | 2026-01-26 | Modularize: 1120 → 932 (-188 lines). Created json_pipeline.py. +4 tests. Total 1233 tests. |
 | **iterate.py Phase 2 (P2)** | 2026-01-26 | Modularize: 1180 → 1120 (-60 lines). Created prompt_steps.py. +15 tests. Total 1229 tests. |
