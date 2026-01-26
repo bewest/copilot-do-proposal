@@ -217,7 +217,7 @@ class TestResumeListFlag:
     
     def test_list_checkpoints_empty_sessions_dir(self, tmp_path, monkeypatch):
         """--list handles missing sessions directory gracefully."""
-        from sdqctl.cli import _list_checkpoints
+        from sdqctl.commands.resume import _list_checkpoints
         from unittest.mock import MagicMock
         
         monkeypatch.chdir(tmp_path)  # No .sdqctl/sessions here
@@ -230,7 +230,7 @@ class TestResumeListFlag:
     
     def test_list_checkpoints_json_empty(self, tmp_path, monkeypatch):
         """--list --json returns empty array for no checkpoints."""
-        from sdqctl.cli import _list_checkpoints
+        from sdqctl.commands.resume import _list_checkpoints
         from unittest.mock import MagicMock
         
         monkeypatch.chdir(tmp_path)
@@ -246,7 +246,7 @@ class TestResumeDryRunFlag:
     
     def test_dry_run_loads_checkpoint(self, tmp_path):
         """--dry-run loads and displays checkpoint without executing."""
-        from sdqctl.cli import _dry_run_resume
+        from sdqctl.commands.resume import _dry_run_resume
         from unittest.mock import MagicMock
         
         # Create a checkpoint
@@ -267,7 +267,7 @@ class TestResumeDryRunFlag:
     def test_dry_run_json_output(self, tmp_path):
         """--dry-run --json returns structured data."""
         import json as json_module
-        from sdqctl.cli import _dry_run_resume
+        from sdqctl.commands.resume import _dry_run_resume
         from unittest.mock import MagicMock
         
         # Create a checkpoint

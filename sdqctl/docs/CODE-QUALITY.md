@@ -60,6 +60,7 @@ Large files are harder to maintain, test, and understand.
 | `commands/run.py` | 973 | ✅ Extracted elide.py, blocks.py, verify_steps.py, run_steps.py (-550 lines). Target <1000 achieved. | ✅ Done |
 | `commands/iterate.py` | 792 | ✅ Extracted iterate_helpers.py, compact_steps.py, prompt_steps.py, json_pipeline.py, output_steps.py (-605 lines from 1397). Target <800 achieved. | ✅ Done |
 | `adapters/copilot.py` | 670 | ✅ Extracted CopilotEventHandler to events.py (-473 lines from 1143). | ✅ Done |
+| `cli.py` | 413 | ✅ Extracted init.py (276 lines) and resume.py (292 lines). (-553 lines from 966). | ✅ Done |
 
 ### Refactoring Strategy
 

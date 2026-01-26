@@ -11,8 +11,8 @@
 | # | Item | Priority | Effort | Notes |
 |---|------|----------|--------|-------|
 | 1 | Add integration tests | P2 | Medium | Ongoing: Total 1288 tests. Focus: adapter integration, CLI integration, end-to-end workflows. |
-| 2 | cli.py modularization | P2 | Medium | 966 lines. Extract `init` command (~150 lines) and `resume` command (~160 lines) to separate modules. |
-| 3 | Deprecate `run` command | P2 | Low | Forward to `iterate -n 1` with warning. See [ITERATE-CONSOLIDATION.md](ITERATE-CONSOLIDATION.md). |
+| 2 | Deprecate `run` command | P2 | Low | Forward to `iterate -n 1` with warning. See [ITERATE-CONSOLIDATION.md](ITERATE-CONSOLIDATION.md). |
+| 3 | help.py modularization | P2 | Medium | 698 lines. Consider extracting help sections to separate modules. |
 
 ---
 
@@ -47,7 +47,6 @@
 | Item | Source | Notes |
 |------|--------|-------|
 | Compaction config unification | [COMPACTION-UNIFICATION.md](COMPACTION-UNIFICATION.md) | P2 Draft: Align directive/CLI naming |
-| help.py modularization | Candidate Discovery | 698 lines - could extract to help/ module |
 | LSP support for refcat | References | Language Server Protocol for IDE integration |
 | Interactive help (`--interactive`) | References | Browsable help system |
 | refcat usage patterns example | P3 Workflow Examples | Cross-repo context injection |
@@ -61,6 +60,7 @@
 
 | Item | Date | Notes |
 |------|------|-------|
+| **CLI modularization (P2)** | 2026-01-26 | Complete: 966 → 413 lines (-553, 57%). Extracted init.py (276 lines) and resume.py (292 lines). |
 | **Copilot adapter modularization (P2)** | 2026-01-26 | Complete: 1143 → 670 lines (-473, 41%). Extracted CopilotEventHandler class to events.py. +32 tests. Total 1288 tests. |
 | **Session resilience Phase 4 (P2)** | 2026-01-26 | Compaction summary display complete. +3 tests. Shows effectiveness ratio in completion output. Total 1256 tests. |
 | **Session resilience Phase 3 (P2)** | 2026-01-26 | Predictive rate limiting complete. +9 tests. Added estimated_remaining_requests, estimated_minutes_remaining, warning integration. Total 1253 tests. |
@@ -211,25 +211,27 @@ adapters/
 
 **Result**: 1,143 → 670 lines (41% reduction). Event handling extracted to `CopilotEventHandler` class.
 
-### CLI Modularization (P2) - 🔲 READY
+### CLI Modularization (P2) - ✅ COMPLETE
 
-**Problem**: `cli.py` is 966 lines with embedded `init` and `resume` commands
+**Problem**: `cli.py` was 966 lines with embedded `init` and `resume` commands
 
-**Proposed extraction**:
+**Completed**: 2026-01-26
+
+**Final structure**:
 ```
 commands/
-  init.py     # init command + _create_copilot_files (~150 lines)
-  resume.py   # resume command + _resume_async (~160 lines)
+  init.py     # init command + _create_copilot_files (276 lines)
+  resume.py   # resume command + _resume_async (292 lines)
 ```
 
-**Expected result**: cli.py 966 → ~650 lines
+**Result**: cli.py 966 → 413 lines (57% reduction).
 
 | Task | Effort | Status |
 |------|--------|--------|
-| Extract init command to commands/init.py | Low | 🔲 Ready |
-| Extract resume command to commands/resume.py | Low | 🔲 Ready |
-| Update cli.py imports | Low | 🔲 Ready |
-| Add tests for extracted modules | Low | 🔲 Ready |
+| Extract init command to commands/init.py | Low | ✅ Complete |
+| Extract resume command to commands/resume.py | Low | ✅ Complete |
+| Update cli.py imports | Low | ✅ Complete |
+| Fix test imports | Low | ✅ Complete (4 imports in test_resume.py) |
 
 ### Integration Test Expansion (P3)
 
@@ -244,7 +246,7 @@ commands/
 
 | Metric | Current | Target | Notes |
 |--------|---------|--------|-------|
-| Max file size | 670 lines | <500 lines | copilot.py (down from 1,143) |
+| Max file size | 413 lines | <500 lines | cli.py (down from 966) |
 | Lint issues (E501/F841) | 0 | 0 | ✅ Clean |
 | Integration test files | 1 | 5+ | |
 | Code duplication (run/cycle) | ~100 lines | <100 lines | ✅ Helpers extracted |
