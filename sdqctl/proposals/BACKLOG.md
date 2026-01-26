@@ -24,7 +24,7 @@
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| Modularize run.py (~1400 lines) | Medium | Phase 1 done: elide.py extracted (-117 lines). Continue with _execute_block_steps. |
+| Modularize run.py (~1300 lines) | Medium | Phase 2 done: blocks.py extracted (-107 lines). Total -224 lines from 1523. |
 | Add integration tests | Medium | Beyond loop stress testing. Adapter + end-to-end scenarios. |
 | Performance benchmark suite | Medium | Track regressions. Promoted from P3. |
 

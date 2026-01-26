@@ -57,7 +57,7 @@ Large files are harder to maintain, test, and understand.
 | File | Lines | Planned Action | Priority |
 |------|-------|----------------|----------|
 | `core/conversation.py` | 1,768 | Split into parser/validator/directives/templates | ✅ Done |
-| `commands/run.py` | 1,406 | ✅ Extracted elide.py (-117 lines). Continue modularization. | P2 |
+| `commands/run.py` | 1,299 | ✅ Extracted elide.py, blocks.py (-224 lines). | P2 |
 | `commands/iterate.py` | 1,079 | Share execution engine with run.py | P2 |
 | `adapters/copilot.py` | 1,054 | ✅ Extracted events.py, stats.py | Done |
 
