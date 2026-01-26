@@ -24,19 +24,18 @@
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| Extract StepExecutor from iterate.py | Medium | See [Architecture Roadmap](#architecture-roadmap). Use ExecutionContext. |
-| CONSULT-DIRECTIVE Phase 4 | Low | Timeout, partial save refinements. Needs scope clarification. |
-| claude/openai adapter stubs | Medium | Implement or clarify scope in ADAPTERS.md |
+| Extract StepExecutor from iterate.py | Medium | Q-020 done. See [Architecture Roadmap](#architecture-roadmap). |
+| CONSULT-DIRECTIVE Phase 4 | Medium | Timeout → fail with clear error. Needs CONSULT-TIMEOUT directive. |
+| Fix E501 lint issues (192 remaining) | Low | Promote to maintain 3-item ready queue. |
 
 ### P3: Low
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| Fix E501 lint issues (171 remaining) | Low | Refactor during normal development |
 | Modularize copilot.py (~1127 lines) | Medium | events.py, stats.py, session.py |
 | Modularize run.py (~1541 lines) | Medium | Largest command file |
 | Add integration tests | Medium | Beyond loop stress testing |
-| Default verbosity key actions | Low | **Blocked by OQ-004** - needs scope clarification |
+| Default verbosity key actions | Low | **Blocked by OQ-004** - needs impact/alternatives proposal |
 | Performance benchmark suite | Medium | Track regressions |
 | Error path test coverage | Medium | File I/O errors, permissions, timeouts |
 
@@ -57,6 +56,8 @@
 
 | Item | Date | Notes |
 |------|------|-------|
+| **claude/openai adapter stubs (P2)** | 2026-01-26 | Created claude.py and openai.py stubs with NotImplementedError. Registered in registry. |
+| **Q-020 Context % fix (P0)** | 2026-01-26 | Sync tokens after each `ai_adapter.send()` in run.py and iterate.py. |
 | **ARCHITECTURE.md (P1)** | 2026-01-26 | Created docs/ARCHITECTURE.md: module structure, data flow, key abstractions, extension points. |
 | **ConversationFile Split (P0)** | 2026-01-26 | Modularized 1819-line file into 7 modules: types.py, parser.py, applicator.py, templates.py, utilities.py, file.py, __init__.py. Largest file now 858 lines. |
 | **Error handling decorator** | 2026-01-26 | @handle_io_errors, @handle_io_errors_async. 16 new tests. |

@@ -859,6 +859,11 @@ async def _run_async(
 
                     step_elapsed = time.time() - step_start
 
+                    # Sync local context tracking with SDK's actual token count (Q-020 fix)
+                    tokens_used, max_tokens = await ai_adapter.get_context_usage(adapter_session)
+                    session.context.window.used_tokens = tokens_used
+                    session.context.window.max_tokens = max_tokens
+
                     # Update context usage after response
                     ctx_status = session.context.get_status()
                     new_context_pct = ctx_status.get("usage_percent", 0)
@@ -1021,6 +1026,11 @@ async def _run_async(
                         console.print()
 
                     step_elapsed = time.time() - step_start
+
+                    # Sync local context tracking with SDK's actual token count (Q-020 fix)
+                    tokens_used, max_tokens = await ai_adapter.get_context_usage(adapter_session)
+                    session.context.window.used_tokens = tokens_used
+                    session.context.window.max_tokens = max_tokens
 
                     ctx_status = session.context.get_status()
                     new_context_pct = ctx_status.get("usage_percent", 0)

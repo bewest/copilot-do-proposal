@@ -33,6 +33,8 @@ def list_adapters() -> list[str]:
     # Ensure built-in adapters are loaded
     _try_load_adapter("copilot")
     _try_load_adapter("mock")
+    _try_load_adapter("claude")
+    _try_load_adapter("openai")
     return list(_adapters.keys())
 
 

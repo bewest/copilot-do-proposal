@@ -1055,6 +1055,11 @@ async def _cycle_async(
                                 on_reasoning=collect_reasoning
                             )
 
+                            # Sync local context tracking with SDK's actual token count (Q-020 fix)
+                            tokens_used, max_tokens = await ai_adapter.get_context_usage(adapter_session)
+                            session.context.window.used_tokens = tokens_used
+                            session.context.window.max_tokens = max_tokens
+
                             # Update context usage after response
                             ctx_status = session.context.get_status()
                             new_context_pct = ctx_status.get("usage_percent", 0)

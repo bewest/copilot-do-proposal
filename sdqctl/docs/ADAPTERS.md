@@ -10,8 +10,8 @@ Adapters connect sdqctl to AI providers. This guide covers setup, authentication
 |---------|---------|-------------|--------|
 | `copilot` | `github-copilot-sdk` | GitHub OAuth / Token | ✅ Primary |
 | `mock` | Built-in | None | ✅ Testing |
-| `claude` | `anthropic` | API Key | 🔧 Planned |
-| `openai` | `openai` | API Key | 🔧 Planned |
+| `claude` | `anthropic` | API Key | 🔲 Stub (NotImplementedError) |
+| `openai` | `openai` | API Key | 🔲 Stub (NotImplementedError) |
 
 Check adapter availability:
 ```bash
@@ -127,7 +127,14 @@ adapter = MockAdapter(
 
 ## claude (Anthropic Claude)
 
-> **Status**: Planned - adapter interface defined but not yet implemented
+> **Status**: Stub - adapter registered but methods raise `NotImplementedError`  
+> **Contributions welcome**: Implement using `anthropic` Python SDK
+
+### Installation
+
+```bash
+pip install anthropic
+```
 
 ### Expected Configuration
 
@@ -135,7 +142,7 @@ adapter = MockAdapter(
 # Environment
 export ANTHROPIC_API_KEY="sk-ant-..."
 
-# Usage
+# Usage (after implementation)
 sdqctl run workflow.conv --adapter claude --model claude-3-opus
 ```
 
@@ -146,11 +153,27 @@ ADAPTER claude
 MODEL claude-3-sonnet-20240229
 ```
 
+### Available Models
+
+The stub provides these model identifiers for future use:
+- `claude-3-5-sonnet-20241022`
+- `claude-3-5-haiku-20241022`
+- `claude-3-opus-20240229`
+- `claude-3-sonnet-20240229`
+- `claude-3-haiku-20240307`
+
 ---
 
 ## openai (OpenAI GPT)
 
-> **Status**: Planned - adapter interface defined but not yet implemented
+> **Status**: Stub - adapter registered but methods raise `NotImplementedError`  
+> **Contributions welcome**: Implement using `openai` Python SDK
+
+### Installation
+
+```bash
+pip install openai
+```
 
 ### Expected Configuration
 
@@ -158,7 +181,7 @@ MODEL claude-3-sonnet-20240229
 # Environment
 export OPENAI_API_KEY="sk-..."
 
-# Usage
+# Usage (after implementation)
 sdqctl run workflow.conv --adapter openai --model gpt-4-turbo
 ```
 
@@ -168,6 +191,17 @@ sdqctl run workflow.conv --adapter openai --model gpt-4-turbo
 ADAPTER openai
 MODEL gpt-4-turbo-preview
 ```
+
+### Available Models
+
+The stub provides these model identifiers for future use:
+- `gpt-4o`
+- `gpt-4o-mini`
+- `gpt-4-turbo`
+- `gpt-4`
+- `gpt-3.5-turbo`
+- `o1-preview`
+- `o1-mini`
 
 ---
 

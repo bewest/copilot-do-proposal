@@ -48,18 +48,23 @@ if not stats.handler_registered:
     stats.handler_registered = True
 ```
 
-### 4. Token Tracking Requires Sync (Q-019B)
+### 4. Token Tracking Requires Sync After Every Send (Q-019B, Q-020)
 
-The SDK and local token estimates diverge after compaction.
+The SDK and local token estimates diverge. Local tracking starts at 0 and only updates if explicitly synced.
 
-**Problem:** After SDK compacts, local `used_tokens` still shows old value → wrong compaction decisions.
+**Problem:** 
+- Q-019B: After SDK compacts, local `used_tokens` still shows old value
+- Q-020: Before any compaction, local shows 0% even with real token usage
 
 **Solution:**
 ```python
-# After any context-modifying operation, sync from SDK
-tokens_after, max_tokens = await adapter.get_context_usage(session)
-session.context.window.used_tokens = tokens_after
+# After EVERY ai_adapter.send() call, sync from SDK
+tokens_used, max_tokens = await adapter.get_context_usage(session)
+session.context.window.used_tokens = tokens_used
+session.context.window.max_tokens = max_tokens
 ```
+
+**Key insight:** The SDK tracks tokens internally via `assistant.usage` events. The local `ContextWindow` is just a mirror and must be explicitly synced after each interaction.
 
 ---
 

@@ -10,6 +10,7 @@
 
 | ID | Description | Resolution Date |
 |----|-------------|-----------------|
+| [Q-020](#q-020-context-percentage-shows-0-until-compaction) | Context percentage shows 0% | 2026-01-26 |
 | [Q-016](#q-016-undefined-name-bugs-f821) | Undefined Name Bugs (F821) | 2026-01-25 |
 | [Q-018](#q-018-session-id-mismatch-between-checkpoint-and-sdk) | Session ID Mismatch | 2026-01-25 |
 | [Q-019B](#q-019b-context-percentage-diverges-after-compaction) | Context percentage divergence | 2026-01-25 |
@@ -23,6 +24,51 @@
 | [Q-003](#q-003-template-variables-encourage-problematic-patterns) | Template Variables | 2026-01-22 |
 | [Q-002](#q-002-sdk-abort-events-not-emitted) | SDK Abort Events | 2026-01-22 |
 | [Q-001](#q-001-workflow-filename-influences-agent-behavior) | Workflow Filename Influence | 2026-01-22 |
+
+---
+
+## Q-020: Context Percentage Shows 0% Until Compaction
+
+**Priority:** P0 - Critical  
+**Discovered:** 2026-01-26  
+**Status:** ✅ FIXED (2026-01-26)
+
+### Description
+
+Context percentage in progress output shows **0%** at session start and during prompts, even though the SDK is tracking actual token usage. The percentage only becomes accurate after compaction.
+
+### Evidence
+
+From `consult-test-logs/consult-test-2026-01-25-125626.log`:
+```
+  Prompt 1/2 (ctx: 0%): Sending...
+  Prompt 1/2 (ctx: 0%): Complete (12.1s)
+```
+
+### Root Cause
+
+The SDK tracks tokens via `stats.total_input_tokens` (updated on each `assistant.usage` event), but sdqctl's local `ContextWindow.used_tokens` was only synced from the SDK **after compaction** (Q-019B fix), not after each prompt send.
+
+**Locations needing sync:**
+- `run.py` ~line 858 (after `ai_adapter.send()`)
+- `run.py` ~line 1023 (after `ai_adapter.send()` in mixed prompt path)
+- `iterate.py` ~line 1056 (after `ai_adapter.send()`)
+
+### Resolution
+
+Added token sync after each `ai_adapter.send()` call:
+```python
+# Sync local context tracking with SDK's actual token count (Q-020 fix)
+tokens_used, max_tokens = await ai_adapter.get_context_usage(adapter_session)
+session.context.window.used_tokens = tokens_used
+session.context.window.max_tokens = max_tokens
+```
+
+**Files modified:** `sdqctl/commands/run.py`, `sdqctl/commands/iterate.py`
+
+### Related
+
+- Q-019B was a **partial fix** that only addressed post-compaction divergence
 
 ---
 
