@@ -124,7 +124,7 @@ tests/
 
 - All public functions should have type annotations
 - Use `TYPE_CHECKING` for imports only needed by type checkers
-- Consider adding `py.typed` marker for downstream consumers
+- Package includes `py.typed` marker (PEP 561) for downstream type checking
 
 ### Example
 

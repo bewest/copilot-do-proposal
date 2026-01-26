@@ -13,6 +13,7 @@ This document catalogs non-obvious behaviors discovered while developing and usi
 
 | ID | Quirk | Priority | Status |
 |----|-------|----------|--------|
+| Q-020 | Context percentage shows 0% until compaction | P0 | 🔴 Open |
 | Q-019A | Progress messages lack timestamps after compaction | P3 | 🟡 Open |
 | Q-017 | 197 remaining linting issues (line length, unused vars) | P3 | 🟡 Backlog |
 
@@ -33,6 +34,53 @@ This document catalogs non-obvious behaviors discovered while developing and usi
 | Q-003 | Template variables encourage problematic patterns | Q-001 fix + examples | [2026-01](../archive/quirks/2026-01-resolved-quirks.md#q-003-template-variables-encourage-problematic-patterns) |
 | Q-002 | SDK abort events not emitted | Lowered thresholds + stop file | [2026-01](../archive/quirks/2026-01-resolved-quirks.md#q-002-sdk-abort-events-not-emitted) |
 | Q-001 | Workflow filename influences agent behavior | Excluded from prompts | [2026-01](../archive/quirks/2026-01-resolved-quirks.md#q-001-workflow-filename-influences-agent-behavior) |
+
+---
+
+## Q-020: Context Percentage Shows 0% Until Compaction
+
+**Priority:** P0 - Critical  
+**Discovered:** 2026-01-26  
+**Status:** 🔴 Open
+
+### Description
+
+Context percentage in progress output shows **0%** at session start and during prompts, even though the SDK is tracking actual token usage. The percentage only becomes accurate after compaction.
+
+### Evidence
+
+From `consult-test-logs/consult-test-2026-01-25-125626.log`:
+```
+  Prompt 1/2 (ctx: 0%): Sending...
+  Prompt 1/2 (ctx: 0%): Complete (12.1s)
+```
+
+### Root Cause
+
+The SDK tracks tokens via `stats.total_input_tokens` (updated on each `assistant.usage` event), but sdqctl's local `ContextWindow.used_tokens` is only synced from the SDK **after compaction** (Q-019B fix), not after each prompt send.
+
+**Locations needing sync:**
+- `run.py` ~line 858 (after `ai_adapter.send()`)
+- `iterate.py` ~line 1056 (after `ai_adapter.send()`)
+
+### Impact
+
+1. **Misleading data** - Users see 0% and assume context is empty
+2. **Compaction decisions** - Auto-compaction thresholds won't trigger correctly
+3. **User confusion** - Q-019B marked "resolved" but percentage still wrong
+
+### Fix
+
+Add token sync after each `ai_adapter.send()` call:
+```python
+tokens_used, max_tokens = await ai_adapter.get_context_usage(adapter_session)
+session.context.window.used_tokens = tokens_used
+session.context.window.max_tokens = max_tokens
+```
+
+### Related
+
+- Q-019B was a **partial fix** that only addressed post-compaction divergence
 
 ---
 
