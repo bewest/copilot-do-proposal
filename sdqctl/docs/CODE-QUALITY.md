@@ -56,10 +56,10 @@ Large files are harder to maintain, test, and understand.
 
 | File | Lines | Planned Action | Priority |
 |------|-------|----------------|----------|
-| `core/conversation.py` | 1,768 | Split into parser/validator/directives/templates | P3 |
+| `core/conversation.py` | 1,768 | Split into parser/validator/directives/templates | ✅ Done |
 | `commands/run.py` | 1,513 | Extract StepExecutor, split into modules | P1 |
 | `commands/iterate.py` | 1,079 | Share execution engine with run.py | P2 |
-| `adapters/copilot.py` | 1,000+ | Extract events/stats/session modules | P3 |
+| `adapters/copilot.py` | 1,054 | ✅ Extracted events.py, stats.py | Done |
 
 ### Refactoring Strategy
 

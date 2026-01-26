@@ -26,7 +26,6 @@
 |------|--------|-------|
 | Extract StepExecutor from iterate.py | Medium | Q-020 done. See [Architecture Roadmap](#architecture-roadmap). |
 | CONSULT-DIRECTIVE Phase 4 | Medium | Timeout → fail with clear error. Needs CONSULT-TIMEOUT directive. |
-| Modularize copilot.py (~1127 lines) | Medium | Split to events.py, stats.py, session.py |
 
 ### P3: Low
 
