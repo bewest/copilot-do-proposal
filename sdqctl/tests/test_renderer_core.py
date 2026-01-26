@@ -9,6 +9,8 @@ from sdqctl.core.renderer import (
 )
 from sdqctl.core.context import ContextFile
 
+pytestmark = pytest.mark.unit
+
 
 class TestRenderedPrompt:
     """Test RenderedPrompt dataclass."""

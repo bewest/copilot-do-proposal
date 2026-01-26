@@ -37,7 +37,6 @@
 | Modularize run.py (~1541 lines) | Medium | Largest command file |
 | Add integration tests | Medium | Beyond loop stress testing |
 | Default verbosity key actions | Low | **Blocked by OQ-004** - needs scope clarification |
-| Test parametrization and markers | Low | `@pytest.mark.unit/integration` |
 | Performance benchmark suite | Medium | Track regressions |
 | Error path test coverage | Medium | File I/O errors, permissions, timeouts |
 
@@ -256,7 +255,7 @@ Documented in [`docs/SECURITY-MODEL.md`](../docs/SECURITY-MODEL.md).
 |-----|--------|--------|
 | No error path tests | Unknown failure behavior | 🔲 Open |
 | Missing parametrization | Incomplete variant coverage | 🔲 Open |
-| No test markers | Can't run selective tests | 🔲 Open |
+| No test markers | Can't run selective tests | ✅ Complete (5 files, 219 tests) |
 | Fixtures not scoped | Slow test runs | 🔲 Open |
 | No `test_exceptions.py` | Exit codes untested | ✅ Complete |
 | No `test_renderer_core.py` | Renderer logic untested | ✅ Complete |

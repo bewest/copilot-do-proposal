@@ -4,6 +4,8 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch
 
+pytestmark = pytest.mark.unit
+
 
 class TestConfig:
     """Test Config dataclass."""

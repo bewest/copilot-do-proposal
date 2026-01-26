@@ -6,6 +6,8 @@ import pytest
 
 from sdqctl.commands.utils import run_async
 
+pytestmark = pytest.mark.unit
+
 
 class TestRunAsync:
     """Test run_async utility function."""

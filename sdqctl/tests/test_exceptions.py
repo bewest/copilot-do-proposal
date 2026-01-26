@@ -15,6 +15,8 @@ from sdqctl.core.exceptions import (
     format_json_error,
 )
 
+pytestmark = pytest.mark.unit
+
 
 class TestExitCodes:
     """Test exit code constants."""

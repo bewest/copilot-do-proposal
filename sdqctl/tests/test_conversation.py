@@ -17,6 +17,8 @@ from sdqctl.core.conversation import (
 )
 from sdqctl.commands.run import process_elided_steps
 
+pytestmark = pytest.mark.unit
+
 
 class TestConversationFileParsing:
     """Core parsing tests for ConversationFile.parse()"""
