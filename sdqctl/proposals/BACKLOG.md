@@ -26,7 +26,7 @@
 |------|--------|-------|
 | Extract StepExecutor from iterate.py | Medium | Q-020 done. See [Architecture Roadmap](#architecture-roadmap). |
 | CONSULT-DIRECTIVE Phase 4 | Medium | Timeout → fail with clear error. Needs CONSULT-TIMEOUT directive. |
-| Fix E501 lint issues (113 remaining) | Low | 59 fixed total (172→113). 34% reduction. |
+| Fix E501 lint issues (103 in core) | Low | run.py(51), iterate.py(43), tests(55). Core down from 172 to 94. |
 
 ### P3: Low
 
@@ -56,6 +56,7 @@
 
 | Item | Date | Notes |
 |------|------|-------|
+| **E501 file.py lint (P2)** | 2026-01-26 | Fixed 10 issues in file.py. Core E501: 172→94 (45% reduction). |
 | **claude/openai adapter stubs (P2)** | 2026-01-26 | Created claude.py and openai.py stubs with NotImplementedError. Registered in registry. |
 | **Q-020 Context % fix (P0)** | 2026-01-26 | Sync tokens after each `ai_adapter.send()` in run.py and iterate.py. |
 | **ARCHITECTURE.md (P1)** | 2026-01-26 | Created docs/ARCHITECTURE.md: module structure, data flow, key abstractions, extension points. |
