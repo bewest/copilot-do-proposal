@@ -10,9 +10,9 @@
 
 | # | Item | Priority | Effort | Notes |
 |---|------|----------|--------|-------|
-| 1 | Add integration tests | P2 | Medium | Ongoing: Total 1296 tests. Focus: adapter integration, CLI integration, end-to-end workflows. |
+| 1 | Add integration tests | P2 | Medium | Ongoing: Total 1300 tests. Focus: adapter integration, CLI integration, end-to-end workflows. |
 | 2 | refcat usage patterns example | P3 | Low | Cross-repo context injection examples. Document workspace.lock.json aliases. |
-| 3 | Q-019A: Progress timestamps | P3 | Low | Progress messages lack timestamps during compaction. |
+| 3 | Expand test markers | P3 | Low | Add pytest markers for selective test runs. |
 
 ---
 
@@ -63,6 +63,7 @@
 
 | Item | Date | Notes |
 |------|------|-------|
+| **Q-019A: Progress timestamps (P3)** | 2026-01-26 | Added `set_timestamps()` to core/progress.py. Enabled when `-v` used. +4 tests. Total 1300 tests. |
 | **iterate.py exit code alignment** | 2026-01-26 | Verified: MissingContextFiles already returns exit code 2 via `ExitCode.MISSING_FILES`. No fix needed. |
 | **copilot.py further modularization (P2)** | 2026-01-26 | Reassessed: 670 lines includes 121 blank + docstrings. Core logic ~500 lines. Already extracted events.py (585) + stats.py (191). No further extraction needed. |
 | **Q-021: `---` separator documentation (P2)** | 2026-01-26 | Documented `--` prefix requirement in `iterate --help` and COMMANDS.md. |

@@ -435,3 +435,48 @@ class TestTTYDetection:
         # Should return a boolean
         result = is_tty()
         assert isinstance(result, bool)
+
+
+class TestTimestamps:
+    """Tests for timestamp functionality (Q-019A)."""
+
+    def test_set_timestamps_function_exists(self):
+        """Test set_timestamps function is available."""
+        from sdqctl.core.progress import set_timestamps
+        
+        # Should not raise
+        set_timestamps(True)
+        set_timestamps(False)
+
+    def test_progress_with_timestamps(self, capsys):
+        """Test progress includes timestamp when enabled."""
+        from sdqctl.core.progress import set_timestamps
+        
+        set_timestamps(True)
+        progress("Test message")
+        set_timestamps(False)  # Reset
+        
+        captured = capsys.readouterr()
+        # Should have HH:MM:SS format timestamp
+        import re
+        assert re.match(r'\d{2}:\d{2}:\d{2} Test message', captured.out)
+
+    def test_progress_without_timestamps(self, capsys):
+        """Test progress has no timestamp when disabled (default)."""
+        from sdqctl.core.progress import set_timestamps
+        
+        set_timestamps(False)
+        progress("Test message")
+        
+        captured = capsys.readouterr()
+        # Should NOT have timestamp prefix
+        assert captured.out == "Test message\n"
+        
+    def test_timestamps_disabled_by_default(self, capsys):
+        """Test timestamps are off by default."""
+        # Just call progress without setting timestamps
+        progress("Plain message")
+        
+        captured = capsys.readouterr()
+        # Should not have timestamp
+        assert captured.out == "Plain message\n"

@@ -13,12 +13,13 @@ This document catalogs non-obvious behaviors discovered while developing and usi
 
 | ID | Quirk | Priority | Status |
 |----|-------|----------|--------|
-| Q-019A | Progress messages lack timestamps after compaction | P3 | 🟡 Open |
+| *(No active quirks)* | | | |
 
 ### Resolved Quirks (Archived)
 
 | ID | Quirk | Resolution | Archive |
 |----|-------|------------|---------|
+| Q-019A | Progress messages lack timestamps | Timestamps enabled when -v flag used | 2026-01-26 |
 | Q-021 | `---` separator requires `--` prefix on CLI | Documented in iterate --help | 2026-01-26 |
 | Q-017 | E501 line too long | All E501 fixed (core + tests) | 2026-01-25 |
 | Q-020 | Context percentage shows 0% until compaction | Sync tokens after each send() | [2026-01](../archive/quirks/2026-01-resolved-quirks.md#q-020-context-percentage-shows-0-until-compaction) |
@@ -88,7 +89,7 @@ Help text now documents the `--` requirement before using `---` separators.
 
 **Priority:** P3 - Cosmetic  
 **Discovered:** 2026-01-25  
-**Status:** 🟡 Open
+**Status:** ✅ RESOLVED (2026-01-26)
 
 ### Description
 
@@ -100,18 +101,16 @@ Progress messages appear interleaved with logger output but lack timestamps:
 15:28:04 [DEBUG] sdqctl.adapters.copilot: Context: 104,300/128,000 tokens
 ```
 
-### Root Cause
+### Resolution
 
-Multiple files emit progress via stdout (no timestamps) while also logging:
-- `copilot.py:607` - `progress("  🗜️  Compacting...")`
-- `run.py:187` - `progress_fn("    🗜  Compacting...")`
-- `cycle.py:442` - `progress_print("    Compacting...")`
+Added `set_timestamps()` function to `core/progress.py`. Timestamps are automatically
+enabled when `-v` (verbose) flag is used, aligning progress output with logger format.
 
-### Fix Options
-
-1. Route all compaction progress through logger
-2. Suppress logger when progress is active
-3. Add timestamps to progress output
+```
+15:28:04 [INFO] sdqctl.adapters.copilot: Compaction started
+15:28:04  🗜️ Compacting...             <-- Now has timestamp
+15:28:04 [DEBUG] sdqctl.adapters.copilot: Context: 104,300/128,000 tokens
+```
 
 ---
 

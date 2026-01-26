@@ -32,7 +32,7 @@ from .commands.sessions import sessions
 from .commands.status import status
 from .commands.verify import verify
 from .core.logging import setup_logging
-from .core.progress import set_quiet
+from .core.progress import set_quiet, set_timestamps
 
 
 @click.group()
@@ -90,6 +90,8 @@ def cli(
     setup_logging(verbose, quiet)
     # When json_errors is enabled, also set quiet to suppress progress messages
     set_quiet(quiet or json_errors)
+    # Enable timestamps when verbose to align with logger format (Q-019A)
+    set_timestamps(verbose >= 1 and not quiet and not json_errors)
 
 
 # Register commands

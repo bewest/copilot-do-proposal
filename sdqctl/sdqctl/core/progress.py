@@ -27,10 +27,14 @@ Usage:
 import sys
 import time
 from contextlib import contextmanager
+from datetime import datetime
 from typing import Optional
 
 # Global quiet flag - when True, suppresses progress output
 _quiet = False
+
+# Global timestamp flag - when True, includes timestamps in progress output
+_show_timestamps = False
 
 # TTY detection for progress overwrites
 _is_tty = sys.stdout.isatty()
@@ -47,6 +51,15 @@ def is_quiet() -> bool:
     return _quiet
 
 
+def set_timestamps(enabled: bool = True) -> None:
+    """Enable or disable timestamps in progress output.
+
+    When enabled, progress messages include timestamps matching logger format.
+    """
+    global _show_timestamps
+    _show_timestamps = enabled
+
+
 def is_tty() -> bool:
     """Check if stdout is a TTY (for progress overwrites)."""
     return _is_tty
@@ -61,6 +74,9 @@ def progress(message: str, end: str = "\n", flush: bool = True) -> None:
         flush: Whether to flush stdout immediately
     """
     if not _quiet:
+        if _show_timestamps:
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            message = f"{timestamp} {message}"
         print(message, end=end, flush=flush, file=sys.stdout)
 
 
