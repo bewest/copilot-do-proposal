@@ -39,7 +39,6 @@
 | Default verbosity key actions | Low | See [SDK-LEARNINGS](../docs/SDK-LEARNINGS.md) |
 | Test parametrization and markers | Low | `@pytest.mark.unit/integration` |
 | Performance benchmark suite | Medium | Track regressions |
-| Add `test_renderer_core.py` | Low | Unit tests for RenderedPrompt, RenderedCycle |
 | Add `test_command_utils.py` | Low | Test `run_async()` function |
 | Error path test coverage | Medium | File I/O errors, permissions, timeouts |
 
@@ -261,7 +260,7 @@ Documented in [`docs/SECURITY-MODEL.md`](../docs/SECURITY-MODEL.md).
 | No test markers | Can't run selective tests | 🔲 Open |
 | Fixtures not scoped | Slow test runs | 🔲 Open |
 | No `test_exceptions.py` | Exit codes untested | ✅ Complete |
-| No `test_renderer_core.py` | Renderer logic untested | 🔲 Open |
+| No `test_renderer_core.py` | Renderer logic untested | ✅ Complete |
 | No `test_command_utils.py` | `run_async()` untested | 🔲 Open |
 
 ---
