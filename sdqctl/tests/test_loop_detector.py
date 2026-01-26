@@ -93,10 +93,14 @@ class TestLoopDetectorReasoningPatterns:
     def test_no_detection_on_normal_reasoning(self):
         """Normal reasoning doesn't trigger detection."""
         detector = LoopDetector()
-        # Response must be >= 100 chars to avoid minimal response detection (Q-002 thresholds)
+        # Response must be >= 100 chars to avoid minimal response detection (Q-002)
+        long_response = (
+            "Here's my analysis of the authentication module. "
+            "The code follows best practices for security including proper hashing."
+        )
         result = detector.check(
             "I'll analyze the code and provide recommendations",
-            "Here's my analysis of the authentication module. The code follows best practices for security including proper hashing.",
+            long_response,
             cycle_number=1
         )
         assert result is None
@@ -104,8 +108,12 @@ class TestLoopDetectorReasoningPatterns:
     def test_no_detection_on_empty_reasoning(self):
         """Empty reasoning doesn't trigger detection."""
         detector = LoopDetector()
-        # Response must be >= 100 chars to not trigger minimal response detection (Q-002 thresholds)
-        result = detector.check(None, "This is a normal response with enough content to pass the length check that is now 100 characters minimum.", cycle_number=1)
+        # Response must be >= 100 chars to not trigger minimal response detection
+        long_response = (
+            "This is a normal response with enough content to pass the length "
+            "check that is now 100 characters minimum."
+        )
+        result = detector.check(None, long_response, cycle_number=1)
         assert result is None
 
 
@@ -117,7 +125,10 @@ class TestLoopDetectorIdenticalResponses:
         detector = LoopDetector()
         
         # Response must be >= 100 chars to not trigger minimal response detection
-        response = "Same response every time with enough content to pass length check easily. This needs to be at least 100 characters long."
+        response = (
+            "Same response every time with enough content to pass length check. "
+            "This needs to be at least 100 characters long."
+        )
         
         # First response - no detection
         result = detector.check(None, response, cycle_number=0)
@@ -132,12 +143,24 @@ class TestLoopDetectorIdenticalResponses:
         """Different responses don't trigger detection."""
         detector = LoopDetector()
         
-        # Responses must be >= 100 chars to not trigger minimal response detection (Q-002)
+        # Responses must be >= 100 chars to not trigger minimal response detection
         responses = [
-            "First unique response with enough content to pass the length check requirement. Adding extra text to reach 100 chars.",
-            "Second different response with sufficient content to avoid minimal detection. Additional padding to reach threshold.",
-            "Third varied response that has plenty of characters in it to be valid. More content to ensure we hit 100 chars easily.",
-            "Fourth distinct response with adequate length to pass all detection checks. Extra text for the 100 char minimum requirement.",
+            (
+                "First unique response with enough content to pass the length "
+                "check requirement. Adding extra text to reach 100 chars."
+            ),
+            (
+                "Second different response with sufficient content to avoid "
+                "minimal detection. Additional padding to reach threshold."
+            ),
+            (
+                "Third varied response that has plenty of characters in it to "
+                "be valid. More content to ensure we hit 100 chars easily."
+            ),
+            (
+                "Fourth distinct response with adequate length to pass all "
+                "detection checks. Extra text for the 100 char minimum."
+            ),
         ]
         
         for i, response in enumerate(responses):
@@ -149,8 +172,14 @@ class TestLoopDetectorIdenticalResponses:
         detector = LoopDetector()
         
         # Responses must be >= 100 chars (Q-002)
-        same = "Same response with enough content to pass the length check requirement. Adding more text to reach 100 characters easily."
-        different = "Different response with sufficient length to avoid minimal detection. More content to ensure we hit 100 chars minimum."
+        same = (
+            "Same response with enough content to pass the length check. "
+            "Adding more text to reach 100 characters easily."
+        )
+        different = (
+            "Different response with sufficient length to avoid minimal. "
+            "More content to ensure we hit 100 chars minimum."
+        )
         
         detector.check(None, same, cycle_number=0)
         result = detector.check(None, different, cycle_number=1)
@@ -162,7 +191,10 @@ class TestLoopDetectorIdenticalResponses:
         detector = LoopDetector(identical_threshold=3)  # Override to 3
         
         # Response >= 100 chars (Q-002)
-        response = "Same response here with sufficient length to avoid minimal response detection. Extra padding to reach 100 character minimum."
+        response = (
+            "Same response here with sufficient length to avoid minimal. "
+            "Extra padding to reach 100 character minimum."
+        )
         
         detector.check(None, response, cycle_number=0)
         result = detector.check(None, response, cycle_number=1)
@@ -181,10 +213,14 @@ class TestLoopDetectorMinimalResponse:
         detector = LoopDetector()
         
         # First cycle - use different response to avoid identical detection
-        result = detector.check(None, "First response that is unique and long enough to pass the 100 char check on first cycle.", cycle_number=0)
+        first = (
+            "First response that is unique and long enough to pass the "
+            "100 char check on first cycle."
+        )
+        result = detector.check(None, first, cycle_number=0)
         assert result is None
         
-        # Second cycle - short response triggers minimal detection (Q-002: min=100)
+        # Second cycle - short response triggers minimal detection
         result = detector.check(None, "OK", cycle_number=1)
         assert result is not None
         assert result.reason == LoopReason.MINIMAL_RESPONSE
@@ -200,10 +236,17 @@ class TestLoopDetectorMinimalResponse:
         detector = LoopDetector()
         
         # First cycle - unique response >= 100 chars
-        detector.check(None, "Normal response with enough content to pass the length check. Adding more text to reach 100 characters minimum.", cycle_number=0)
+        first = (
+            "Normal response with enough content to pass the length check. "
+            "Adding more text to reach 100 characters minimum."
+        )
+        detector.check(None, first, cycle_number=0)
         
         # Second cycle with adequate length (>= 100 chars, Q-002)
-        long_response = "This is a response with more than 100 characters of content. Adding extra text to ensure we pass the minimum threshold."
+        long_response = (
+            "This is a response with more than 100 characters of content. "
+            "Adding extra text to ensure we pass the minimum threshold."
+        )
         result = detector.check(None, long_response, cycle_number=1)
         assert result is None
 
@@ -212,9 +255,17 @@ class TestLoopDetectorMinimalResponse:
         detector = LoopDetector(min_response_length=200)  # Higher than default
         
         # First cycle - unique response
-        detector.check(None, "Normal first response with enough content to be unique and avoid identical detection on subsequent cycles.", cycle_number=0)
+        first = (
+            "Normal first response with enough content to be unique and "
+            "avoid identical detection on subsequent cycles."
+        )
+        detector.check(None, first, cycle_number=0)
         # Second cycle - 100 chars is now too short with min=200
-        result = detector.check(None, "Short response that is under 200 characters but over the default 100 character minimum threshold.", cycle_number=1)
+        short = (
+            "Short response that is under 200 characters but over the "
+            "default 100 character minimum threshold."
+        )
+        result = detector.check(None, short, cycle_number=1)
         
         assert result is not None
         assert result.reason == LoopReason.MINIMAL_RESPONSE
@@ -277,8 +328,11 @@ class TestLoopDetectorCycleInfo:
         """Reset clears all detection state."""
         detector = LoopDetector()
         
-        # Use responses long enough to not trigger minimal detection (Q-002: min=100)
-        response = "Same response with enough content to pass the length check requirement. Adding extra text to reach 100 characters minimum."
+        # Use responses long enough to not trigger minimal detection
+        response = (
+            "Same response with enough content to pass the length check. "
+            "Adding extra text to reach 100 characters minimum."
+        )
         
         # Build up state - with threshold=2, this would trigger on second
         detector.check(None, response, cycle_number=0)
@@ -309,14 +363,22 @@ class TestLoopReasoningPatterns:
         """Test specific pattern matching examples."""
         import re
         
+        # (text, pattern, should_match)
+        prompt_pattern = r"\bsame (?:workflow )?prompt (?:being )?repeated\b"
+        confirmed_pattern = (
+            r"\balready (?:confirmed|answered|responded).*"
+            r"(?:multiple|several) times\b"
+        )
+        minimal_pattern = r"\bkeep(?:ing)? (?:my )?response minimal\b"
+        
         test_cases = [
             ("in a loop", r"\bin a loop\b", True),
             ("inalooptest", r"\bin a loop\b", False),  # word boundaries
-            ("same prompt being repeated", r"\bsame (?:workflow )?prompt (?:being )?repeated\b", True),
-            ("same workflow prompt repeated", r"\bsame (?:workflow )?prompt (?:being )?repeated\b", True),
-            ("already confirmed multiple times", r"\balready (?:confirmed|answered|responded).*(?:multiple|several) times\b", True),
-            ("keep my response minimal", r"\bkeep(?:ing)? (?:my )?response minimal\b", True),
-            ("keeping response minimal", r"\bkeep(?:ing)? (?:my )?response minimal\b", True),
+            ("same prompt being repeated", prompt_pattern, True),
+            ("same workflow prompt repeated", prompt_pattern, True),
+            ("already confirmed multiple times", confirmed_pattern, True),
+            ("keep my response minimal", minimal_pattern, True),
+            ("keeping response minimal", minimal_pattern, True),
         ]
         
         for text, pattern, should_match in test_cases:
@@ -349,7 +411,10 @@ class TestLoopDetectorStopFile:
         detector = LoopDetector(nonce="testnonc1234", stop_file_dir=tmp_path)
         
         # No stop file - no detection
-        response = "Normal response with sufficient length to pass all other detection thresholds. Extra padding for 100 chars."
+        response = (
+            "Normal response with sufficient length to pass all other "
+            "detection thresholds. Extra padding for 100 chars."
+        )
         result = detector.check(None, response, cycle_number=0)
         assert result is None
         
@@ -358,7 +423,11 @@ class TestLoopDetectorStopFile:
         stop_file.write_text('{"reason": "User requested stop"}')
         
         # Now detection triggers
-        result = detector.check(None, "Another unique response with sufficient length to pass all detection thresholds including 100 char min.", cycle_number=1)
+        response2 = (
+            "Another unique response with sufficient length to pass all "
+            "detection thresholds including 100 char min."
+        )
+        result = detector.check(None, response2, cycle_number=1)
         assert result is not None
         assert result.reason == LoopReason.STOP_FILE
         assert "User requested stop" in result.details

@@ -151,7 +151,10 @@ class TestApplyTemplateVariables:
 
     def test_iteration_index_substituted(self):
         """Test {{ITERATION_INDEX}} is substituted."""
-        content = "MODEL gpt-4\nADAPTER mock\nPROMPT Item {{ITERATION_INDEX}} of {{ITERATION_TOTAL}}."
+        content = (
+            "MODEL gpt-4\nADAPTER mock\n"
+            "PROMPT Item {{ITERATION_INDEX}} of {{ITERATION_TOTAL}}."
+        )
         conv = ConversationFile.parse(content)
         
         result = apply_iteration_context(conv, "/lib/auth.js", 3, 10, "plugin")

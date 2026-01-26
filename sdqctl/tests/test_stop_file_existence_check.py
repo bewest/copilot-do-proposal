@@ -49,7 +49,9 @@ def stop_file_content():
 class TestCycleStopFileCheck:
     """Test that iterate command checks for existing stop file."""
 
-    def test_cycle_refuses_when_stop_file_exists(self, runner, temp_workflow, stop_file_content, tmp_path):
+    def test_cycle_refuses_when_stop_file_exists(
+        self, runner, temp_workflow, stop_file_content, tmp_path
+    ):
         """Cycle should refuse to run when stop file exists."""
         nonce = "testcheck123"
         stop_file = tmp_path / f"STOPAUTOMATION-{nonce}.json"
@@ -97,7 +99,9 @@ class TestCycleStopFileCheck:
 class TestRunStopFileCheck:
     """Test that run command checks for existing stop file."""
 
-    def test_run_refuses_when_stop_file_exists(self, runner, temp_workflow, stop_file_content, tmp_path):
+    def test_run_refuses_when_stop_file_exists(
+        self, runner, temp_workflow, stop_file_content, tmp_path
+    ):
         """Run should refuse when stop file exists."""
         nonce = "runcheck1234"
         
@@ -136,7 +140,9 @@ class TestRunStopFileCheck:
 class TestApplyStopFileCheck:
     """Test that apply command checks for existing stop file."""
 
-    def test_apply_refuses_when_stop_file_exists(self, runner, temp_workflow, stop_file_content, tmp_path):
+    def test_apply_refuses_when_stop_file_exists(
+        self, runner, temp_workflow, stop_file_content, tmp_path
+    ):
         """Apply should refuse when stop file exists."""
         nonce = "applycheck1"
         

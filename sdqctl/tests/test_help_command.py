@@ -240,7 +240,11 @@ class TestHelpDataStructures:
     def test_overview_contains_all_commands(self):
         """Verify overview mentions all commands."""
         overview = get_overview()
-        for cmd in ["run", "cycle", "flow", "apply", "render", "verify", "validate", "status", "init", "resume", "show"]:
+        commands = [
+            "run", "cycle", "flow", "apply", "render", "verify",
+            "validate", "status", "init", "resume", "show"
+        ]
+        for cmd in commands:
             assert cmd in overview, f"Overview missing command: {cmd}"
     
     def test_overview_contains_all_topics(self):

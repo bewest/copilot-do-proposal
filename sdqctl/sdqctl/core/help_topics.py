@@ -32,7 +32,8 @@ Directives control workflow behavior in `.conv` files.
 | `MODEL-PREFERS` | Soft preference (hint) | `MODEL-PREFERS vendor:anthropic` |
 | `MODEL-POLICY` | Resolution strategy | `MODEL-POLICY cheapest` |
 
-Requirements: `context:Nk`, `tier:economy|standard|premium`, `speed:fast|standard|deliberate`, `capability:code|reasoning|general`
+Requirements: `context:Nk`, `tier:economy|standard|premium`, `speed:fast|standard|deliberate`,
+`capability:code|reasoning|general`
 
 ## Context Directives
 

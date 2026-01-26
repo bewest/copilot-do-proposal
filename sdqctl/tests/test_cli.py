@@ -237,7 +237,9 @@ class TestValidateCommand:
         fake_path = tmp_path / "nonexistent.conv"
         result = cli_runner.invoke(cli, ["validate", str(fake_path)])
         # Should fail with error about file not existing
-        assert result.exit_code != 0 or "error" in result.output.lower() or "not found" in result.output.lower()
+        is_err = result.exit_code != 0
+        output_lower = result.output.lower()
+        assert is_err or "error" in output_lower or "not found" in output_lower
 
     def test_validate_elide_chain_with_run_retry(self, cli_runner, tmp_path):
         """Test validation rejects RUN-RETRY inside ELIDE chain."""
@@ -344,7 +346,9 @@ Some description.
         # Without --strict, should pass (orphan is a warning)
         result = cli_runner.invoke(cli, ["verify", "traceability", "-p", str(tmp_path)])
         # With --strict, warnings become errors
-        result_strict = cli_runner.invoke(cli, ["verify", "traceability", "-p", str(tmp_path), "--strict"])
+        result_strict = cli_runner.invoke(
+            cli, ["verify", "traceability", "-p", str(tmp_path), "--strict"]
+        )
         # Note: The exact behavior depends on whether UCA without SC is warning or error
         # Just verify that --strict changes output to include "(strict mode)"
         if "WARN" in result.output or result.exit_code == 0:

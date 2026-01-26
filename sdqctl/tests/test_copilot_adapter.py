@@ -123,7 +123,9 @@ class TestCopilotAdapterLifecycle:
         mock_copilot_client.stop.assert_called_once()
     
     @pytest.mark.asyncio
-    async def test_stop_handles_session_destroy_error(self, mock_copilot_client, mock_copilot_session):
+    async def test_stop_handles_session_destroy_error(
+        self, mock_copilot_client, mock_copilot_session
+    ):
         """Test stop() continues even if session destroy fails."""
         mock_copilot_session.destroy.side_effect = Exception("Session error")
         
@@ -201,7 +203,9 @@ class TestCopilotAdapterSessions:
         mock_copilot_session.destroy.assert_called()
     
     @pytest.mark.asyncio
-    async def test_destroy_session_logs_stats(self, mock_copilot_client, mock_copilot_session, caplog):
+    async def test_destroy_session_logs_stats(
+        self, mock_copilot_client, mock_copilot_session, caplog
+    ):
         """Test destroy_session() logs final stats."""
         mock_copilot_client.create_session.return_value = mock_copilot_session
         
@@ -453,7 +457,9 @@ class TestCopilotAdapterEventHandling:
         assert stats.total_tool_calls == 3
     
     @pytest.mark.asyncio
-    async def test_tool_execution_with_timing_and_status(self, mock_copilot_client, mock_copilot_session):
+    async def test_tool_execution_with_timing_and_status(
+        self, mock_copilot_client, mock_copilot_session
+    ):
         """Test tool execution tracks timing and success/failure status."""
         mock_copilot_client.create_session.return_value = mock_copilot_session
         
@@ -479,7 +485,9 @@ class TestCopilotAdapterEventHandling:
             # Simulate failed tool
             event = MagicMock()
             event.type = MockEventType("tool.execution_start")
-            event.data = MagicMock(name="edit", tool_call_id="tc2", arguments={"path": "/missing.py"})
+            event.data = MagicMock(
+                name="edit", tool_call_id="tc2", arguments={"path": "/missing.py"}
+            )
             handler(event)
             
             event = MagicMock()
@@ -554,7 +562,9 @@ class TestCopilotAdapterContextUsage:
         assert max_tokens == 128000
     
     @pytest.mark.asyncio
-    async def test_get_context_usage_estimates_from_messages(self, mock_copilot_client, mock_copilot_session):
+    async def test_get_context_usage_estimates_from_messages(
+        self, mock_copilot_client, mock_copilot_session
+    ):
         """Test get_context_usage() estimates tokens if no stats."""
         mock_copilot_client.create_session.return_value = mock_copilot_session
         
@@ -771,7 +781,11 @@ class TestCopilotAdapterEventExport:
         async def simulate_events(*args, **kwargs):
             handler = mock_copilot_session._event_handler
             
-            for event_type in ["session.start", "assistant.turn_start", "assistant.intent", "session.idle"]:
+            event_types = [
+                "session.start", "assistant.turn_start",
+                "assistant.intent", "session.idle"
+            ]
+            for event_type in event_types:
                 event = MagicMock()
                 event.type = MockEventType(event_type)
                 event.data = MagicMock()

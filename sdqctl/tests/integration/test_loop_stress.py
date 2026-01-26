@@ -160,7 +160,8 @@ async def run_repeated_prompt_test(
     def on_reasoning(text: str):
         reasoning_buffer.append(text)
         if verbose:
-            console.print(f"[dim]Reasoning: {text[:100]}...[/dim]" if len(text) > 100 else f"[dim]Reasoning: {text}[/dim]")
+            preview = text[:100] + "..." if len(text) > 100 else text
+            console.print(f"[dim]Reasoning: {preview}[/dim]")
     
     try:
         await adapter.start()
@@ -193,7 +194,8 @@ async def run_repeated_prompt_test(
                     result.responses.append(response)
                     
                     if verbose:
-                        console.print(f"[green]Response ({len(response)} chars):[/green] {response[:150]}...")
+                        preview = response[:150] + "..."
+                        console.print(f"[green]Response ({len(response)} chars):[/green] {preview}")
                     
                     # Check with our local loop detector
                     combined_reasoning = "\n".join(reasoning_buffer)
@@ -206,7 +208,8 @@ async def run_repeated_prompt_test(
                         result.loop_reason = loop_result.reason.value
                         result.loop_cycle = cycle_num
                         if verbose:
-                            console.print(f"[yellow]⚠️ LoopDetector triggered: {loop_result.reason.value}[/yellow]")
+                            reason = loop_result.reason.value
+                            console.print(f"[yellow]⚠️ LoopDetector triggered: {reason}[/yellow]")
                         # Continue to see if SDK also aborts
                         
                 except AgentAborted as e:
@@ -252,7 +255,8 @@ async def run_loop_elicit_test(
     def on_reasoning(text: str):
         reasoning_buffer.append(text)
         if verbose:
-            console.print(f"[dim]Reasoning: {text[:100]}...[/dim]" if len(text) > 100 else f"[dim]Reasoning: {text}[/dim]")
+            preview = text[:100] + "..." if len(text) > 100 else text
+            console.print(f"[dim]Reasoning: {preview}[/dim]")
     
     try:
         await adapter.start()
@@ -294,7 +298,8 @@ async def run_loop_elicit_test(
                     result.loop_reason = loop_result.reason.value
                     result.loop_cycle = 1
                     if verbose:
-                        console.print(f"[yellow]⚠️ LoopDetector triggered: {loop_result.reason.value}[/yellow]")
+                        reason = loop_result.reason.value
+                        console.print(f"[yellow]⚠️ LoopDetector triggered: {reason}[/yellow]")
                         
             except AgentAborted as e:
                 result.abort_triggered = True
@@ -352,7 +357,8 @@ async def run_minimal_response_test(
             
             setup_response = await adapter.send(
                 session,
-                "This is a loop detection test. Please confirm you understand with a brief response.",
+                "This is a loop detection test. Please confirm you understand "
+                "with a brief response.",
             )
             result.responses.append(setup_response)
             loop_detector.check(None, setup_response, 0)
@@ -378,7 +384,8 @@ async def run_minimal_response_test(
                     result.loop_reason = loop_result.reason.value
                     result.loop_cycle = 2
                     if verbose:
-                        console.print(f"[yellow]⚠️ LoopDetector triggered: {loop_result.reason.value}[/yellow]")
+                        reason = loop_result.reason.value
+                        console.print(f"[yellow]⚠️ LoopDetector triggered: {reason}[/yellow]")
                         
             except AgentAborted as e:
                 result.abort_triggered = True
@@ -474,7 +481,8 @@ async def run_stop_file_elicit_test(
                 result.agent_response = response
                 
                 if verbose:
-                    console.print(f"[green]Response ({len(response)} chars):[/green] {response[:300]}...")
+                    preview = response[:300] + "..."
+                    console.print(f"[green]Response ({len(response)} chars):[/green] {preview}")
                 
             except AgentAborted as e:
                 result.error = f"Agent aborted: {e.reason}"
@@ -622,7 +630,10 @@ def print_detailed_result(result: TestResult):
 @click.group()
 @click.option("--adapter", "-a", default="copilot", help="Adapter to use (copilot, mock)")
 @click.option("--model", "-m", default="gpt-4o", help="Model to use")
-@click.option("--output-dir", "-o", type=click.Path(), default="./loop-test-logs", help="Output directory for event logs")
+@click.option(
+    "--output-dir", "-o", type=click.Path(), default="./loop-test-logs",
+    help="Output directory for event logs"
+)
 @click.option("--verbose", "-v", is_flag=True, help="Verbose output")
 @click.pass_context
 def cli(ctx, adapter: str, model: str, output_dir: str, verbose: bool):
@@ -787,7 +798,11 @@ def stopfile(ctx, nonce: Optional[str]):
         console.print("\n[green]✓ Stop file mechanism VERIFIED - agent created the file[/green]")
         raise SystemExit(0)
     else:
-        console.print("\n[yellow]⚠ Stop file NOT created - agent may have been blocked or refused[/yellow]")
+        msg = (
+            "\n[yellow]⚠ Stop file NOT created - agent may have been blocked or "
+            "refused[/yellow]"
+        )
+        console.print(msg)
         raise SystemExit(1)
 
 

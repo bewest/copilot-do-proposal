@@ -179,7 +179,10 @@ class TestCheckpointRoundTrip:
         # Simulate: prompt 1 completed, RUN failed before prompt 2
         session.add_message("user", "Analyze")
         session.add_message("assistant", "I found issues...")
-        session.add_message("system", "[RUN output]\n```\n$ pytest (exit 1)\nFailed: test_auth.py::test_login\n```")
+        session.add_message(
+            "system",
+            "[RUN output]\n```\n$ pytest (exit 1)\nFailed: test_auth.py::test_login\n```"
+        )
         session.state.prompt_index = 1  # Resume from prompt 2
         
         checkpoint_path = session.save_pause_checkpoint("RUN failed: pytest (exit 1)")

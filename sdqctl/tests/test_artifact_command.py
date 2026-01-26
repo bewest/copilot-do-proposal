@@ -516,7 +516,11 @@ class TestArtifactRetireCLI:
         with tempfile.TemporaryDirectory() as tmpdir:
             # File already has [RETIRED] in heading
             test_file = Path(tmpdir) / "test.md"
-            test_file.write_text("### REQ-005: [RETIRED] Old req\n**Status:** RETIRED (2026-01-01)\n")
+            content = (
+                "### REQ-005: [RETIRED] Old req\n"
+                "**Status:** RETIRED (2026-01-01)\n"
+            )
+            test_file.write_text(content)
             
             result = runner.invoke(cli, [
                 "artifact", "retire", "REQ-005",

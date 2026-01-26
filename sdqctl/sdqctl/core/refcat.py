@@ -197,7 +197,11 @@ def parse_ref(ref: str) -> RefSpec:
     )
 
 
-def resolve_alias(alias: str, aliases: Optional[dict[str, Path]] = None, cwd: Optional[Path] = None) -> Path:
+def resolve_alias(
+    alias: str,
+    aliases: Optional[dict[str, Path]] = None,
+    cwd: Optional[Path] = None
+) -> Path:
     """Resolve alias to base path.
 
     Args:

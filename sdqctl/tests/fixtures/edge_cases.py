@@ -55,9 +55,12 @@ def mixed_validity_batch():
     now = datetime.now(timezone.utc)
     base_time = int(now.timestamp() * 1000)
     return [
-        {"type": "sgv", "sgv": 120, "date": base_time, "direction": "Flat", "isValid": True},
-        {"type": "sgv", "sgv": 115, "date": base_time - 300000, "direction": "Flat", "isValid": False},
-        {"type": "sgv", "sgv": 125, "date": base_time + 300000, "direction": "FortyFiveUp", "isValid": True},
+        {"type": "sgv", "sgv": 120, "date": base_time,
+         "direction": "Flat", "isValid": True},
+        {"type": "sgv", "sgv": 115, "date": base_time - 300000,
+         "direction": "Flat", "isValid": False},
+        {"type": "sgv", "sgv": 125, "date": base_time + 300000,
+         "direction": "FortyFiveUp", "isValid": True},
     ]
 
 

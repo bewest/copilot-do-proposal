@@ -14,12 +14,12 @@ This document catalogs non-obvious behaviors discovered while developing and usi
 | ID | Quirk | Priority | Status |
 |----|-------|----------|--------|
 | Q-019A | Progress messages lack timestamps after compaction | P3 | 🟡 Open |
-| Q-017 | 55 E501 remaining (tests only) | P3 | 🟢 Core clean |
 
 ### Resolved Quirks (Archived)
 
 | ID | Quirk | Resolution | Archive |
 |----|-------|------------|---------|
+| Q-017 | E501 line too long | All E501 fixed (core + tests) | 2026-01-25 |
 | Q-020 | Context percentage shows 0% until compaction | Sync tokens after each send() | [2026-01](../archive/quirks/2026-01-resolved-quirks.md#q-020-context-percentage-shows-0-until-compaction) |
 | Q-019B | Context percentage diverges after compaction | Sync tokens from SDK | [2026-01](../archive/quirks/2026-01-resolved-quirks.md#q-019b-context-percentage-diverges-after-compaction) |
 | Q-018 | Session ID mismatch between checkpoint and SDK | Store SDK session UUID | [2026-01](../archive/quirks/2026-01-resolved-quirks.md#q-018-session-id-mismatch-between-checkpoint-and-sdk) |
@@ -72,7 +72,7 @@ Multiple files emit progress via stdout (no timestamps) while also logging:
 
 **Priority:** P3 - Low (Cosmetic)  
 **Discovered:** 2026-01-25  
-**Status:** 🟢 Core clean - 55 remaining in tests only
+**Status:** ✅ RESOLVED - All E501 fixed
 
 ### Description
 
@@ -82,13 +82,13 @@ Comprehensive ruff linting revealed issues across the codebase. Auto-fix applied
 
 | Before | After | Fixed |
 |--------|-------|-------|
-| 1,994 issues | 55 E501 | 1,939 (97%) |
+| 1,994 issues | 0 E501 | 1,994 (100%) |
 
 ### Remaining Issues
 
 | Category | Count | Notes |
 |----------|-------|-------|
-| E501 (line too long >100) | 55 | Tests only. Core commands clean ✅ |
+| E501 (line too long >100) | 0 | ✅ All fixed (2026-01-25) |
 | F841 (unused variables) | 0 | ✅ All fixed |
 
 ---

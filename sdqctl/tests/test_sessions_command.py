@@ -291,7 +291,9 @@ class TestSessionsCleanupCommand:
         mock_adapter.list_sessions = AsyncMock(return_value=sample_sessions)
         
         with patch("sdqctl.commands.sessions.get_adapter", return_value=mock_adapter):
-            result = cli_runner.invoke(cli, ["sessions", "cleanup", "--older-than", "7d", "--dry-run"])
+            result = cli_runner.invoke(
+                cli, ["sessions", "cleanup", "--older-than", "7d", "--dry-run"]
+            )
         
         assert result.exit_code == 0
         assert "Would delete" in result.output

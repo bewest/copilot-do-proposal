@@ -442,7 +442,10 @@ class TestTimeoutPartialOutput:
         import subprocess
         
         # Simulate what run.py does with TimeoutExpired
-        e = subprocess.TimeoutExpired(cmd="slow_cmd", timeout=5, output="partial stdout", stderr="partial stderr")
+        e = subprocess.TimeoutExpired(
+            cmd="slow_cmd", timeout=5, output="partial stdout",
+            stderr="partial stderr"
+        )
         
         partial_stdout = e.stdout or ""
         partial_stderr = e.stderr or ""
@@ -634,7 +637,12 @@ class TestR2FailureOutputCapture:
             output_text += f"\n\n[stderr]\n{result.stderr}"
         
         assert "[stderr]" in output_text
-        assert "nonexistent" in output_text.lower() or "cannot access" in output_text.lower() or "no such" in output_text.lower()
+        output_lower = output_text.lower()
+        assert (
+            "nonexistent" in output_lower or
+            "cannot access" in output_lower or
+            "no such" in output_lower
+        )
 
 
 class TestRunOutputLimit:
@@ -767,7 +775,9 @@ class TestRunSubprocessHelper:
     def test_stderr_captured(self, tmp_path):
         """Test stderr is captured separately."""
         from sdqctl.commands.run import _run_subprocess
-        result = _run_subprocess("ls /nonexistent_path_12345", allow_shell=False, timeout=10, cwd=tmp_path)
+        result = _run_subprocess(
+            "ls /nonexistent_path_12345", allow_shell=False, timeout=10, cwd=tmp_path
+        )
         assert result.returncode != 0
         assert result.stderr  # Should have error message
 

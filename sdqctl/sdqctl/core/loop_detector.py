@@ -257,9 +257,10 @@ class LoopDetector:
         # Check 3: Minimal response (only after first cycle, skip if tools used)
         if self._check_minimal_response(response, cycle_number, tools_called):
             logger.debug(f"Loop detected: minimal response ({len(response)} chars)")
+            char_count = len(response.strip())
             return LoopDetected(
                 reason=LoopReason.MINIMAL_RESPONSE,
-                details=f"Response too short ({len(response.strip())} chars, min: {self.min_response_length})",
+                details=f"Response too short ({char_count} chars, min: {self.min_response_length})",
                 cycle_number=cycle_number + 1
             )
 
