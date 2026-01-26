@@ -32,10 +32,11 @@
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| Fix E501 lint issues (192 remaining) | Low | Refactor during normal development |
-| Review F841 unused variables (5) | Low | Needs manual review |
+| Fix E501 lint issues (203 remaining) | Low | Refactor during normal development |
+| Fix W293 whitespace (5) + I001 imports (2) | Low | Quick ruff --fix |
 | Update "cycle command" comments to "iterate" | Low | GETTING-STARTED.md, VALIDATION-WORKFLOW.md |
-| Modularize copilot.py (~1000 lines) | Medium | events.py, stats.py, session.py |
+| Modularize copilot.py (~1127 lines) | Medium | events.py, stats.py, session.py |
+| Modularize run.py (~1541 lines) | Medium | Largest command file |
 | Add integration tests | Medium | Beyond loop stress testing |
 | Add py.typed marker | Low | Enable downstream type checking |
 | Default verbosity key actions | Low | See [SDK-LEARNINGS](../docs/SDK-LEARNINGS.md) |
