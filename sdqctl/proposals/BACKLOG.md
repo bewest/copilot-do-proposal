@@ -11,7 +11,7 @@
 | # | Item | Priority | Effort | Notes |
 |---|------|----------|--------|-------|
 | 1 | Add integration tests | P2 | Medium | Ongoing: Total 1296 tests. Focus: adapter integration, CLI integration, end-to-end workflows. |
-| 2 | traceability.py modularization | P2 | Medium | 685 lines. Similar pattern to verify.py extraction. |
+| 2 | copilot.py modularization | P2 | Medium | 670 lines. Session handling could extract. |
 | 3 | refcat usage patterns example | P3 | Low | Cross-repo context injection examples. |
 
 ---
@@ -60,6 +60,7 @@
 
 | Item | Date | Notes |
 |------|------|-------|
+| **traceability.py modularization (P2)** | 2026-01-26 | Complete: 685 → 571 lines (-17%). Extracted traceability_coverage.py (135 lines). |
 | **verify.py modularization (P2)** | 2026-01-26 | Complete: 641 → 532 lines (-17%). Extracted verify_output.py (114 lines). |
 | **artifact.py modularization (P2)** | 2026-01-26 | Complete: 689 → 500 lines (-27%). Extracted core/artifact_ids.py (213 lines). |
 | **help.py modularization (P2)** | 2026-01-26 | Complete: 698 → 156 lines (-78%). Extracted COMMAND_HELP to core/help_commands.py (550 lines). |

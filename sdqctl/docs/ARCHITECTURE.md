@@ -99,7 +99,8 @@ sdqctl/
 │   ├── refs.py           # Reference verifier (@file checks)
 │   ├── links.py          # Link verifier (URL checks)
 │   ├── terminology.py    # Terminology consistency
-│   ├── traceability.py   # Traceability matrix
+│   ├── traceability.py   # Traceability matrix (571 lines)
+│   ├── traceability_coverage.py  # Coverage calculation helpers (135 lines)
 │   └── assertions.py     # Inline assertion checks
 │
 └── utils/                # Shared utilities
