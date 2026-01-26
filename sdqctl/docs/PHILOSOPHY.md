@@ -409,6 +409,60 @@ sdqctl iterate examples/workflows/backlog-processor.conv \
 
 ---
 
+## Extended Workflow Pattern (v2)
+
+The backlog-processor-v2 workflow introduces a **9-phase structure** with role shifts:
+
+### Implementation Stream (Phases 1-6)
+The agent acts as an **Implementer**:
+1. **Select** — Pick ONE item from Ready Queue
+2. **Execute** — Make the changes
+3. **Verify** — Run tests, check results
+4. **Document** — Update relevant docs
+5. **Hygiene** — Light backlog cleanup
+6. **Commit** — Git commit with conventional message
+
+### Management Stream (Phases 7-8)
+The agent shifts to **Project Manager**:
+7. **Candidate Discovery** — Scan proposals/, QUIRKS, code for 5 new candidates
+8. **Queue Routing** — Route candidates to appropriate queues:
+   - Actionable → BACKLOG.md Ready Queue (target: 3 items)
+   - Questions → OPEN-QUESTIONS.md (for human input)
+   - Design needs → proposals/*.md
+   - Bugs → QUIRKS.md
+
+### Maintenance Stream (Phase 9)
+The agent shifts to **Librarian**:
+9. **Archive & Integrate** — Keep files under size limits, archive completed work
+
+### Context Efficiency
+
+The v2 pattern achieves dramatically better context efficiency:
+
+| Metric | v1 (6 phases) | v2 (9 phases) |
+|--------|---------------|---------------|
+| Context peak | 55-58% | **20%** |
+| Cycles completed | 5.5/10 | **10/10** |
+| Tool success | 99.4% | **100%** |
+
+**Key insight**: COMPACT after Phase 6 clears implementation details before PM/Librarian work, keeping context lean across 10+ cycles.
+
+### Bidirectional Flow
+
+The v2 workflow enables bidirectional flow:
+
+```
+FORWARD (synthesis)              BACKWARD (analysis)
+humans → decisions → code        code → discoveries → humans
+        ↓                                ↓
+        └── BACKLOG.md ←──────── OPEN-QUESTIONS.md ──┘
+```
+
+- **Backward**: Implementation reveals questions → routed to OPEN-QUESTIONS.md
+- **Forward**: Human answers questions → routed to BACKLOG.md for implementation
+
+---
+
 ## See Also
 
 - [GLOSSARY.md](GLOSSARY.md) — Terminology definitions

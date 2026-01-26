@@ -136,6 +136,42 @@ Ruff linting with `--select F821` found 5 undefined name bugs that would crash a
 | Duplicate log entries | Handler multiplexing | Register handler once per session |
 | Wrong context percentage | Token tracking drift | Sync tokens from SDK after compaction |
 | Tool shows "unknown" | Info in nested field | Check `tool_requests[0].name` |
+| Context bloat over cycles | No COMPACT between phases | Add COMPACT after implementation phases |
+
+---
+
+## Workflow Efficiency Patterns
+
+### COMPACT Placement Matters
+
+Based on cross-run analysis (v1 vs v2 workflow):
+
+| Workflow | Context Peak | Cycles Completed |
+|----------|--------------|------------------|
+| v1 (6 phases, no strategic COMPACT) | 55-58% | 5.5/10 |
+| v2 (9 phases, COMPACT after Phase 6) | **20%** | **10/10** |
+
+**Key insight**: Placing COMPACT after the implementation stream (Phase 6) clears tool output and file contents before PM/Librarian phases. This keeps context lean for 10+ cycle runs.
+
+### Role Shift Improves Focus
+
+The v2 workflow uses explicit role shifts:
+- **Implementer** (Phases 1-6): Edit code, run tests
+- **Project Manager** (Phases 7-8): Discover candidates, route to queues
+- **Librarian** (Phase 9): Archive, maintain file sizes
+
+Each role shift allows the model to refocus context on the new task.
+
+### Bidirectional Flow Discovery
+
+Long-running sessions reveal two streams of work:
+
+```
+FORWARD: humans → decisions → BACKLOG.md → implementation
+BACKWARD: implementation → discoveries → OPEN-QUESTIONS.md → humans
+```
+
+This pattern enables autonomous operation while surfacing design decisions for human review.
 
 ---
 
@@ -144,3 +180,4 @@ Ruff linting with `--select F821` found 5 undefined name bugs that would crash a
 - [Resolved Quirks Archive](../archive/quirks/2026-01-resolved-quirks.md) - Full investigation context
 - [QUIRKS.md](QUIRKS.md) - Active quirks tracker
 - [LOOP-STRESS-TEST.md](LOOP-STRESS-TEST.md) - Testing methodology
+- [PHILOSOPHY.md](PHILOSOPHY.md) - Extended Workflow Pattern (v2)

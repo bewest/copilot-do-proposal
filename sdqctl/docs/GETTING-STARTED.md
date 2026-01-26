@@ -275,6 +275,47 @@ See [CONTEXT-MANAGEMENT.md](CONTEXT-MANAGEMENT.md#precise-extraction-with-refcat
 
 ---
 
+## Recommended Workflow: backlog-processor-v2
+
+For backlog-driven work, use the 9-phase workflow that includes project management and archival:
+
+```bash
+# Basic usage - processes BACKLOG.md items
+sdqctl iterate examples/workflows/backlog-processor-v2.conv \
+  --adapter copilot -n 10
+
+# With prologue context for additional sources
+sdqctl iterate examples/workflows/backlog-processor-v2.conv \
+  --prologue "Focus on docs/QUIRKS.md for bug fixes" \
+  --adapter copilot -n 5
+```
+
+### Why v2?
+
+| Feature | v1 (6 phases) | v2 (9 phases) |
+|---------|---------------|---------------|
+| Context peak | 55-58% | **20%** |
+| Cycles completed | 5.5/10 | **10/10** |
+| Project management | Manual | **Built-in (Phase 7-8)** |
+| Archival | Manual | **Built-in (Phase 9)** |
+| Open questions | Mixed in backlog | **Separate queue** |
+
+### Phase Structure
+
+- **Phases 1-6 (Implementer)**: Select → Execute → Verify → Document → Hygiene → Commit
+- **Phases 7-8 (Project Manager)**: Discover candidates → Route to queues
+- **Phase 9 (Librarian)**: Archive old content, maintain file sizes
+
+### Related Files
+
+- `docs/OPEN-QUESTIONS.md` — Questions needing human input
+- `proposals/BACKLOG.md` — Ready Queue (3 actionable items)
+- `archive/SESSIONS/` — Session logs for each run
+
+See [PHILOSOPHY.md](PHILOSOPHY.md#extended-workflow-pattern-v2) for design rationale.
+
+---
+
 ## Verbosity & Debugging
 
 ### See What's Happening
