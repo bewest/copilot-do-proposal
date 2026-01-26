@@ -215,8 +215,12 @@ class Session:
         # Context manager
         # Setup context with file restriction filter
         path_filter = None
-        if conversation.file_restrictions.allow_patterns or conversation.file_restrictions.deny_patterns or \
-           conversation.file_restrictions.allow_dirs or conversation.file_restrictions.deny_dirs:
+        restrictions = conversation.file_restrictions
+        has_restrictions = (
+            restrictions.allow_patterns or restrictions.deny_patterns or
+            restrictions.allow_dirs or restrictions.deny_dirs
+        )
+        if has_restrictions:
             path_filter = conversation.file_restrictions.is_path_allowed
 
         self.context = ContextManager(
@@ -283,8 +287,10 @@ class Session:
 
     def create_checkpoint(self, name: Optional[str] = None) -> Checkpoint:
         """Create a checkpoint of current state."""
-        checkpoint_name = name or self.conversation.checkpoint_name or f"checkpoint-{len(self.state.checkpoints)}"
+        default_name = f"checkpoint-{len(self.state.checkpoints)}"
+        checkpoint_name = name or self.conversation.checkpoint_name or default_name
 
+        conv_path = self.conversation.source_path
         checkpoint = Checkpoint(
             id=str(uuid.uuid4())[:8],
             name=checkpoint_name,
@@ -294,7 +300,7 @@ class Session:
             cycle_number=self.state.cycle_number,
             metadata={
                 "prompt_index": self.state.prompt_index,
-                "conversation_file": str(self.conversation.source_path) if self.conversation.source_path else None,
+                "conversation_file": str(conv_path) if conv_path else None,
             },
         )
 
@@ -342,8 +348,12 @@ class Session:
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "session_id": self.id,
             "sdk_session_id": self.sdk_session_id,  # SDK's UUID for resume (Q-018)
-            "conversation_file": str(self.conversation.source_path) if self.conversation.source_path else None,
-            "conversation_inline": self.conversation.to_string() if not self.conversation.source_path else None,
+            "conversation_file": (
+                str(self.conversation.source_path) if self.conversation.source_path else None
+            ),
+            "conversation_inline": (
+                self.conversation.to_string() if not self.conversation.source_path else None
+            ),
             "cycle_number": self.state.cycle_number,
             "prompt_index": self.state.prompt_index,
             "messages": [
@@ -426,11 +436,15 @@ class Session:
     def get_compaction_prompt(self) -> str:
         """Generate prompt for compaction."""
         preserve = self.conversation.compact_preserve
-        summary_instruction = self.conversation.compact_summary or "Summarize the key findings and progress."
+        summary_instruction = (
+            self.conversation.compact_summary or "Summarize the key findings and progress."
+        )
+        default_preserve = 'key findings, decisions, remaining work'
+        preserve_items = ', '.join(preserve) if preserve else default_preserve
 
         prompt = f"""Compact this conversation for continuation.
 
-PRESERVE these key items: {', '.join(preserve) if preserve else 'key findings, decisions, remaining work'}
+PRESERVE these key items: {preserve_items}
 
 {summary_instruction}
 
@@ -454,15 +468,20 @@ Format the summary so it can be used to continue the work in a new context windo
 
     def to_dict(self) -> dict:
         """Serialize session for JSON output."""
+        conv_path = self.conversation.source_path
         return {
             "id": self.id,
-            "conversation_file": str(self.conversation.source_path) if self.conversation.source_path else None,
+            "conversation_file": str(conv_path) if conv_path else None,
             "state": {
                 "status": self.state.status,
                 "cycle_number": self.state.cycle_number,
                 "prompt_index": self.state.prompt_index,
-                "started_at": self.state.started_at.isoformat() if self.state.started_at else None,
-                "finished_at": self.state.finished_at.isoformat() if self.state.finished_at else None,
+                "started_at": (
+                    self.state.started_at.isoformat() if self.state.started_at else None
+                ),
+                "finished_at": (
+                    self.state.finished_at.isoformat() if self.state.finished_at else None
+                ),
             },
             "context": self.context.get_status(),
             "checkpoints": [
