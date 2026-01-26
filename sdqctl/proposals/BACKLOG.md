@@ -25,6 +25,7 @@
 | Item | Effort | Notes |
 |------|--------|-------|
 | Add integration tests | Medium | Phase 2 done: +30 tests for iterate_helpers, compact_steps. Total 1240 tests. |
+| Session resilience Phase 2 | Medium | [SESSION-RESILIENCE.md](SESSION-RESILIENCE.md) - Checkpoint resume from failure |
 | Performance benchmark suite | Medium | **Blocked by OQ-005** - needs scope decision. Track regressions. |
 
 ### P3: Low
@@ -32,7 +33,7 @@
 | Item | Effort | Notes |
 |------|--------|-------|
 | Default verbosity key actions | Low | **Blocked by OQ-004** → [VERBOSITY-DEFAULTS.md](VERBOSITY-DEFAULTS.md) |
-| Session resilience (remaining phases) | Medium | [SESSION-RESILIENCE.md](SESSION-RESILIENCE.md) Phase 2-4: Checkpoint resume, rate limit prediction, compaction tuning |
+| Session resilience Phase 3-4 | Medium | [SESSION-RESILIENCE.md](SESSION-RESILIENCE.md) Rate limit prediction, compaction tuning |
 
 ### Future (Unstarted)
 
