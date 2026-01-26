@@ -33,7 +33,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from ..adapters import get_adapter
 from ..adapters.base import AdapterConfig, InfiniteSessionConfig
 from ..core.conversation import ConversationFile
-from ..core.exceptions import LoopDetected, LoopReason, MissingContextFiles
+from ..core.exceptions import LoopDetected, MissingContextFiles
 from ..core.logging import WorkflowContext, get_logger, set_workflow_context
 from ..core.loop_detector import LoopDetector, generate_nonce, get_stop_file_instruction
 from ..core.progress import WorkflowProgress
@@ -49,6 +49,14 @@ from .iterate_helpers import (
     is_workflow_file,
     parse_targets,
     validate_targets,
+)
+from .json_pipeline import execute_json_pipeline
+from .prompt_steps import (
+    PromptContext,
+    build_full_prompt,
+    check_response_loop,
+    emit_prompt_progress,
+    format_loop_output,
 )
 from .utils import run_async
 from .verify_steps import execute_verify_coverage_step, execute_verify_trace_step
@@ -272,7 +280,7 @@ def iterate(
         show_prompt_flag = ctx.obj.get("show_prompt", False) if ctx.obj else False
         json_errors = ctx.obj.get("json_errors", False) if ctx.obj else False
 
-        run_async(_cycle_from_json_async(
+        run_async(execute_json_pipeline(
             json_data, max_cycles, session_mode, adapter, model, checkpoint_dir,
             prologue, epilogue, header, footer,
             output, event_log, json_output, dry_run, no_stop_file_prologue, stop_file_nonce,
@@ -300,195 +308,6 @@ def iterate(
         buffer_threshold=buffer_threshold,
         json_errors=json_errors
     ))
-
-
-async def _cycle_from_json_async(
-    json_data: dict,
-    max_cycles_override: Optional[int],
-    session_mode: str,
-    adapter_name: Optional[str],
-    model: Optional[str],
-    checkpoint_dir: Optional[str],
-    cli_prologues: tuple[str, ...],
-    cli_epilogues: tuple[str, ...],
-    cli_headers: tuple[str, ...],
-    cli_footers: tuple[str, ...],
-    output_file: Optional[str],
-    event_log_path: Optional[str],
-    json_output: bool,
-    dry_run: bool,
-    no_stop_file_prologue: bool = False,
-    stop_file_nonce: Optional[str] = None,
-    verbosity: int = 0,
-    show_prompt: bool = False,
-    min_compaction_density: int = 30,
-    no_infinite_sessions: bool = False,
-    compaction_threshold: int = 80,
-    buffer_threshold: int = 95,
-    json_errors: bool = False,
-) -> None:
-    """Execute workflow from pre-rendered JSON.
-
-    Enables external transformation pipelines:
-        sdqctl render cycle foo.conv --json | transform.py | sdqctl cycle --from-json -
-    """
-    import time
-
-    from ..core.conversation import (
-        build_output_with_injection,
-        substitute_template_variables,
-    )
-    from ..core.loop_detector import LoopDetector
-
-    # Initialize prompt writer for stderr output
-    prompt_writer = PromptWriter(enabled=show_prompt)
-
-    cycle_start = time.time()
-    workflow_name = json_data.get("workflow_name", "json-workflow")
-
-    # Extract configuration from JSON
-    conv = ConversationFile.from_rendered_json(json_data)
-
-    # Override with CLI options if provided
-    if adapter_name:
-        conv.adapter = adapter_name
-    if model:
-        conv.model = model
-
-    # Apply CLI prologues/epilogues
-    if cli_prologues:
-        conv.prologues = list(cli_prologues) + conv.prologues
-    if cli_epilogues:
-        conv.epilogues = list(cli_epilogues) + conv.epilogues
-    if cli_headers:
-        conv.headers = list(cli_headers)
-    if cli_footers:
-        conv.footers = list(cli_footers)
-
-    max_cycles = max_cycles_override or json_data.get("max_cycles", conv.max_cycles) or 1
-
-    progress_print(f"Running from JSON ({max_cycles} cycle(s), session={session_mode})...")
-
-    if dry_run:
-        console.print(
-            f"[dim]Would execute {len(conv.prompts)} prompt(s) "
-            f"for {max_cycles} cycle(s)[/dim]"
-        )
-        console.print(f"[dim]Adapter: {conv.adapter}, Model: {conv.model}[/dim]")
-        return
-
-    # Get adapter
-    try:
-        ai_adapter = get_adapter(conv.adapter)
-    except ValueError as e:
-        console.print(f"[red]Adapter error: {e}[/red]")
-        return
-
-    # Create adapter config with infinite sessions (merge CLI + conv file settings)
-    infinite_config = build_infinite_session_config(
-        no_infinite_sessions, compaction_threshold, buffer_threshold, min_compaction_density,
-        conv_infinite_sessions=conv.infinite_sessions,
-        conv_compaction_min=conv.compaction_min,
-        conv_compaction_threshold=conv.compaction_threshold,
-    )
-    adapter_config = AdapterConfig(
-        model=conv.model,
-        event_log_path=event_log_path,
-        debug_intents=conv.debug_intents,
-        infinite_sessions=infinite_config,
-    )
-
-    # Initialize session
-    session = Session(workflow=workflow_name)
-
-    # Stop file handling
-    stop_file_nonce_value = stop_file_nonce or generate_nonce()
-    loop_detector = LoopDetector(
-        max_cycles=max_cycles,
-        stop_file_nonce=stop_file_nonce_value,
-    )
-
-    # Create adapter session
-    adapter_session = await ai_adapter.create_session(adapter_config)
-    session.sdk_session_id = adapter_session.sdk_session_id  # Q-018 fix
-
-    try:
-        responses = []
-
-        for cycle_num in range(1, max_cycles + 1):
-            progress_print(f"  Cycle {cycle_num}/{max_cycles}")
-
-            # Check for stop file
-            if loop_detector.check_stop_file():
-                console.print("[yellow]Stop file detected, exiting[/yellow]")
-                break
-
-            # Build prompts for this cycle
-            template_vars = json_data.get("template_variables", {}).copy()
-            template_vars["CYCLE_NUMBER"] = str(cycle_num)
-            template_vars["CYCLE_TOTAL"] = str(max_cycles)
-            template_vars["STOP_FILE"] = f"STOPAUTOMATION-{stop_file_nonce_value}.json"
-
-            for prompt_idx, prompt_text in enumerate(conv.prompts):
-                # Substitute any remaining template variables
-                final_prompt = substitute_template_variables(prompt_text, template_vars)
-
-                # Add stop file instruction to first prompt
-                if prompt_idx == 0 and cycle_num == 1 and not no_stop_file_prologue:
-                    stop_instruction = get_stop_file_instruction(stop_file_nonce_value)
-                    final_prompt = f"{stop_instruction}\n\n{final_prompt}"
-
-                # Show prompt if enabled
-                prompt_writer.write_prompt(
-                    final_prompt,
-                    cycle=cycle_num,
-                    total_cycles=max_cycles,
-                    prompt_num=prompt_idx + 1,
-                    total_prompts=len(conv.prompts)
-                )
-
-                # Execute prompt
-                response = await ai_adapter.run(
-                    adapter_session,
-                    final_prompt,
-                    stream=verbosity >= 2,
-                )
-                responses.append(response)
-
-                # Add to session
-                session.add_message("user", final_prompt)
-                session.add_message("assistant", response)
-
-            # Handle session mode
-            if session_mode == "compact" and cycle_num < max_cycles:
-                progress_print("    Compacting...")
-                await ai_adapter.compact(adapter_session)
-            elif session_mode == "fresh" and cycle_num < max_cycles:
-                progress_print("    Fresh session...")
-                adapter_session = await ai_adapter.create_session(adapter_config)
-
-        # Output
-        session.state.status = "completed"
-        total_elapsed = time.time() - cycle_start
-
-        raw_output = "\n\n---\n\n".join(responses)
-        final_output = build_output_with_injection(
-            raw_output, conv.headers, conv.footers,
-            base_path=Path.cwd(),
-            variables=template_vars
-        )
-
-        if output_file:
-            Path(output_file).parent.mkdir(parents=True, exist_ok=True)
-            Path(output_file).write_text(final_output)
-            console.print(f"[green]Output written to {output_file}[/green]")
-        else:
-            console.print(final_output)
-
-        progress_print(f"  Completed in {total_elapsed:.1f}s")
-
-    finally:
-        await ai_adapter.close_session(adapter_session)
 
 
 async def _cycle_async(
@@ -547,7 +366,6 @@ async def _cycle_async(
 
     from ..core.conversation import (
         build_output_with_injection,
-        build_prompt_with_injection,
         get_standard_variables,
         substitute_template_variables,
     )
@@ -903,65 +721,29 @@ async def _cycle_async(
                             # Update workflow context for logging
                             workflow_ctx.prompt = prompt_idx + 1
 
-                            # Get context usage percentage
-                            ctx_status = session.context.get_status()
-                            context_pct = ctx_status.get("usage_percent", 0)
-
-                            # Build prompt with prologue/epilogue injection
-                            is_first = (prompt_idx == 0)
-                            is_last = (prompt_idx == total_prompts - 1)
-                            full_prompt = build_prompt_with_injection(
-                                prompt, conv.prologues, conv.epilogues,
-                                conv.source_path.parent if conv.source_path else None,
-                                cycle_vars,
-                                is_first_prompt=is_first,
-                                is_last_prompt=is_last
-                            )
-
-                            # Add context to first prompt (fresh: always, others: cycle 0)
-                            if prompt_idx == 0 and context_content:
-                                full_prompt = f"{context_content}\n\n{full_prompt}"
-
-                            # Add stop file instruction on first prompt of session (Q-002)
-                            # For fresh mode: inject each cycle. For accumulate: only cycle 0.
-                            should_inject_stop_file = (
-                                not no_stop_file_prologue and
-                                prompt_idx == 0 and
-                                (session_mode == "fresh" or cycle_num == 0)
-                            )
-                            if should_inject_stop_file:
-                                stop_instr = get_stop_file_instruction(
-                                    loop_detector.stop_file_name
-                                )
-                                full_prompt = f"{full_prompt}\n\n{stop_instr}"
-
-                            # On subsequent cycles (accumulate), add continuation context
-                            is_continuation = (
-                                session_mode == "accumulate" and
-                                cycle_num > 0 and prompt_idx == 0 and
-                                conv.on_context_limit_prompt
-                            )
-                            if is_continuation:
-                                full_prompt = (
-                                    f"{conv.on_context_limit_prompt}\n\n{full_prompt}"
-                                )
-
-                            # Enhanced progress with context %
-                            workflow_progress.prompt_sending(
-                                cycle=cycle_num + 1,
-                                prompt=prompt_idx + 1,
-                                context_pct=context_pct,
-                                preview=prompt[:50] if verbosity >= 1 else None
-                            )
-
-                            # Write prompt to stderr if --show-prompt / -P enabled
-                            prompt_writer.write_prompt(
-                                full_prompt,
-                                cycle=cycle_num + 1,
-                                total_cycles=conv.max_cycles,
-                                prompt_idx=prompt_idx + 1,
+                            # Build full prompt with all injections
+                            prompt_ctx = PromptContext(
+                                prompt=prompt,
+                                prompt_idx=prompt_idx,
                                 total_prompts=total_prompts,
-                                context_pct=context_pct,
+                                cycle_num=cycle_num,
+                                max_cycles=conv.max_cycles,
+                                session_mode=session_mode,
+                                context_content=context_content,
+                                template_vars=cycle_vars,
+                                no_stop_file_prologue=no_stop_file_prologue,
+                                verbosity=verbosity,
+                            )
+                            build_result = build_full_prompt(
+                                prompt_ctx, conv, session, loop_detector
+                            )
+                            full_prompt = build_result.full_prompt
+                            context_pct = build_result.context_pct
+
+                            # Emit progress notifications
+                            emit_prompt_progress(
+                                prompt_ctx, context_pct, workflow_progress,
+                                prompt_writer, full_prompt
                             )
 
                             # Clear reasoning collector before send
@@ -995,46 +777,16 @@ async def _cycle_async(
                             )
 
                             # Check for loop after each response
-                            combined = " ".join(last_reasoning) if last_reasoning else None
-                            # Get tool count from turn stats for tool-aware loop detection
-                            turn_tools = 0
-                            if hasattr(ai_adapter, 'get_session_stats'):
-                                stats = ai_adapter.get_session_stats(adapter_session)
-                                if stats and stats._send_turn_stats:
-                                    turn_tools = stats._send_turn_stats.tool_calls
-                            loop_result = loop_detector.check(
-                                combined, response, cycle_num, turn_tools
+                            loop_check = check_response_loop(
+                                response, last_reasoning, cycle_num,
+                                ai_adapter, adapter_session, loop_detector
                             )
-                            if loop_result:
-                                # Special handling for stop file (agent-initiated stop)
-                                if loop_result.reason == LoopReason.STOP_FILE:
-                                    stop_name = loop_detector.stop_file_name
-                                    console.print(
-                                        f"\n[yellow]⚠️  Agent requested stop via "
-                                        f"{stop_name}[/yellow]"
-                                    )
-                                    console.print(
-                                        f"[yellow]   Reason: {loop_result.details}[/yellow]"
-                                    )
-                                    console.print(
-                                        f"[yellow]   Session: {session.id}[/yellow]"
-                                    )
-                                    console.print(
-                                        f"[yellow]   Cycle: {cycle_num + 1}/"
-                                        f"{conv.max_cycles}[/yellow]"
-                                    )
-                                    console.print(
-                                        "\n[dim]Review the agent's work and "
-                                        "decide next steps.[/dim]"
-                                    )
-                                    progress_print(
-                                        f"  ⚠️  Agent stop: {loop_result.details}"
-                                    )
-                                else:
-                                    console.print(f"\n[red]⚠️  {loop_result}[/red]")
-                                    reason_val = loop_result.reason.value
-                                    progress_print(f"  ⚠️  Loop detected: {reason_val}")
-                                raise loop_result
+                            if loop_check.detected:
+                                format_loop_output(
+                                    loop_check.loop_result, loop_detector, session,
+                                    cycle_num, conv.max_cycles, console, progress_print
+                                )
+                                raise loop_check.loop_result
 
                             session.add_message("user", prompt)
                             session.add_message("assistant", response)
