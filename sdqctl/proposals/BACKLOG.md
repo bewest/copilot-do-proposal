@@ -52,6 +52,8 @@
 | `--once` flag for non-repeating CLI prompts | Phase 6 deferred | Needs use case research |
 | `--prompt` / `--file` disambiguation switches | Phase 6 deferred | Needs impact analysis |
 | Performance benchmark suite | [OQ-005] | **Blocked** - needs scope decision |
+| artifact.py modularization | Discovery 2026-01-26 | 689 lines. Similar scope to help.py. |
+| iterate.py exit code alignment | Discovery 2026-01-26 | MissingContextFiles returns 1 instead of 2. Low priority. |
 
 ---
 
