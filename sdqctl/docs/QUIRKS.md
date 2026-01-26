@@ -14,7 +14,7 @@ This document catalogs non-obvious behaviors discovered while developing and usi
 | ID | Quirk | Priority | Status |
 |----|-------|----------|--------|
 | Q-019A | Progress messages lack timestamps after compaction | P3 | 🟡 Open |
-| Q-017 | 149 E501 remaining (run.py:51, iterate.py:43, tests:55) | P3 | 🟡 Backlog |
+| Q-017 | 120 E501 remaining (run.py:51, iterate.py:14, tests:55) | P3 | 🟡 Backlog |
 
 ### Resolved Quirks (Archived)
 
@@ -88,7 +88,7 @@ Comprehensive ruff linting revealed issues across the codebase. Auto-fix applied
 
 | Category | Count | Notes |
 |----------|-------|-------|
-| E501 (line too long >100) | 149 | run.py(51), iterate.py(43), tests(55) |
+| E501 (line too long >100) | 120 | run.py(51), iterate.py(14), tests(55) |
 | F841 (unused variables) | 0 | ✅ All fixed |
 
 ---
