@@ -32,7 +32,7 @@
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| Fix E501 lint issues (203 remaining) | Low | Refactor during normal development |
+| Fix E501 lint issues (190 remaining) | Low | Refactor during normal development |
 | Modularize copilot.py (~1127 lines) | Medium | events.py, stats.py, session.py |
 | Modularize run.py (~1541 lines) | Medium | Largest command file |
 | Add integration tests | Medium | Beyond loop stress testing |

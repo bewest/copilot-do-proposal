@@ -40,7 +40,9 @@ from .core.progress import set_quiet
 @click.option("-P", "--show-prompt", is_flag=True, help="Show expanded prompts on stderr")
 @click.option("--json-errors", is_flag=True, help="Output errors as JSON for CI integration")
 @click.pass_context
-def cli(ctx: click.Context, verbose: int, quiet: bool, show_prompt: bool, json_errors: bool) -> None:
+def cli(
+    ctx: click.Context, verbose: int, quiet: bool, show_prompt: bool, json_errors: bool
+) -> None:
     """sdqctl - Software Defined Quality Control
 
     Vendor-agnostic CLI for orchestrating AI-assisted development workflows.
@@ -107,7 +109,11 @@ cli.add_command(help_cmd)
 @click.argument("targets", nargs=-1)
 @click.option("--from-json", "from_json", type=click.Path())
 @click.option("--max-cycles", "-n", type=int, default=None)
-@click.option("--session-mode", "-s", type=click.Choice(["accumulate", "compact", "fresh"]), default="accumulate")
+@click.option(
+    "--session-mode", "-s",
+    type=click.Choice(["accumulate", "compact", "fresh"]),
+    default="accumulate",
+)
 @click.option("--adapter", "-a", default=None)
 @click.option("--model", "-m", default=None)
 @click.option("--context", "-c", multiple=True)
@@ -413,12 +419,25 @@ done
 
 @cli.command()
 @click.argument("workflow", type=click.Path(exists=True))
-@click.option("--allow-missing", is_flag=True, help="Warn on missing context files instead of failing")
-@click.option("--exclude", "-e", multiple=True, help="Patterns to exclude from validation (can be repeated)")
+@click.option(
+    "--allow-missing", is_flag=True,
+    help="Warn on missing context files instead of failing",
+)
+@click.option(
+    "--exclude", "-e", multiple=True,
+    help="Patterns to exclude from validation (can be repeated)",
+)
 @click.option("--strict", is_flag=True, help="Fail on any issue (overrides VALIDATION-MODE)")
 @click.option("--check-model", is_flag=True, help="Validate MODEL-REQUIRES can be resolved")
 @click.option("--json", "json_output", is_flag=True, help="Output results as JSON")
-def validate(workflow: str, allow_missing: bool, exclude: tuple, strict: bool, check_model: bool, json_output: bool) -> None:
+def validate(
+    workflow: str,
+    allow_missing: bool,
+    exclude: tuple,
+    strict: bool,
+    check_model: bool,
+    json_output: bool,
+) -> None:
     """Validate a ConversationFile.
 
     Checks syntax and references without executing.
@@ -650,8 +669,18 @@ def show(workflow: str) -> None:
 @click.option("--adapter", "-a", default=None, help="AI adapter override")
 @click.option("--dry-run", is_flag=True, help="Show what would happen without executing")
 @click.option("--json", "json_output", is_flag=True, help="JSON output format")
-@click.option("--verbose", "-v", is_flag=True, help="Verbose output (deprecated, use -v on main command)")
-def resume(checkpoint: str, list_checkpoints: bool, adapter: str, dry_run: bool, json_output: bool, verbose: bool) -> None:
+@click.option(
+    "--verbose", "-v", is_flag=True,
+    help="Verbose output (deprecated, use -v on main command)",
+)
+def resume(
+    checkpoint: str,
+    list_checkpoints: bool,
+    adapter: str,
+    dry_run: bool,
+    json_output: bool,
+    verbose: bool,
+) -> None:
     """Resume a paused workflow from checkpoint.
 
     Continues execution from where PAUSE stopped.
@@ -789,14 +818,17 @@ def _dry_run_resume(checkpoint: str, console, json_output: bool) -> None:
         ))
 
         console.print("\n[bold]Prompts remaining:[/bold]")
-        for i, prompt in enumerate(conv.prompts[session.state.prompt_index:], session.state.prompt_index + 1):
+        remaining_prompts = conv.prompts[session.state.prompt_index:]
+        for i, prompt in enumerate(remaining_prompts, session.state.prompt_index + 1):
             preview = prompt[:80] + "..." if len(prompt) > 80 else prompt
             console.print(f"  {i}. {preview}")
 
         console.print("\n[yellow]Dry run - no execution[/yellow]")
 
 
-async def _resume_async(checkpoint: str, adapter_name: str, console, json_output: bool = False) -> None:
+async def _resume_async(
+    checkpoint: str, adapter_name: str, console, json_output: bool = False
+) -> None:
     """Async implementation of resume command."""
     import json as json_module
     from pathlib import Path

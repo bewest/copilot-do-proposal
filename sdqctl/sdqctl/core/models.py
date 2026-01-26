@@ -296,8 +296,9 @@ _operator_config: Optional[dict] = None
 
 def _get_config_paths() -> list[Optional[Path]]:
     """Get config file search paths (evaluated at call time)."""
+    env_config = os.environ.get("SDQCTL_CONFIG")
     return [
-        Path(os.environ.get("SDQCTL_CONFIG", "")) / "models.yaml" if os.environ.get("SDQCTL_CONFIG") else None,
+        Path(env_config) / "models.yaml" if env_config else None,
         Path.home() / ".config" / "sdqctl" / "models.yaml",
         Path.home() / ".sdqctl" / "models.yaml",
     ]
@@ -414,15 +415,27 @@ def get_operator_models() -> dict:
             parsed["context"] = _parse_context_size(str(caps["context"]))
 
         if "tier" in caps:
-            tier_map = {"economy": CostTier.ECONOMY, "standard": CostTier.STANDARD, "premium": CostTier.PREMIUM}
+            tier_map = {
+                "economy": CostTier.ECONOMY,
+                "standard": CostTier.STANDARD,
+                "premium": CostTier.PREMIUM,
+            }
             parsed["tier"] = tier_map.get(caps["tier"].lower(), CostTier.STANDARD)
 
         if "speed" in caps:
-            speed_map = {"fast": SpeedTier.FAST, "standard": SpeedTier.STANDARD, "deliberate": SpeedTier.DELIBERATE}
+            speed_map = {
+                "fast": SpeedTier.FAST,
+                "standard": SpeedTier.STANDARD,
+                "deliberate": SpeedTier.DELIBERATE,
+            }
             parsed["speed"] = speed_map.get(caps["speed"].lower(), SpeedTier.STANDARD)
 
         if "capability" in caps:
-            cap_map = {"code": CapabilityClass.CODE, "reasoning": CapabilityClass.REASONING, "general": CapabilityClass.GENERAL}
+            cap_map = {
+                "code": CapabilityClass.CODE,
+                "reasoning": CapabilityClass.REASONING,
+                "general": CapabilityClass.GENERAL,
+            }
             parsed["capability"] = cap_map.get(caps["capability"].lower(), CapabilityClass.GENERAL)
 
         if "vendor" in caps:
