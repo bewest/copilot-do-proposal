@@ -14,6 +14,7 @@ import click
 from rich.console import Console
 
 from ..verifiers import VERIFIERS, VerificationResult
+from .verify_output import add_fix_suggestions, apply_strict_mode, output_result
 
 console = Console()
 
@@ -78,19 +79,12 @@ def verify_refs(
     )
 
     if suggest_fixes and result.errors:
-        result = _add_fix_suggestions(result, Path(path))
+        result = add_fix_suggestions(result, Path(path))
 
-    # In strict mode, promote warnings to errors
-    if strict and result.warnings:
-        result = VerificationResult(
-            passed=False,
-            errors=result.errors + result.warnings,
-            warnings=[],
-            summary=result.summary + " (strict mode)",
-            details=result.details,
-        )
+    if strict:
+        result = apply_strict_mode(result)
 
-    _output_result(result, json_output, verbose, "refs")
+    output_result(result, json_output, verbose, "refs")
 
 
 @verify.command("all")
@@ -109,15 +103,8 @@ def verify_all(json_output: bool, verbose: bool, path: str, strict: bool):
         verifier = verifier_cls()
         result = verifier.verify(Path(path))
 
-        # In strict mode, promote warnings to errors
-        if strict and result.warnings:
-            result = VerificationResult(
-                passed=False,
-                errors=result.errors + result.warnings,
-                warnings=[],
-                summary=result.summary + " (strict mode)",
-                details=result.details,
-            )
+        if strict:
+            result = apply_strict_mode(result)
 
         results[name] = result
         if not result.passed:
@@ -152,28 +139,6 @@ def verify_all(json_output: bool, verbose: bool, path: str, strict: bool):
     raise SystemExit(0 if all_passed else 1)
 
 
-def _output_result(result: VerificationResult, json_output: bool, verbose: bool, name: str):
-    """Output verification result in requested format."""
-    if json_output:
-        console.print_json(json.dumps(result.to_json()))
-    else:
-        status = "[green]✓ PASSED[/green]" if result.passed else "[red]✗ FAILED[/red]"
-        console.print(f"{status}: {result.summary}")
-
-        if verbose or not result.passed:
-            for err in result.errors:
-                loc = f"{err.file}:{err.line}" if err.line else err.file
-                console.print(f"  [red]ERROR[/red] {loc}: {err.message}")
-                if err.fix_hint and verbose:
-                    console.print(f"        [dim]{err.fix_hint}[/dim]")
-
-            for warn in result.warnings:
-                loc = f"{warn.file}:{warn.line}" if warn.line else warn.file
-                console.print(f"  [yellow]WARN[/yellow] {loc}: {warn.message}")
-
-    raise SystemExit(0 if result.passed else 1)
-
-
 @verify.command("links")
 @click.option("--json", "json_output", is_flag=True, help="JSON output")
 @click.option("--verbose", "-v", is_flag=True, help="Show all findings")
@@ -196,17 +161,10 @@ def verify_links(json_output: bool, verbose: bool, path: str, strict: bool):
     verifier = VERIFIERS["links"]()
     result = verifier.verify(Path(path))
 
-    # In strict mode, promote warnings to errors
-    if strict and result.warnings:
-        result = VerificationResult(
-            passed=False,
-            errors=result.errors + result.warnings,
-            warnings=[],
-            summary=result.summary + " (strict mode)",
-            details=result.details,
-        )
+    if strict:
+        result = apply_strict_mode(result)
 
-    _output_result(result, json_output, verbose, "links")
+    output_result(result, json_output, verbose, "links")
 
 
 @verify.command("traceability")
@@ -250,15 +208,8 @@ def verify_traceability(
     verifier = VERIFIERS["traceability"]()
     result = verifier.verify(Path(path))
 
-    # In strict mode, promote warnings to errors
-    if strict and result.warnings:
-        result = VerificationResult(
-            passed=False,
-            errors=result.errors + result.warnings,
-            warnings=[],
-            summary=result.summary + " (strict mode)",
-            details=result.details,
-        )
+    if strict:
+        result = apply_strict_mode(result)
 
     if json_output:
         console.print_json(json.dumps(result.to_json()))
@@ -493,18 +444,10 @@ def verify_terminology(
     verifier = VERIFIERS["terminology"]()
     result = verifier.verify(Path(path), glossary=glossary)
 
-    # In strict mode, promote warnings to errors
-    if strict and result.warnings:
-        from ..verifiers.base import VerificationResult as VResult
-        result = VResult(
-            passed=False,
-            errors=result.errors + result.warnings,
-            warnings=[],
-            summary=result.summary + " (strict mode)",
-            details=result.details,
-        )
+    if strict:
+        result = apply_strict_mode(result)
 
-    _output_result(result, json_output, verbose, "terminology")
+    output_result(result, json_output, verbose, "terminology")
 
 
 @verify.command("assertions")
@@ -587,55 +530,3 @@ def verify_assertions(
                     console.print(f"  [yellow]WARN[/yellow] {loc}: {warn.message}")
 
     raise SystemExit(0 if result.passed else 1)
-
-
-def _add_fix_suggestions(result: VerificationResult, root: Path) -> VerificationResult:
-    """Add fix suggestions by searching for moved files."""
-    import subprocess
-
-    from ..verifiers.base import VerificationError
-
-    externals_dir = root / "externals"
-    if not externals_dir.exists():
-        return result
-
-    new_errors = []
-    for err in result.errors:
-        if 'Expected at' in (err.fix_hint or ''):
-            # Extract filename from expected path
-            expected_path = err.fix_hint.replace('Expected at', '').strip()
-            filename = Path(expected_path).name
-
-            # Search for file in externals
-            try:
-                proc = subprocess.run(
-                    ['find', str(externals_dir), '-name', filename, '-type', 'f'],
-                    capture_output=True, text=True, timeout=5
-                )
-                found = [p for p in proc.stdout.strip().split('\n') if p]
-
-                if found:
-                    # Create suggestion
-                    suggestion = f"Found: {found[0]}"
-                    if len(found) > 1:
-                        suggestion += f" (+{len(found)-1} more)"
-                    new_hint = f"{err.fix_hint}\n        Suggestion: {suggestion}"
-                    new_errors.append(VerificationError(
-                        file=err.file,
-                        line=err.line,
-                        message=err.message,
-                        fix_hint=new_hint,
-                    ))
-                    continue
-            except (subprocess.TimeoutExpired, Exception):
-                pass
-
-        new_errors.append(err)
-
-    return VerificationResult(
-        passed=result.passed,
-        errors=new_errors,
-        warnings=result.warnings,
-        summary=result.summary,
-        details=result.details,
-    )

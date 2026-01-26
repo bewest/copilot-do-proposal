@@ -74,7 +74,8 @@ sdqctl/
 │   ├── iterate.py        # Multi-cycle execution with compaction
 │   ├── apply.py          # Batch execution over components
 │   ├── render.py         # Prompt rendering (dry-run)
-│   ├── verify.py         # Verification command
+│   ├── verify.py         # Verification CLI (532 lines, uses verify_output.py)
+│   ├── verify_output.py  # Verification output helpers (114 lines)
 │   ├── sessions.py       # Session management (list, resume)
 │   ├── status.py         # Adapter status (auth, models)
 │   ├── artifact.py       # Artifact ID CLI commands (500 lines, uses core/artifact_ids.py)
