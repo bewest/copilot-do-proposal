@@ -13,7 +13,9 @@ Example:
     PROMPT Generate security report.
 """
 
+import logging
 import re
+import warnings
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -21,6 +23,9 @@ from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from .models import ModelRequirements
+
+# Module logger for deprecation warnings
+_logger = logging.getLogger(__name__)
 
 # Patterns for detecting secret environment variable names
 SECRET_KEY_PATTERNS = ('KEY', 'SECRET', 'TOKEN', 'PASSWORD', 'AUTH', 'CREDENTIAL', 'API_')
@@ -1141,6 +1146,15 @@ def _apply_directive(conv: ConversationFile, directive: Directive) -> None:
             conv.model_requirements.set_policy(directive.value)
 
         case DirectiveType.CONTEXT:
+            # DEPRECATED: Use REFCAT instead
+            warnings.warn(
+                f"CONTEXT directive is deprecated. Use REFCAT instead: REFCAT {directive.value}",
+                DeprecationWarning,
+                stacklevel=2
+            )
+            _logger.warning(
+                f"CONTEXT directive is deprecated. Use REFCAT instead: REFCAT {directive.value}"
+            )
             conv.context_files.append(directive.value)
         case DirectiveType.CONTEXT_OPTIONAL:
             conv.context_files_optional.append(directive.value)

@@ -1,0 +1,379 @@
+# backlog-processor-v2.conv - Extended backlog workflow with triage phases
+#
+# A 9-phase workflow for processing backlogs with integrated project management.
+# Extends v1 with candidate discovery, queue routing, and archive maintenance.
+#
+# Usage:
+#   sdqctl iterate examples/workflows/backlog-processor-v2.conv \
+#     --prologue "BACKLOG.md contains 3 ready items. QUIRKS.md has active bugs." \
+#     --adapter copilot -n 5
+#
+# Phase Structure:
+#   IMPLEMENTATION (1-6): Select → Execute → Verify → Docs → Hygiene → Commit
+#   MANAGEMENT (7-8): Candidate Discovery → Queue Routing
+#   MAINTENANCE (9): Archive & Integrate
+#
+# Terminology:
+#   - CYCLE = one complete pass through all 9 phases (works ONE item)
+#   - Ready Queue = 3 actionable items in BACKLOG.md
+#   - Open Questions = items needing human input (→ CONSULT workflow)
+#
+# Design principles:
+#   1. Role shifts between phases (Implementer → PM → Librarian)
+#   2. Generate 5 candidates, route to appropriate queues
+#   3. Keep Ready Queue at 3 items for focused selection
+#   4. Archive old material to keep files <500 lines active
+#   5. Questions route to OPEN-QUESTIONS.md for separate CONSULT workflow
+
+MODEL claude-sonnet-4-20250514
+ADAPTER copilot
+MODE implement
+MAX-CYCLES 1
+
+# === Context Management ===
+CONTEXT-LIMIT 60%
+ON-CONTEXT-LIMIT compact
+COMPACT-PRESERVE prompts,errors,tool-results
+
+# === Role Clarification ===
+PROLOGUE You are an implementation assistant processing a backlog of work items.
+PROLOGUE
+PROLOGUE **BACKLOG DISCIPLINE**:
+PROLOGUE - Ready Queue should have exactly 3 actionable items
+PROLOGUE - Pick ONE item per cycle, complete it fully
+PROLOGUE - New ideas go to proposals/*.md, not directly to Ready Queue
+PROLOGUE - Questions needing human input go to docs/OPEN-QUESTIONS.md
+PROLOGUE
+PROLOGUE **Cross-Document Review**:
+PROLOGUE Before selecting work, scan ALL relevant documents.
+PROLOGUE Prioritize P0 > P1 > P2 across ALL documents, not just the first.
+PROLOGUE
+PROLOGUE When blocked by missing information, document the blocker and STOP.
+PROLOGUE Do not work around blockers - surface them for human review.
+
+# === Session Context ===
+PROLOGUE ---
+PROLOGUE Session: {{DATETIME}} | Branch: {{GIT_BRANCH}}
+PROLOGUE Working directory: {{CWD}}
+PROLOGUE ---
+
+# ============================================================================
+# IMPLEMENTATION STREAM (Phases 1-6)
+# ============================================================================
+
+# === Phase 1: Select and Assess ===
+PROMPT ## Phase 1: Work Selection
+
+Review the Ready Queue in BACKLOG.md and select ONE item to implement.
+
+**Selection criteria (in order):**
+1. **P0 items** - Critical/blocking work
+2. **P1 items** - High value, unblocked
+3. **P2/P3 items** - Only if P0/P1 are clear or blocked
+4. **Unblocked over blocked** - Skip items needing research you can't do
+5. **Clear scope over ambiguous** - Pick items with defined deliverables
+
+**Scan for these markers:**
+- `[ ]` unchecked items (ready to work)
+- `❌` not implemented
+- `🔶` known issues/quirks
+- `P0`, `P1`, `P2` priority labels
+
+**Output format:**
+```
+### Selected: [Item Name]
+**Source:** [BACKLOG.md Ready Queue item #]
+**Priority:** P0/P1/P2/P3
+**Type:** Implementation | Documentation | Design | Bug Fix | Refactor
+**Goal:** [What we're trying to achieve]
+**Approach:** [Specific steps]
+**Files to modify:** [List]
+**Effort:** Low/Medium/High
+```
+
+If ALL items are blocked, list blockers and create STOPAUTOMATION file.
+
+COMPACT
+
+# === Phase 2: Execute ===
+PROMPT ## Phase 2: Execute
+
+Implement the selected task now. **Edit files directly, don't just describe.**
+
+**For Implementation tasks:**
+1. Read relevant source files
+2. Make changes with minimal modifications
+3. Add or update tests if applicable
+
+**For Documentation tasks:**
+1. Read existing docs for style/structure
+2. Make changes consistent with surrounding content
+3. Update cross-references if needed
+
+**For Design Decisions:**
+1. State the question clearly
+2. Enumerate options with trade-offs
+3. Make a recommendation
+4. Document in appropriate proposal file
+
+**CRITICAL: Actually edit files. Do not just describe changes.**
+
+If you encounter a blocker:
+1. Document it clearly
+2. Add to OPEN-QUESTIONS.md if needs human input
+3. Stop and report in Phase 3
+
+# Run tests if applicable
+RUN-ON-ERROR continue
+RUN-OUTPUT on-error
+RUN-TIMEOUT 2m
+RUN python -m pytest tests/ -v --tb=short -x 2>/dev/null || echo "Tests skipped"
+
+COMPACT
+
+# === Phase 3: Verify ===
+PROMPT ## Phase 3: Verify
+
+Verify the changes work correctly.
+
+**Verification checklist:**
+- [ ] Changes compile/parse without errors
+- [ ] Tests pass (or no tests affected)
+- [ ] Documentation is accurate
+- [ ] No unintended side effects
+
+**If tests failed:**
+1. Analyze the failure
+2. Fix if straightforward (< 5 min)
+3. If complex, add to OPEN-QUESTIONS.md and stop
+
+**Update tracking:**
+Mark the item complete in BACKLOG.md (change `[ ]` to `[x]`)
+
+**Output format:**
+```
+### Verification Result
+**Item:** [What was worked on]
+**Outcome:** Completed | Partial | Blocked
+**Files changed:** [List]
+**Tests:** Pass | Fail | N/A
+```
+
+COMPACT
+
+# === Phase 4: Documentation Integration ===
+PROMPT ## Phase 4: Documentation Integration
+
+Ensure changes are reflected in project documentation.
+
+**Review these areas:**
+1. **Usage guides** (`docs/`): Are examples still accurate?
+2. **API/Reference**: Are new functions documented?
+3. **README and help**: Is the feature discoverable?
+4. **Cross-references**: Do links still work?
+
+**Actions:**
+- Docs need updates → make changes now (minimal, surgical)
+- Docs current → note "No updates needed"
+- Major doc work → add to candidates for Phase 7
+
+**Output:**
+```
+### Documentation Result
+**Reviewed:** [files checked]
+**Updated:** [changes or "None"]
+**Deferred:** [items for Phase 7 or "None"]
+```
+
+COMPACT
+
+# === Phase 5: Backlog Hygiene ===
+PROMPT ## Phase 5: Backlog Hygiene
+
+Light cleanup of tracking files.
+
+**Quick hygiene:**
+1. Mark completed items with ✅ and date
+2. Update status markers (🔶 → ✅ for resolved)
+3. Note any dependencies now unblocked
+
+**Do NOT do heavy archival here** - that's Phase 9's job.
+
+**Output:**
+```
+### Hygiene Result
+**Items marked complete:** N
+**Status updates:** [list or "None"]
+```
+
+COMPACT
+
+# === Phase 6: Commit ===
+PROMPT ## Phase 6: Commit
+
+Commit all changes from Phases 1-5.
+
+```bash
+git add -A
+git status
+git commit -m "[type]: [brief description]"
+```
+
+Use conventional commits: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
+
+**Output:**
+```
+### Commit Result
+**Hash:** [commit hash]
+**Message:** [commit message]
+**Files:** N files changed
+```
+
+COMPACT
+
+# ============================================================================
+# PROJECT MANAGER STREAM (Phases 7-8)
+# ============================================================================
+
+# === Phase 7: Candidate Discovery ===
+PROMPT ## Phase 7: Candidate Discovery
+
+**Role shift**: You are now a project manager surveying the work landscape.
+
+Use your context from Phases 1-6 to identify future work opportunities.
+
+### 7.1 Scan Sources
+
+Review these for potential work items:
+1. **proposals/*.md** - "Future Work", unchecked phases, deferred items
+2. **docs/QUIRKS.md** - Active quirks (🟡 Open status)
+3. **docs/OPEN-QUESTIONS.md** - Recently answered questions that unlock work
+4. **Code observations** - Issues noticed during implementation this cycle
+
+### 7.2 Generate 5 Candidates
+
+Enumerate clearly with proper taxonomy:
+
+| # | Candidate | Source | Type | Effort | Notes |
+|---|-----------|--------|------|--------|-------|
+| 1 | [name] | [file:section] | Impl/Doc/Design/Bug | Low/Med/High | [brief] |
+| 2 | ... | ... | ... | ... | ... |
+| 3 | ... | ... | ... | ... | ... |
+| 4 | ... | ... | ... | ... | ... |
+| 5 | ... | ... | ... | ... | ... |
+
+**Type taxonomy:**
+- `Impl` - Code changes, features, refactoring
+- `Doc` - Documentation, examples, guides
+- `Design` - Needs human decision (→ OPEN-QUESTIONS)
+- `Bug` - Unexpected behavior (→ QUIRKS)
+- `Proposal` - Needs design spec (→ proposals/)
+
+Prefer variety across types. Include brief notes for reader context.
+
+# No COMPACT here - context from implementation is valuable for routing
+
+# === Phase 8: Queue Routing ===
+PROMPT ## Phase 8: Queue Routing
+
+Route each of the 5 candidates to the appropriate queue.
+
+### 8.1 Routing Decisions
+
+For each candidate, decide destination:
+
+| # | Candidate | → Destination | Rationale |
+|---|-----------|---------------|-----------|
+| 1 | ... | BACKLOG Ready Queue | Actionable, clear scope |
+| 2 | ... | OPEN-QUESTIONS.md | Needs human decision |
+| 3 | ... | proposals/X.md | Needs design detail |
+| 4 | ... | QUIRKS.md | Bug/unexpected behavior |
+| 5 | ... | Skip | Already tracked in Y |
+
+### 8.2 Execute Routing
+
+**Make the actual edits:**
+
+1. **BACKLOG.md Ready Queue** (target: 3 items)
+   - Add actionable items with priority and effort
+   - If >3 items, keep highest priority 3
+
+2. **docs/OPEN-QUESTIONS.md** (Pending section)
+   - Add questions needing human input
+   - Include context and options if known
+
+3. **proposals/*.md** (Future Work section)
+   - Add design items to existing proposals
+   - Or note need for new proposal
+
+4. **docs/QUIRKS.md**
+   - Add bugs with Q-XXX ID and priority
+
+### 8.3 Output
+
+```
+### Routing Result
+**Ready Queue:** N items (target: 3)
+**Open Questions:** N added
+**Proposals updated:** N
+**Quirks added:** N
+**Skipped:** N (already tracked)
+```
+
+# No COMPACT - librarian needs routing context
+
+# ============================================================================
+# LIBRARIAN STREAM (Phase 9)
+# ============================================================================
+
+# === Phase 9: Archive & Integrate ===
+PROMPT ## Phase 9: Archive & Integrate
+
+**Role shift**: You are now a librarian maintaining the knowledge base.
+
+### 9.1 Size Check
+
+Review these files for bloat (check line counts):
+- `proposals/BACKLOG.md` - target <300 lines active content
+- `docs/QUIRKS.md` - target <200 lines active content
+- `docs/OPEN-QUESTIONS.md` - answered items should move out
+
+### 9.2 Archive Actions
+
+**Completed proposals** (all phases ✅, >30 days old):
+- Move full content to `archive/proposals/YYYY-MM-name.md`
+- Leave 1-line summary with link in Proposals Status table
+
+**Resolved quirks** (marked ✅, >14 days old):
+- Move to `archive/quirks/YYYY-MM-resolved.md`
+- Keep entry in Quick Reference with archive link
+
+**Old backlog items** (completed >2 cycles ago):
+- Move to `archive/backlog/YYYY-MM-completed.md`
+- Keep in "Recently Completed" for 1 more cycle, then remove
+
+**Answered questions**:
+- Move from Pending to Answered section
+- If >14 days answered, move to `archive/questions/`
+
+### 9.3 Cross-Reference Verification
+
+For any moved content, verify:
+- Links from README still work (or update)
+- Proposal cross-links updated
+- BACKLOG item references updated
+
+### 9.4 Output
+
+```
+### Archive Result
+**Items archived:** N
+**Files trimmed:** [list with before/after line counts]
+**Links verified:** Yes | [list of broken links]
+**Next cycle Ready Queue:** [3 items listed]
+```
+
+COMPACT
+
+# === End of Cycle ===
+# Next cycle will start fresh at Phase 1, selecting from the Ready Queue
