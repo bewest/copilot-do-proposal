@@ -181,12 +181,12 @@ This is useful for:
 | `status` | Show session/adapter status | Troubleshooting |
 | `sessions` | Manage conversation sessions | List, delete, cleanup sessions |
 
-### run vs cycle vs apply
+### run vs iterate vs apply
 
 **`run`** — Single execution, good for:
 - Testing a workflow design
 - One-off prompts
-- Priming before committing to cycles
+- Priming before committing to iterations
 
 > **⚠️ Note**: `run` does not process CHECKPOINT directives. If your workflow uses 
 > CHECKPOINT for resumability, use `iterate` instead. The `run` command is lightweight 
@@ -199,11 +199,11 @@ This is useful for:
 - **Workflows with CHECKPOINT directives**
 - **Mixed mode**: Combine inline prompts with `.conv` files
 
-**Session modes** control context across cycles:
+**Session modes** control context across iterations:
 ```bash
-sdqctl iterate workflow.conv -n 5 --session-mode fresh      # New session each cycle
+sdqctl iterate workflow.conv -n 5 --session-mode fresh      # New session each iteration
 sdqctl iterate workflow.conv -n 5 --session-mode accumulate # Context grows (default)
-sdqctl iterate workflow.conv -n 10 --session-mode compact   # Summarize between cycles
+sdqctl iterate workflow.conv -n 10 --session-mode compact   # Summarize between iterations
 
 # Mixed mode: inline prompts + workflow file
 sdqctl iterate "Setup context" workflow.conv "Summarize" -n 3
