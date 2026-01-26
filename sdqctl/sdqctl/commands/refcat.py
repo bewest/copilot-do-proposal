@@ -307,7 +307,8 @@ def refcat(
         else:
             output = {
                 "refs": [
-                    format_for_json(r["extracted"], include_spec=spec_output) if "extracted" in r else r
+                    format_for_json(r["extracted"], include_spec=spec_output)
+                    if "extracted" in r else r
                     for r in results
                 ],
                 "errors": errors,

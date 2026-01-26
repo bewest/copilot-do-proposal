@@ -186,7 +186,10 @@ class ContextManager:
         parts = ["## Context Files\n"]
         for ctx_file in self.files:
             try:
-                rel_path = ctx_file.path.relative_to(self.base_path) if self.base_path else ctx_file.path
+                if self.base_path:
+                    rel_path = ctx_file.path.relative_to(self.base_path)
+                else:
+                    rel_path = ctx_file.path
             except ValueError:
                 # File is not in base_path subtree, use absolute or name
                 rel_path = ctx_file.path

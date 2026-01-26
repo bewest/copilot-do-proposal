@@ -234,7 +234,9 @@ class FileRestrictions:
 class ConversationStep:
     """A step in the conversation flow (PROMPT, COMPACT, NEW-CONVERSATION, etc.)."""
 
-    type: str  # "prompt", "compact", "new_conversation", "checkpoint", "run", "run_retry", "verify", "pause", "consult"
+    # Step types: prompt, compact, new_conversation, checkpoint, run,
+    # run_retry, verify, pause, consult
+    type: str
     content: str = ""  # Prompt text or checkpoint name
     preserve: list[str] = field(default_factory=list)  # For compact
     retry_count: int = 0  # For run_retry: max retries

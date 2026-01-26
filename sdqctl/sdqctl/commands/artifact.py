@@ -176,7 +176,10 @@ def next_id(type_spec: str, path: str, no_scan: bool, as_json: bool) -> None:
         raise SystemExit(1)
 
     if category and art_type not in CATEGORY_TYPES:
-        console.print(f"[yellow]Warning: {art_type} does not support categories, ignoring '{category}'[/yellow]")
+        console.print(
+            f"[yellow]Warning: {art_type} does not support categories, "
+            f"ignoring '{category}'[/yellow]"
+        )
         category = None
 
     if no_scan:
@@ -230,7 +233,10 @@ def list_artifacts(type_spec: Optional[str], path: str, show_all: bool, as_json:
         if as_json:
             import json
             result = {
-                art_type: [{"id": id_, "number": num} for id_, num in sorted(ids, key=lambda x: x[1])]
+                art_type: [
+                    {"id": id_, "number": num}
+                    for id_, num in sorted(ids, key=lambda x: x[1])
+                ]
                 for art_type, ids in all_artifacts.items()
             }
             console.print(json.dumps(result))
@@ -265,7 +271,10 @@ def list_artifacts(type_spec: Optional[str], path: str, show_all: bool, as_json:
             result = {
                 "type": art_type,
                 "category": category,
-                "artifacts": [{"id": id_, "number": num} for id_, num in sorted(found, key=lambda x: x[1])],
+                "artifacts": [
+                    {"id": id_, "number": num}
+                    for id_, num in sorted(found, key=lambda x: x[1])
+                ],
             }
             console.print(json.dumps(result))
         else:
@@ -360,7 +369,11 @@ def rename_artifact(old_id: str, new_id: str, path: str, dry_run: bool, as_json:
     if not references:
         if as_json:
             import json
-            console.print(json.dumps({"old_id": old_id, "new_id": new_id, "files_changed": 0, "references": 0}))
+            result = {
+                "old_id": old_id, "new_id": new_id,
+                "files_changed": 0, "references": 0
+            }
+            console.print(json.dumps(result))
         else:
             console.print(f"[yellow]No references to {old_id} found[/yellow]")
         return
@@ -389,8 +402,14 @@ def rename_artifact(old_id: str, new_id: str, path: str, dry_run: bool, as_json:
             }
             console.print(json.dumps(result, indent=2))
         else:
-            console.print(f"[bold]Dry run:[/bold] Would rename [cyan]{old_id}[/cyan] → [green]{new_id}[/green]")
-            console.print(f"[dim]Found {len(references)} reference(s) in {len(files_with_refs)} file(s):[/dim]\n")
+            console.print(
+                f"[bold]Dry run:[/bold] Would rename "
+                f"[cyan]{old_id}[/cyan] → [green]{new_id}[/green]"
+            )
+            console.print(
+                f"[dim]Found {len(references)} reference(s) "
+                f"in {len(files_with_refs)} file(s):[/dim]\n"
+            )
 
             for filepath in sorted(files_with_refs.keys()):
                 refs = files_with_refs[filepath]
@@ -422,7 +441,10 @@ def rename_artifact(old_id: str, new_id: str, path: str, dry_run: bool, as_json:
             "new_id": new_id,
             "files_changed": len(files_changed),
             "total_replacements": total_replacements,
-            "files": [str(fp.relative_to(root) if fp.is_relative_to(root) else fp) for fp in sorted(files_changed)],
+            "files": [
+                str(fp.relative_to(root) if fp.is_relative_to(root) else fp)
+                for fp in sorted(files_changed)
+            ],
         }
         console.print(json.dumps(result, indent=2))
     else:
@@ -548,8 +570,13 @@ def retire_artifact(
                 "references_found": len(references),
             }))
         else:
-            console.print(f"[yellow]Warning:[/yellow] No definition heading found for {artifact_id}")
-            console.print(f"Found {len(references)} reference(s) but no heading like '### {artifact_id}: ...'")
+            console.print(
+                f"[yellow]Warning:[/yellow] No definition heading found for {artifact_id}"
+            )
+            console.print(
+                f"Found {len(references)} reference(s) but no heading "
+                f"like '### {artifact_id}: ...'"
+            )
             console.print("[dim]Consider adding a definition section manually[/dim]")
         raise SystemExit(1)
 
@@ -562,10 +589,15 @@ def retire_artifact(
     if dry_run:
         if as_json:
             import json
+            def_file_rel = (
+                definition_file.relative_to(root)
+                if definition_file.is_relative_to(root)
+                else definition_file
+            )
             result = {
                 "artifact_id": artifact_id,
                 "dry_run": True,
-                "definition_file": str(definition_file.relative_to(root) if definition_file.is_relative_to(root) else definition_file),
+                "definition_file": str(def_file_rel),
                 "definition_line": definition_line,
                 "original_heading": definition_heading,
                 "retired_heading": retired_heading,
@@ -577,7 +609,11 @@ def retire_artifact(
             # Use print() instead of console.print() to avoid Rich markup interpretation
             print(json.dumps(result, indent=2))
         else:
-            rel_path = definition_file.relative_to(root) if definition_file.is_relative_to(root) else definition_file
+            rel_path = (
+                definition_file.relative_to(root)
+                if definition_file.is_relative_to(root)
+                else definition_file
+            )
             console.print(f"[bold]Dry run:[/bold] Would retire [cyan]{artifact_id}[/cyan]")
             console.print(f"\n[dim]File:[/dim] {rel_path}:{definition_line}")
             console.print("\n[dim]Original heading:[/dim]")
@@ -625,10 +661,15 @@ def retire_artifact(
 
     if as_json:
         import json
+        file_rel = (
+            definition_file.relative_to(root)
+            if definition_file.is_relative_to(root)
+            else definition_file
+        )
         result = {
             "artifact_id": artifact_id,
             "status": "retired",
-            "file": str(definition_file.relative_to(root) if definition_file.is_relative_to(root) else definition_file),
+            "file": str(file_rel),
             "line": definition_line,
             "reason": reason,
             "successor": successor,
@@ -636,7 +677,11 @@ def retire_artifact(
         }
         console.print(json.dumps(result, indent=2))
     else:
-        rel_path = definition_file.relative_to(root) if definition_file.is_relative_to(root) else definition_file
+        rel_path = (
+            definition_file.relative_to(root)
+            if definition_file.is_relative_to(root)
+            else definition_file
+        )
         console.print(f"[green]✓[/green] Retired [cyan]{artifact_id}[/cyan]")
         console.print(f"  File: {rel_path}:{definition_line}")
         console.print(f"  Reason: {reason}")

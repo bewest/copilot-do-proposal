@@ -72,7 +72,7 @@ Multiple files emit progress via stdout (no timestamps) while also logging:
 
 **Priority:** P3 - Low (Cosmetic)  
 **Discovered:** 2026-01-25  
-**Status:** 🟢 Ongoing reduction - 148 remaining
+**Status:** 🟢 Ongoing reduction - 113 remaining
 
 ### Description
 
@@ -82,13 +82,13 @@ Comprehensive ruff linting revealed issues across the codebase. Auto-fix applied
 
 | Before | After | Fixed |
 |--------|-------|-------|
-| 1,994 issues | 148 issues | 1,846 (93%) |
+| 1,994 issues | 113 issues | 1,881 (94%) |
 
 ### Remaining Issues
 
 | Category | Count | Notes |
 |----------|-------|-------|
-| E501 (line too long >100) | 148 | Manual refactoring in progress |
+| E501 (line too long >100) | 113 | Concentrated in run.py, iterate.py, file.py |
 | F841 (unused variables) | 0 | ✅ All fixed |
 
 ---

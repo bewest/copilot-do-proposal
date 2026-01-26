@@ -83,7 +83,10 @@ def _render_common(
         # Filter to specific cycle if requested
         if cycle is not None:
             if cycle < 1 or cycle > len(rendered.cycles):
-                console.print(f"[red]Error: Cycle {cycle} not in range 1-{len(rendered.cycles)}[/red]")
+                console.print(
+                    f"[red]Error: Cycle {cycle} not in range "
+                    f"1-{len(rendered.cycles)}[/red]"
+                )
                 sys.exit(1)
             rendered.cycles = [rendered.cycles[cycle - 1]]
 
@@ -91,13 +94,17 @@ def _render_common(
         if prompt is not None:
             for c in rendered.cycles:
                 if prompt < 1 or prompt > len(c.prompts):
-                    console.print(f"[red]Error: Prompt {prompt} not in range 1-{len(c.prompts)}[/red]")
+                    console.print(
+                        f"[red]Error: Prompt {prompt} not in range "
+                        f"1-{len(c.prompts)}[/red]"
+                    )
                     sys.exit(1)
                 c.prompts = [c.prompts[prompt - 1]]
 
         # Format output
         if json_output:
-            output_content = json.dumps(format_rendered_json(rendered, plan_mode=plan_mode), indent=2)
+            rendered_json = format_rendered_json(rendered, plan_mode=plan_mode)
+            output_content = json.dumps(rendered_json, indent=2)
         else:
             output_content = format_rendered_markdown(
                 rendered,
@@ -128,7 +135,10 @@ def _render_common(
                     )
 
                     if json_output:
-                        cycle_content = json.dumps(format_rendered_json(single_cycle_copy, plan_mode=plan_mode), indent=2)
+                        rendered_json = format_rendered_json(
+                            single_cycle_copy, plan_mode=plan_mode
+                        )
+                        cycle_content = json.dumps(rendered_json, indent=2)
                         cycle_file = output_path / f"cycle-{c.number}.json"
                     else:
                         cycle_content = format_rendered_markdown(
@@ -166,19 +176,44 @@ def _render_common(
 # Common options for all render subcommands
 def common_render_options(f):
     """Decorator for common render options."""
-    f = click.option("--session-mode", "-s", type=click.Choice(["accumulate", "compact", "fresh"]),
-                     default="accumulate", help="Session mode (affects output structure for fresh)")(f)
-    f = click.option("--cycles", "-n", type=int, default=None, help="Number of cycles to render")(f)
-    f = click.option("--cycle", type=int, default=None, help="Render only this cycle number")(f)
-    f = click.option("--prompt", type=int, default=None, help="Render only this prompt number")(f)
+    f = click.option(
+        "--session-mode", "-s",
+        type=click.Choice(["accumulate", "compact", "fresh"]),
+        default="accumulate",
+        help="Session mode (affects output structure for fresh)"
+    )(f)
+    f = click.option(
+        "--cycles", "-n", type=int, default=None,
+        help="Number of cycles to render"
+    )(f)
+    f = click.option(
+        "--cycle", type=int, default=None,
+        help="Render only this cycle number"
+    )(f)
+    f = click.option(
+        "--prompt", type=int, default=None,
+        help="Render only this prompt number"
+    )(f)
     f = click.option("--output", "-o", default=None, help="Output file or directory")(f)
     f = click.option("--json", "json_output", is_flag=True, help="JSON output format")(f)
     f = click.option("--no-context", is_flag=True, help="Exclude context file contents")(f)
     f = click.option("--no-sections", is_flag=True, help="Omit section markers")(f)
-    f = click.option("--prologue", multiple=True, help="Additional prologue (inline text or @file)")(f)
-    f = click.option("--epilogue", multiple=True, help="Additional epilogue (inline text or @file)")(f)
-    f = click.option("--plan", "plan_mode", is_flag=True, help="Show @file references without expanding content")(f)
-    f = click.option("--full", "full_mode", is_flag=True, help="Fully expand all content (default)")(f)
+    f = click.option(
+        "--prologue", multiple=True,
+        help="Additional prologue (inline text or @file)"
+    )(f)
+    f = click.option(
+        "--epilogue", multiple=True,
+        help="Additional epilogue (inline text or @file)"
+    )(f)
+    f = click.option(
+        "--plan", "plan_mode", is_flag=True,
+        help="Show @file references without expanding content"
+    )(f)
+    f = click.option(
+        "--full", "full_mode", is_flag=True,
+        help="Fully expand all content (default)"
+    )(f)
     return f
 
 
@@ -379,7 +414,10 @@ def render_apply(
     """
     # For apply, we'd need to discover components and render each
     # For now, just render the base workflow with a note
-    console.print("[yellow]Note: Rendering base workflow. Use --components to specify targets.[/yellow]")
+    console.print(
+        "[yellow]Note: Rendering base workflow. "
+        "Use --components to specify targets.[/yellow]"
+    )
 
     if components:
         console.print(f"[dim]Component patterns: {list(components)}[/dim]")

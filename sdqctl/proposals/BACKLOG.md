@@ -26,7 +26,7 @@
 |------|--------|-------|
 | Extract StepExecutor from iterate.py | Medium | Q-020 done. See [Architecture Roadmap](#architecture-roadmap). |
 | CONSULT-DIRECTIVE Phase 4 | Medium | Timeout → fail with clear error. Needs CONSULT-TIMEOUT directive. |
-| Fix E501 lint issues (148 remaining) | Low | 24 fixed this session. Batch refactor continues. |
+| Fix E501 lint issues (113 remaining) | Low | 59 fixed total (172→113). 34% reduction. |
 
 ### P3: Low
 

@@ -110,7 +110,10 @@ async def _flow_async(
         logger.debug(f"  - {wf}")
 
     if dry_run:
-        console.print(f"\n[yellow]Would execute {len(workflow_files)} workflows with parallelism {parallel_limit}[/yellow]")
+        console.print(
+            f"\n[yellow]Would execute {len(workflow_files)} workflows "
+            f"with parallelism {parallel_limit}[/yellow]"
+        )
         return
 
     # Create output directory

@@ -319,7 +319,9 @@ class TraceabilityVerifier:
         for loss_id in artifacts_by_type.get("LOSS", []):
             loss = artifacts[loss_id]
             has_haz = any(self._is_type(lid, "HAZ", artifacts) for lid in loss.links_to)
-            has_haz = has_haz or any(self._is_type(lid, "HAZ", artifacts) for lid in loss.linked_from)
+            has_haz = has_haz or any(
+                self._is_type(lid, "HAZ", artifacts) for lid in loss.linked_from
+            )
             if has_haz:
                 losses_with_haz += 1
 
@@ -333,7 +335,9 @@ class TraceabilityVerifier:
         for haz_id in artifacts_by_type.get("HAZ", []):
             haz = artifacts[haz_id]
             has_uca = any(self._is_type(lid, "UCA", artifacts) for lid in haz.links_to)
-            has_uca = has_uca or any(self._is_type(lid, "UCA", artifacts) for lid in haz.linked_from)
+            has_uca = has_uca or any(
+                self._is_type(lid, "UCA", artifacts) for lid in haz.linked_from
+            )
             if has_uca:
                 hazards_with_uca += 1
 
@@ -359,7 +363,9 @@ class TraceabilityVerifier:
         for req_id in artifacts_by_type.get("REQ", []):
             req = artifacts[req_id]
             has_spec = any(self._is_type(lid, "SPEC", artifacts) for lid in req.links_to)
-            has_spec = has_spec or any(self._is_type(lid, "SPEC", artifacts) for lid in req.linked_from)
+            has_spec = has_spec or any(
+                self._is_type(lid, "SPEC", artifacts) for lid in req.linked_from
+            )
             if has_spec:
                 reqs_with_spec += 1
 
@@ -373,7 +379,9 @@ class TraceabilityVerifier:
         for spec_id in artifacts_by_type.get("SPEC", []):
             spec = artifacts[spec_id]
             has_test = any(self._is_type(lid, "TEST", artifacts) for lid in spec.links_to)
-            has_test = has_test or any(self._is_type(lid, "TEST", artifacts) for lid in spec.linked_from)
+            has_test = has_test or any(
+                self._is_type(lid, "TEST", artifacts) for lid in spec.linked_from
+            )
             if has_test:
                 specs_with_test += 1
 
@@ -385,7 +393,8 @@ class TraceabilityVerifier:
         # Overall coverage (average of available metrics)
         metrics = [v for k, v in coverage.items() if "_to_" in k]
         if metrics:
-            coverage["overall"] = sum(m for m in metrics if isinstance(m, (int, float))) / len(metrics)
+            valid_metrics = [m for m in metrics if isinstance(m, (int, float))]
+            coverage["overall"] = sum(valid_metrics) / len(metrics)
         else:
             coverage["overall"] = 0
 
@@ -649,13 +658,19 @@ class TraceabilityVerifier:
                 errors=[],
                 warnings=[],
                 summary=f"VERIFY-COVERAGE {metric} {op} {threshold}%: PASS ({actual:.1f}%)",
-                details={"coverage": coverage, "metric": metric, "actual": actual, "threshold": threshold},
+                details={
+                    "coverage": coverage, "metric": metric,
+                    "actual": actual, "threshold": threshold
+                },
             )
         else:
             errors.append(VerificationError(
                 file=None,
                 line=None,
-                message=f"Coverage check failed: {metric} = {actual:.1f}% (expected {op} {threshold}%)",
+                message=(
+                    f"Coverage check failed: {metric} = {actual:.1f}% "
+                    f"(expected {op} {threshold}%)"
+                ),
                 fix_hint="Improve traceability by adding links between artifacts",
             ))
             return VerificationResult(
@@ -663,5 +678,8 @@ class TraceabilityVerifier:
                 errors=errors,
                 warnings=warnings,
                 summary=f"VERIFY-COVERAGE {metric} {op} {threshold}%: FAIL ({actual:.1f}%)",
-                details={"coverage": coverage, "metric": metric, "actual": actual, "threshold": threshold},
+                details={
+                    "coverage": coverage, "metric": metric,
+                    "actual": actual, "threshold": threshold
+                },
             )
