@@ -26,7 +26,7 @@
 |------|--------|-------|
 | Extract StepExecutor from iterate.py | Medium | Q-020 done. See [Architecture Roadmap](#architecture-roadmap). |
 | CONSULT-DIRECTIVE Phase 4 | Medium | Timeout → fail with clear error. Needs CONSULT-TIMEOUT directive. |
-| Fix E501 lint issues (45 in run.py) | Low | iterate.py clean. run.py(45), tests(55). |
+| Fix E501 lint issues (55 in tests) | Low | Core clean. Tests only remaining. |
 
 ### P3: Low
 
@@ -37,7 +37,6 @@
 | Add integration tests | Medium | Beyond loop stress testing |
 | Default verbosity key actions | Low | **Blocked by OQ-004** → [VERBOSITY-DEFAULTS.md](VERBOSITY-DEFAULTS.md) |
 | Performance benchmark suite | Medium | Track regressions |
-| Error path test coverage | Medium | File I/O errors, permissions, timeouts |
 
 ### Future (Unstarted)
 
@@ -56,6 +55,7 @@
 
 | Item | Date | Notes |
 |------|------|-------|
+| **E501 run.py clean** | 2026-01-26 | Fixed 45 issues in run.py (now 0). Core commands E501 clean. |
 | **E501 iterate.py clean** | 2026-01-26 | Fixed 14 issues in iterate.py (now 0). run.py 51→45. |
 | **Loop detection: tool-aware** | 2026-01-26 | Skip minimal response check if tools called in turn. 2 new tests. |
 | **E501 file.py lint (P2)** | 2026-01-26 | Fixed 10 issues in file.py. Core E501: 172→94 (45% reduction). |

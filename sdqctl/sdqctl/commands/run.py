@@ -466,7 +466,10 @@ def run(
             DeprecationWarning,
             stacklevel=2,
         )
-        console.print("[yellow]⚠ --render-only is deprecated. Use: sdqctl render run workflow.conv[/yellow]")
+        console.print(
+            "[yellow]⚠ --render-only is deprecated. "
+            "Use: sdqctl render run workflow.conv[/yellow]"
+        )
 
         target_path = Path(target)
         if target_path.exists() and target_path.suffix in (".conv", ".copilot"):
@@ -584,7 +587,8 @@ async def _run_async(
                 console.print("[red]Error: Missing mandatory context files:[/red]")
                 for pattern, resolved in errors:
                     console.print(f"[red]  - {pattern} (resolved to {resolved})[/red]")
-                console.print("[dim]Tip: Use VALIDATION-MODE lenient or --allow-missing to continue[/dim]")
+                tip = "Tip: Use VALIDATION-MODE lenient or --allow-missing"
+                console.print(f"[dim]{tip} to continue[/dim]")
                 sys.exit(exc.exit_code)
     else:
         # Treat as inline prompt
@@ -613,7 +617,10 @@ async def _run_async(
             list(allow_files) + list(f"{d}/**" for d in allow_dir),
             list(deny_files) + list(f"{d}/**" for d in deny_dir),
         )
-        logger.info(f"File restrictions: allow={conv.file_restrictions.allow_patterns}, deny={conv.file_restrictions.deny_patterns}")
+        logger.info(
+            f"File restrictions: allow={conv.file_restrictions.allow_patterns}, "
+            f"deny={conv.file_restrictions.deny_patterns}"
+        )
 
     # Add CLI-provided prologues/epilogues (prepend to file-defined ones)
     if cli_prologues:
@@ -646,7 +653,10 @@ async def _run_async(
         status = session.get_status()
         restrictions_info = ""
         if conv.file_restrictions.allow_patterns or conv.file_restrictions.deny_patterns:
-            restrictions_info = f"\nAllow patterns: {conv.file_restrictions.allow_patterns}\nDeny patterns: {conv.file_restrictions.deny_patterns}"
+            restrictions_info = (
+                f"\nAllow patterns: {conv.file_restrictions.allow_patterns}"
+                f"\nDeny patterns: {conv.file_restrictions.deny_patterns}"
+            )
 
         console.print(Panel.fit(
             f"Adapter: {conv.adapter}\n"
@@ -737,7 +747,9 @@ async def _run_async(
         if effective_session_name:
             # Named session: resume if exists, otherwise create new
             try:
-                adapter_session = await ai_adapter.resume_session(effective_session_name, adapter_config)
+                adapter_session = await ai_adapter.resume_session(
+                    effective_session_name, adapter_config
+                )
                 logger.info(f"Resumed session: {effective_session_name}")
                 if verbosity > 0:
                     console.print(f"[dim]Resumed session: {effective_session_name}[/dim]")
@@ -745,10 +757,13 @@ async def _run_async(
                 # Session doesn't exist, create new with session name
                 # Note: SDK may not support named session creation directly,
                 # so we create a regular session and track the name
-                logger.debug(f"Could not resume session '{effective_session_name}': {e}, creating new")
+                logger.debug(
+                    f"Could not resume session '{effective_session_name}': {e}"
+                )
                 adapter_session = await ai_adapter.create_session(adapter_config)
                 if verbosity > 0:
-                    console.print(f"[dim]Created new session: {effective_session_name}[/dim]")
+                    msg = f"[dim]Created new session: {effective_session_name}[/dim]"
+                    console.print(msg)
         else:
             adapter_session = await ai_adapter.create_session(adapter_config)
 
@@ -854,7 +869,9 @@ async def _run_async(
                         if logger.isEnabledFor(logging.DEBUG) and not json_output:
                             console.print(chunk, end="")
 
-                    response = await ai_adapter.send(adapter_session, full_prompt, on_chunk=on_chunk)
+                    response = await ai_adapter.send(
+                        adapter_session, full_prompt, on_chunk=on_chunk
+                    )
 
                     if logger.isEnabledFor(logging.DEBUG):
                         console.print()  # Newline after streaming
@@ -892,9 +909,14 @@ async def _run_async(
                         console.print(f"[dim]Checkpoint saved: {checkpoint_path}[/dim]")
                         # Show resume with SDK session ID (Q-018)
                         if session.sdk_session_id:
-                            console.print(f"\n[bold]To resume:[/bold] sdqctl sessions resume {session.sdk_session_id}")
+                            sid = session.sdk_session_id
+                            console.print(
+                                f"\n[bold]To resume:[/bold] sdqctl sessions resume {sid}"
+                            )
                         else:
-                            console.print(f"\n[bold]To resume:[/bold] sdqctl resume {checkpoint_path}")
+                            console.print(
+                                f"\n[bold]To resume:[/bold] sdqctl resume {checkpoint_path}"
+                            )
                         return  # Session cleanup handled by finally blocks
 
                     # Check for CONSULT after this prompt
@@ -910,21 +932,31 @@ async def _run_async(
 
                         # Show resume instructions with SDK session ID (Q-018)
                         if session.sdk_session_id:
-                            console.print(f"\n[bold]To resume:[/bold] sdqctl sessions resume {session.sdk_session_id}")
+                            sid = session.sdk_session_id
+                            console.print(
+                                f"\n[bold]To resume:[/bold] sdqctl sessions resume {sid}"
+                            )
                         elif conv.session_name:
-                            console.print(f"\n[bold]To resume:[/bold] copilot --resume {conv.session_name}")
+                            console.print(
+                                f"\n[bold]To resume:[/bold] copilot --resume "
+                                f"{conv.session_name}"
+                            )
                         else:
-                            console.print(f"\n[bold]To resume:[/bold] sdqctl resume {checkpoint_path}")
+                            console.print(
+                                f"\n[bold]To resume:[/bold] sdqctl resume {checkpoint_path}"
+                            )
 
-                        console.print("[dim]On resume, the agent will proactively present open questions.[/dim]")
+                        msg = "On resume, the agent will proactively present open questions."
+                        console.print(f"[dim]{msg}[/dim]")
                         return  # Session cleanup handled by finally blocks
 
                 elif step_type == "merged_prompt":
-                    # Handle ELIDE-merged prompts - execute embedded RUN commands and send as single prompt
+                    # Handle ELIDE-merged prompts - execute embedded RUN commands
                     merged_content = step_content
                     run_commands = getattr(step, 'run_commands', [])
 
-                    logger.info(f"🔗 Processing ELIDE-merged prompt with {len(run_commands)} embedded RUN commands")
+                    cmd_count = len(run_commands)
+                    logger.info(f"🔗 Processing ELIDE-merged prompt with {cmd_count} RUN commands")
 
                     # Execute embedded RUN commands and replace placeholders
                     for idx, cmd in enumerate(run_commands):
@@ -938,7 +970,10 @@ async def _run_async(
                             if conv.run_cwd:
                                 run_dir = Path(conv.run_cwd)
                                 if not run_dir.is_absolute():
-                                    base = conv.source_path.parent if conv.source_path else Path.cwd()
+                                    base = (
+                                        conv.source_path.parent
+                                        if conv.source_path else Path.cwd()
+                                    )
                                     run_dir = base / run_dir
                             elif conv.cwd:
                                 run_dir = Path(conv.cwd)
@@ -958,7 +993,10 @@ async def _run_async(
                                 output_text += f"\n\n[stderr]\n{result.stderr}"
                             output_text = _truncate_output(output_text, conv.run_output_limit)
 
-                            status_marker = "" if result.returncode == 0 else f" (exit {result.returncode})"
+                            status_marker = (
+                                "" if result.returncode == 0
+                                else f" (exit {result.returncode})"
+                            )
                             run_output = f"```\n$ {cmd}{status_marker}\n{output_text}\n```"
 
                         except Exception as e:
@@ -1022,7 +1060,9 @@ async def _run_async(
                         if logger.isEnabledFor(logging.DEBUG) and not json_output:
                             console.print(chunk, end="")
 
-                    response = await ai_adapter.send(adapter_session, full_prompt, on_chunk=on_chunk)
+                    response = await ai_adapter.send(
+                        adapter_session, full_prompt, on_chunk=on_chunk
+                    )
 
                     if logger.isEnabledFor(logging.DEBUG):
                         console.print()
@@ -1049,7 +1089,8 @@ async def _run_async(
 
                 elif step_type == "checkpoint":
                     # Save session state and commit outputs to git
-                    checkpoint_name = step_content or f"checkpoint-{len(session.state.checkpoints) + 1}"
+                    ckpt_idx = len(session.state.checkpoints) + 1
+                    checkpoint_name = step_content or f"checkpoint-{ckpt_idx}"
 
                     logger.info(f"📌 CHECKPOINT: {checkpoint_name}")
                     progress(f"  📌 CHECKPOINT: {checkpoint_name}")
@@ -1085,7 +1126,10 @@ async def _run_async(
                         preserve = step.preserve if hasattr(step, 'preserve') else []
                         compact_prompt = session.get_compaction_prompt()
                         if preserve:
-                            compact_prompt = f"Preserve these items: {', '.join(preserve)}\n\n{compact_prompt}"
+                            preserve_list = ', '.join(preserve)
+                            compact_prompt = (
+                                f"Preserve these items: {preserve_list}\n\n{compact_prompt}"
+                            )
 
                         response = await ai_adapter.send(adapter_session, compact_prompt)
                         session.add_message("system", f"[Compaction summary]\n{response}")
@@ -1116,10 +1160,11 @@ async def _run_async(
                 elif step_type == "run":
                     # Execute shell command (with optional retry-with-AI-fix)
                     command = step_content
-                    retry_count = getattr(step, 'retry_count', 0) if hasattr(step, 'retry_count') else 0
-                    retry_prompt = getattr(step, 'retry_prompt', '') if hasattr(step, 'retry_prompt') else ''
+                    retry_count = getattr(step, 'retry_count', 0)
+                    retry_prompt = getattr(step, 'retry_prompt', '')
 
-                    max_attempts = retry_count + 1  # retry_count is number of retries AFTER first attempt
+                    # retry_count is number of retries AFTER first attempt
+                    max_attempts = retry_count + 1
                     attempt = 0
                     last_result = None
 
@@ -1140,7 +1185,10 @@ async def _run_async(
                             if conv.run_cwd:
                                 run_dir = Path(conv.run_cwd)
                                 if not run_dir.is_absolute():
-                                    base = conv.source_path.parent if conv.source_path else Path.cwd()
+                                    base = (
+                                        conv.source_path.parent
+                                        if conv.source_path else Path.cwd()
+                                    )
                                     run_dir = base / run_dir
                             elif conv.cwd:
                                 run_dir = Path(conv.cwd)
@@ -1162,7 +1210,8 @@ async def _run_async(
                                 progress(f"  ✓ Command succeeded ({run_elapsed:.1f}s)")
                                 break  # Success - exit retry loop
                             else:
-                                logger.warning(f"  ✗ Command failed with exit code {result.returncode}")
+                                rc = result.returncode
+                                logger.warning(f"  ✗ Command failed (exit {rc})")
                                 progress(f"  ✗ Command failed (exit {result.returncode})")
 
                                 # If retries remaining, send to AI for fix
@@ -1171,7 +1220,9 @@ async def _run_async(
                                     error_output = result.stdout or ""
                                     if result.stderr:
                                         error_output += f"\n\n[stderr]\n{result.stderr}"
-                                    error_output = _truncate_output(error_output, conv.run_output_limit)
+                                    error_output = _truncate_output(
+                                        error_output, conv.run_output_limit
+                                    )
 
                                     # Build retry prompt for AI
                                     full_retry_prompt = f"""{retry_prompt}
@@ -1184,7 +1235,8 @@ $ {command}
 
 Exit code: {result.returncode}
 
-Please analyze the error and make necessary fixes. After fixing, the command will be retried automatically."""
+Please analyze the error and make necessary fixes. \
+After fixing, the command will be retried automatically."""
 
                                     logger.info("  📤 Sending error to AI for fix...")
                                     progress("  📤 Asking AI to fix...")
@@ -1198,7 +1250,8 @@ Please analyze the error and make necessary fixes. After fixing, the command wil
                                             stream=True,
                                         ))
                                         if retry_response:
-                                            logger.info(f"  📥 AI fix response received ({len(retry_response)} chars)")
+                                            resp_len = len(retry_response)
+                                            logger.info(f"  📥 AI response ({resp_len} chars)")
                                             progress("  📥 AI response received, retrying...")
                                             # Add AI response to session context
                                             session.add_message("assistant", retry_response)
@@ -1243,11 +1296,19 @@ Please analyze the error and make necessary fixes. After fixing, the command wil
                             output_text = _truncate_output(output_text, conv.run_output_limit)
 
                             if output_text.strip():
-                                status_marker = "" if last_result.returncode == 0 else f" (exit {last_result.returncode})"
-                                retry_marker = f" [after {attempt} attempt(s)]" if retry_count > 0 else ""
-                                run_context = f"```\n$ {command}{status_marker}{retry_marker}\n{output_text}\n```"
+                                rc = last_result.returncode
+                                status_marker = "" if rc == 0 else f" (exit {rc})"
+                                retry_marker = (
+                                    f" [after {attempt} attempt(s)]"
+                                    if retry_count > 0 else ""
+                                )
+                                run_context = (
+                                    f"```\n$ {command}{status_marker}{retry_marker}"
+                                    f"\n{output_text}\n```"
+                                )
                                 session.add_message("system", f"[RUN output]\n{run_context}")
-                                logger.debug(f"Added RUN output to context ({len(output_text)} chars)")
+                                out_len = len(output_text)
+                                logger.debug(f"Added RUN output to context ({out_len} chars)")
 
                         # Execute ON-FAILURE or ON-SUCCESS blocks if present
                         if last_result.returncode != 0 and step.on_failure:
@@ -1265,16 +1326,20 @@ Please analyze the error and make necessary fixes. After fixing, the command wil
                                 console, progress, first_prompt
                             )
 
-                        # Handle stop-on-error AFTER capturing output, blocks, and exhausting retries
-                        # Only stop if no ON-FAILURE block was present (block handles the failure)
-                        if last_result.returncode != 0 and conv.run_on_error == "stop" and not step.on_failure:
+                        # Handle stop-on-error AFTER output, blocks, retries
+                        # Only stop if no ON-FAILURE block was present
+                        is_failed = last_result.returncode != 0
+                        should_stop = conv.run_on_error == "stop" and not step.on_failure
+                        if is_failed and should_stop:
                             retry_msg = f" after {attempt} attempts" if retry_count > 0 else ""
                             console.print(f"[red]RUN failed{retry_msg}: {command}[/red]")
                             console.print(f"[dim]Exit code: {last_result.returncode}[/dim]")
                             if last_result.stderr:
                                 console.print(f"[dim]stderr: {last_result.stderr[:500]}[/dim]")
                             session.state.status = "failed"
-                            checkpoint_path = session.save_pause_checkpoint(f"RUN failed: {command} (exit {last_result.returncode})")
+                            rc = last_result.returncode
+                            ckpt_msg = f"RUN failed: {command} (exit {rc})"
+                            checkpoint_path = session.save_pause_checkpoint(ckpt_msg)
                             console.print(f"[dim]Checkpoint saved: {checkpoint_path}[/dim]")
                             return
 
@@ -1316,7 +1381,8 @@ Please analyze the error and make necessary fixes. After fixing, the command wil
                     conv.async_processes.append((command, proc))
                     logger.info(f"  ✓ Background process started (PID {proc.pid})")
                     progress(f"  ✓ Background process started (PID {proc.pid})")
-                    session.add_message("system", f"[RUN-ASYNC started]\n$ {command} (PID {proc.pid})")
+                    async_msg = f"[RUN-ASYNC started]\n$ {command} (PID {proc.pid})"
+                    session.add_message("system", async_msg)
 
                 elif step_type == "run_wait":
                     # Wait/sleep for specified duration
@@ -1342,8 +1408,8 @@ Please analyze the error and make necessary fixes. After fixing, the command wil
                     # Run verification step
                     from ..verifiers import VERIFIERS
 
-                    verify_type = step.verify_type if hasattr(step, 'verify_type') else step.get('verify_type', 'all')
-                    verify_options = step.verify_options if hasattr(step, 'verify_options') else step.get('verify_options', {})
+                    verify_type = getattr(step, 'verify_type', step.get('verify_type', 'all'))
+                    verify_options = getattr(step, 'verify_options', step.get('verify_options', {}))
 
                     logger.info(f"🔍 VERIFY: {verify_type}")
                     progress(f"  🔍 Verifying: {verify_type}")
@@ -1381,9 +1447,11 @@ Please analyze the error and make necessary fixes. After fixing, the command wil
                         verify_output_lines.append(f"### {name}\n{status}: {result.summary}\n")
                         if result.errors and conv.verify_output in ("always", "on-error"):
                             for err in result.errors[:10]:  # Limit to first 10 errors
-                                verify_output_lines.append(f"- ERROR {err.file}:{err.line}: {err.message}")
+                                err_line = f"- ERROR {err.file}:{err.line}: {err.message}"
+                                verify_output_lines.append(err_line)
                             if len(result.errors) > 10:
-                                verify_output_lines.append(f"- ... and {len(result.errors) - 10} more errors")
+                                extra = len(result.errors) - 10
+                                verify_output_lines.append(f"- ... and {extra} more errors")
 
                     verify_output = "\n".join(verify_output_lines)
 
@@ -1412,9 +1480,9 @@ Please analyze the error and make necessary fixes. After fixing, the command wil
                     # Run VERIFY-TRACE step (check specific trace link)
                     from ..verifiers.traceability import TraceabilityVerifier
 
-                    verify_options = step.verify_options if hasattr(step, 'verify_options') else step.get('verify_options', {})
-                    from_id = verify_options.get('from', '')
-                    to_id = verify_options.get('to', '')
+                    opts = getattr(step, 'verify_options', step.get('verify_options', {}))
+                    from_id = opts.get('from', '')
+                    to_id = opts.get('to', '')
 
                     logger.info(f"🔍 VERIFY-TRACE: {from_id} -> {to_id}")
                     progress(f"  🔍 Verifying trace: {from_id} -> {to_id}")
@@ -1436,13 +1504,14 @@ Please analyze the error and make necessary fixes. After fixing, the command wil
                     # Run VERIFY-COVERAGE step (check coverage metrics)
                     from ..verifiers.traceability import TraceabilityVerifier
 
-                    verify_options = step.verify_options if hasattr(step, 'verify_options') else step.get('verify_options', {})
-                    report_only = verify_options.get('report_only', False)
-                    metric = verify_options.get('metric')
-                    op = verify_options.get('op')
-                    threshold = verify_options.get('threshold')
+                    opts = getattr(step, 'verify_options', step.get('verify_options', {}))
+                    report_only = opts.get('report_only', False)
+                    metric = opts.get('metric')
+                    op = opts.get('op')
+                    threshold = opts.get('threshold')
 
-                    logger.info(f"🔍 VERIFY-COVERAGE: {'report' if report_only else f'{metric} {op} {threshold}'}")
+                    mode = 'report' if report_only else f'{metric} {op} {threshold}'
+                    logger.info(f"🔍 VERIFY-COVERAGE: {mode}")
                     progress("  🔍 Verifying coverage")
 
                     verify_path = conv.source_path.parent if conv.source_path else Path.cwd()
@@ -1451,7 +1520,9 @@ Please analyze the error and make necessary fixes. After fixing, the command wil
                     if report_only:
                         result = verifier.verify_coverage(verify_path)
                     else:
-                        result = verifier.verify_coverage(verify_path, metric=metric, op=op, threshold=threshold)
+                        result = verifier.verify_coverage(
+                            verify_path, metric=metric, op=op, threshold=threshold
+                        )
 
                     if result.passed:
                         logger.info(f"  ✓ Coverage: {result.summary}")
@@ -1505,8 +1576,10 @@ Please analyze the error and make necessary fixes. After fixing, the command wil
                 # Use conv.output_file which includes both CLI override and workflow OUTPUT-FILE
                 effective_output = conv.output_file
                 if effective_output:
-                    # Substitute template variables in output path (use output_vars with WORKFLOW_NAME)
-                    effective_output = substitute_template_variables(effective_output, output_vars)
+                    # Substitute template variables in output path
+                    effective_output = substitute_template_variables(
+                        effective_output, output_vars
+                    )
                     output_path = Path(effective_output)
                     output_path.parent.mkdir(parents=True, exist_ok=True)
                     output_path.write_text(final_output)
