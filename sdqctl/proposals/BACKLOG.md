@@ -20,8 +20,7 @@ No high priority items. Next priorities are in P2.
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| Extract StepExecutor from iterate.py | Medium | See [Architecture Roadmap](#architecture-roadmap) |
-| Create shared ExecutionContext dataclass | Low | Unify adapter initialization |
+| Extract StepExecutor from iterate.py | Medium | See [Architecture Roadmap](#architecture-roadmap). Use ExecutionContext. |
 | CONSULT-DIRECTIVE Phase 4 | Low | Timeout, partial save refinements |
 | claude/openai adapter stubs | Medium | Implement or clarify scope in ADAPTERS.md |
 | Extract common utilities (`utils/io.py`) | Low | Deduplicate ~50 JSON output + 65 file I/O patterns |
@@ -64,6 +63,7 @@ No high priority items. Next priorities are in P2.
 
 | Item | Date | Notes |
 |------|------|-------|
+| **ExecutionContext dataclass** | 2026-01-26 | Unified context for workflow execution. In core/session.py. 4 new tests. |
 | **Phase 6: Mixed Prompt Support** | 2026-01-26 | Variadic targets, `---` separator, elision into boundaries. 16 new tests. |
 | **Groom QUIRKS.md** | 2026-01-25 | 960 → 135 lines. Archived 13 resolved quirks. Created SDK-LEARNINGS.md |
 | **Consolidate run+cycle → iterate** | 2026-01-25 | [ITERATE-CONSOLIDATION.md](ITERATE-CONSOLIDATION.md) Phase 1-5 complete. `cycle` renamed to `iterate`, deprecated alias added. |
@@ -97,28 +97,36 @@ class StepExecutor:
 | Refactor cycle.py to use StepExecutor | Medium | 🔲 Open |
 | Add StepExecutor tests | Medium | 🔲 Open |
 
-### Shared ExecutionContext (P2)
+### Shared ExecutionContext (P2) - ✅ COMPLETE
 
 **Problem**: Adapter initialization repeated in run.py, cycle.py, apply.py
 
-**Solution**: Create `ExecutionContext` dataclass
+**Solution**: Created `ExecutionContext` dataclass in `core/session.py`
 
 ```python
 @dataclass
 class ExecutionContext:
     adapter: AdapterBase
+    adapter_config: AdapterConfig
+    adapter_session: AdapterSession
     session: Session
     conv: ConversationFile
     verbosity: int
     console: Console
+    show_prompt: bool
+    json_errors: bool
 ```
+
+**Completed**: 2026-01-26
 
 | Task | Effort | Status |
 |------|--------|--------|
-| Define ExecutionContext in core/session.py | Low | 🔲 Open |
-| Refactor run.py to use ExecutionContext | Low | 🔲 Open |
-| Refactor cycle.py to use ExecutionContext | Low | 🔲 Open |
-| Refactor apply.py to use ExecutionContext | Low | 🔲 Open |
+| Define ExecutionContext in core/session.py | Low | ✅ Complete |
+| Add create_execution_context() factory | Low | ✅ Complete |
+| Add tests | Low | ✅ Complete (4 tests) |
+| Refactor run.py to use ExecutionContext | Low | 🔲 Deferred to StepExecutor |
+| Refactor iterate.py to use ExecutionContext | Low | 🔲 Deferred to StepExecutor |
+| Refactor apply.py to use ExecutionContext | Low | 🔲 Deferred to StepExecutor |
 
 ### ConversationFile Split (P3)
 

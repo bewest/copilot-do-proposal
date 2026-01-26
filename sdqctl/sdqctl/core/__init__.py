@@ -11,16 +11,18 @@ from .conversation import (
 )
 from .logging import get_logger, setup_logging
 from .progress import ProgressTracker, is_quiet, progress, set_quiet
-from .session import Session
+from .session import ExecutionContext, Session, create_execution_context
 
 __all__ = [
     "ConversationFile",
     "ConversationStep",
     "Directive",
+    "ExecutionContext",
     "FileRestrictions",
     "ContextManager",
     "Session",
     "apply_iteration_context",
+    "create_execution_context",
     "get_logger",
     "is_quiet",
     "progress",

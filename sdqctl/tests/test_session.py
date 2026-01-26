@@ -8,8 +8,9 @@ import pytest
 import json
 from pathlib import Path
 from datetime import datetime, timezone
+from unittest.mock import AsyncMock, MagicMock
 
-from sdqctl.core.session import Session, SessionState, Message, Checkpoint
+from sdqctl.core.session import Session, SessionState, Message, Checkpoint, ExecutionContext
 from sdqctl.core.conversation import ConversationFile
 
 
@@ -520,3 +521,127 @@ class TestSessionStatus:
         assert "state" in data
         assert "context" in data
         assert "checkpoints" in data
+
+
+class TestExecutionContext:
+    """Tests for ExecutionContext dataclass."""
+
+    def test_execution_context_creation(self, sample_conv_content):
+        """Test ExecutionContext can be created with required fields."""
+        from rich.console import Console
+        from sdqctl.adapters.base import AdapterConfig
+
+        conv = ConversationFile.parse(sample_conv_content)
+        session = Session(conv)
+
+        # Create mock adapter and session
+        mock_adapter = MagicMock()
+        mock_adapter_session = MagicMock()
+        mock_adapter_session.sdk_session_id = "test-session-id"
+
+        adapter_config = AdapterConfig(model="gpt-4")
+
+        ctx = ExecutionContext(
+            adapter=mock_adapter,
+            adapter_config=adapter_config,
+            adapter_session=mock_adapter_session,
+            session=session,
+            conv=conv,
+            verbosity=1,
+            console=Console(),
+        )
+
+        assert ctx.adapter == mock_adapter
+        assert ctx.conv == conv
+        assert ctx.verbosity == 1
+        assert ctx.is_verbose is True
+        assert ctx.is_debug is False
+
+    def test_execution_context_verbosity_properties(self, sample_conv_content):
+        """Test is_verbose and is_debug properties."""
+        from rich.console import Console
+        from sdqctl.adapters.base import AdapterConfig
+
+        conv = ConversationFile.parse(sample_conv_content)
+        session = Session(conv)
+        mock_adapter = MagicMock()
+        mock_adapter_session = MagicMock()
+        adapter_config = AdapterConfig(model="gpt-4")
+
+        # Verbosity 0: quiet
+        ctx0 = ExecutionContext(
+            adapter=mock_adapter,
+            adapter_config=adapter_config,
+            adapter_session=mock_adapter_session,
+            session=session,
+            conv=conv,
+            verbosity=0,
+        )
+        assert ctx0.is_verbose is False
+        assert ctx0.is_debug is False
+
+        # Verbosity 1: verbose
+        ctx1 = ExecutionContext(
+            adapter=mock_adapter,
+            adapter_config=adapter_config,
+            adapter_session=mock_adapter_session,
+            session=session,
+            conv=conv,
+            verbosity=1,
+        )
+        assert ctx1.is_verbose is True
+        assert ctx1.is_debug is False
+
+        # Verbosity 2: debug
+        ctx2 = ExecutionContext(
+            adapter=mock_adapter,
+            adapter_config=adapter_config,
+            adapter_session=mock_adapter_session,
+            session=session,
+            conv=conv,
+            verbosity=2,
+        )
+        assert ctx2.is_verbose is True
+        assert ctx2.is_debug is True
+
+    def test_execution_context_default_console(self, sample_conv_content):
+        """Test ExecutionContext creates default Console if not provided."""
+        from rich.console import Console
+        from sdqctl.adapters.base import AdapterConfig
+
+        conv = ConversationFile.parse(sample_conv_content)
+        session = Session(conv)
+        mock_adapter = MagicMock()
+        mock_adapter_session = MagicMock()
+        adapter_config = AdapterConfig(model="gpt-4")
+
+        ctx = ExecutionContext(
+            adapter=mock_adapter,
+            adapter_config=adapter_config,
+            adapter_session=mock_adapter_session,
+            session=session,
+            conv=conv,
+        )
+
+        assert isinstance(ctx.console, Console)
+
+    def test_execution_context_json_errors_flag(self, sample_conv_content):
+        """Test json_errors flag is stored correctly."""
+        from sdqctl.adapters.base import AdapterConfig
+
+        conv = ConversationFile.parse(sample_conv_content)
+        session = Session(conv)
+        mock_adapter = MagicMock()
+        mock_adapter_session = MagicMock()
+        adapter_config = AdapterConfig(model="gpt-4")
+
+        ctx = ExecutionContext(
+            adapter=mock_adapter,
+            adapter_config=adapter_config,
+            adapter_session=mock_adapter_session,
+            session=session,
+            conv=conv,
+            json_errors=True,
+        )
+
+        assert ctx.json_errors is True

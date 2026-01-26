@@ -5,6 +5,7 @@ Handles:
 - Conversation state
 - Checkpoint/restore
 - Adapter lifecycle
+- ExecutionContext for unified command execution
 """
 
 import json
@@ -12,10 +13,144 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+from rich.console import Console
 
 from .context import ContextManager
 from .conversation import ConversationFile
+
+if TYPE_CHECKING:
+    from ..adapters.base import AdapterBase, AdapterConfig, AdapterSession
+
+
+@dataclass
+class ExecutionContext:
+    """Unified context for workflow execution across commands.
+
+    Encapsulates the common state needed by run, iterate, and apply commands,
+    reducing code duplication and ensuring consistent initialization.
+
+    Attributes:
+        adapter: The AI adapter instance (e.g., CopilotAdapter)
+        adapter_config: Configuration for the adapter
+        adapter_session: The active session from the adapter
+        session: Session instance for checkpointing and state
+        conv: The loaded ConversationFile
+        verbosity: Logging verbosity level (0=quiet, 1=normal, 2=verbose)
+        console: Rich console for output
+        show_prompt: Whether to display prompts to stderr
+        json_errors: Whether to format errors as JSON
+    """
+
+    adapter: "AdapterBase"
+    adapter_config: "AdapterConfig"
+    adapter_session: "AdapterSession"
+    session: "Session"
+    conv: ConversationFile
+    verbosity: int = 0
+    console: Console = field(default_factory=Console)
+    show_prompt: bool = False
+    json_errors: bool = False
+
+    @property
+    def is_verbose(self) -> bool:
+        """True if verbosity >= 1."""
+        return self.verbosity >= 1
+
+    @property
+    def is_debug(self) -> bool:
+        """True if verbosity >= 2."""
+        return self.verbosity >= 2
+
+
+async def create_execution_context(
+    conv: ConversationFile,
+    adapter_name: Optional[str] = None,
+    model: Optional[str] = None,
+    session_name: Optional[str] = None,
+    session_dir: Optional[Path] = None,
+    event_log_path: Optional[str] = None,
+    verbosity: int = 0,
+    console: Optional[Console] = None,
+    show_prompt: bool = False,
+    json_errors: bool = False,
+    infinite_sessions_config: Optional[Any] = None,
+) -> ExecutionContext:
+    """Create an ExecutionContext with initialized adapter and session.
+
+    This factory function consolidates the common adapter initialization
+    pattern used across run.py, iterate.py, and apply.py.
+
+    Args:
+        conv: The loaded ConversationFile
+        adapter_name: Override adapter name (defaults to conv.adapter)
+        model: Override model name (defaults to conv.model)
+        session_name: Named session for resumability
+        session_dir: Directory for checkpoints
+        event_log_path: Path for SDK event log
+        verbosity: Logging verbosity (0=quiet, 1=normal, 2=debug)
+        console: Rich console for output (defaults to new Console)
+        show_prompt: Whether to display prompts to stderr
+        json_errors: Whether to format errors as JSON
+        infinite_sessions_config: InfiniteSessionConfig for SDK compaction
+
+    Returns:
+        Initialized ExecutionContext ready for workflow execution
+
+    Raises:
+        ValueError: If adapter is not available
+    """
+    from ..adapters import get_adapter
+    from ..adapters.base import AdapterConfig
+
+    # Use console or create new
+    effective_console = console or Console()
+
+    # Get adapter
+    effective_adapter_name = adapter_name or conv.adapter or "copilot"
+    adapter = get_adapter(effective_adapter_name)
+
+    # Start adapter
+    await adapter.start()
+
+    # Build adapter config
+    adapter_config = AdapterConfig(
+        model=model or conv.model,
+        streaming=True,
+        debug_categories=getattr(conv, 'debug_categories', None),
+        debug_intents=getattr(conv, 'debug_intents', False),
+        event_log=event_log_path,
+        infinite_sessions=infinite_sessions_config,
+    )
+
+    # Create session for checkpointing
+    session = Session(conv, session_dir=session_dir)
+
+    # Create or resume adapter session
+    effective_session_name = session_name or conv.session_name
+    if effective_session_name:
+        try:
+            adapter_session = await adapter.resume_session(effective_session_name, adapter_config)
+        except Exception:
+            adapter_session = await adapter.create_session(adapter_config)
+    else:
+        adapter_session = await adapter.create_session(adapter_config)
+
+    # Store SDK session ID for resume (Q-018 fix)
+    session.sdk_session_id = adapter_session.sdk_session_id
+
+    return ExecutionContext(
+        adapter=adapter,
+        adapter_config=adapter_config,
+        adapter_session=adapter_session,
+        session=session,
+        conv=conv,
+        verbosity=verbosity,
+        console=effective_console,
+        show_prompt=show_prompt,
+        json_errors=json_errors,
+    )
 
 
 @dataclass
