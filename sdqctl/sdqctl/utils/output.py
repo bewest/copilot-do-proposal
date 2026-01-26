@@ -12,7 +12,8 @@ TTY detection (git-style):
 
 import json
 import sys
-from typing import Any, Optional
+from pathlib import Path
+from typing import Any, Optional, Union
 
 from rich.console import Console
 from rich.markdown import Markdown
@@ -220,7 +221,7 @@ def print_json(data: Any, file: Optional[Any] = None) -> None:
         console.print_json(json_str)
 
 
-def write_json_file(path: "Path", data: Any) -> None:
+def write_json_file(path: Union[Path, str], data: Any) -> None:
     """Write data as formatted JSON to a file.
 
     Consolidates the common pattern: Path(...).write_text(json.dumps(data, indent=2))
@@ -229,13 +230,12 @@ def write_json_file(path: "Path", data: Any) -> None:
         path: Path to write to (parent directories created if needed)
         data: Data to serialize
     """
-    from pathlib import Path as PathType
-    p = PathType(path) if not isinstance(path, PathType) else path
+    p = Path(path) if not isinstance(path, Path) else path
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(data, indent=2, default=str))
 
 
-def read_json_file(path: "Path") -> Any:
+def read_json_file(path: Union[Path, str]) -> Any:
     """Read and parse JSON from a file.
 
     Args:
@@ -248,20 +248,18 @@ def read_json_file(path: "Path") -> Any:
         FileNotFoundError: If file doesn't exist
         json.JSONDecodeError: If file is not valid JSON
     """
-    from pathlib import Path as PathType
-    p = PathType(path) if not isinstance(path, PathType) else path
+    p = Path(path) if not isinstance(path, Path) else path
     return json.loads(p.read_text())
 
 
-def write_text_file(path: "Path", content: str) -> None:
+def write_text_file(path: Union[Path, str], content: str) -> None:
     """Write text content to a file, creating parent directories.
 
     Args:
         path: Path to write to
         content: Text content to write
     """
-    from pathlib import Path as PathType
-    p = PathType(path) if not isinstance(path, PathType) else path
+    p = Path(path) if not isinstance(path, Path) else path
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(content)
 

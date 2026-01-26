@@ -8,7 +8,6 @@ PermissionError, or OSError.
 
 import functools
 import sys
-from pathlib import Path
 from typing import Callable, TypeVar, ParamSpec
 
 import click
