@@ -34,7 +34,7 @@
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| *(No unblocked P2 items)* | | |
+| CLI ergonomics: `---` separator | Low | Q-021: Document `--` prefix or change separator. See QUIRKS.md |
 
 ### P3: Low
 

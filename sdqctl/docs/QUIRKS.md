@@ -13,6 +13,7 @@ This document catalogs non-obvious behaviors discovered while developing and usi
 
 | ID | Quirk | Priority | Status |
 |----|-------|----------|--------|
+| Q-021 | `---` separator requires `--` prefix on CLI | P2 | 🟡 Open |
 | Q-019A | Progress messages lack timestamps after compaction | P3 | 🟡 Open |
 
 ### Resolved Quirks (Archived)
@@ -34,6 +35,59 @@ This document catalogs non-obvious behaviors discovered while developing and usi
 | Q-003 | Template variables encourage problematic patterns | Q-001 fix + examples | [2026-01](../archive/quirks/2026-01-resolved-quirks.md#q-003-template-variables-encourage-problematic-patterns) |
 | Q-002 | SDK abort events not emitted | Lowered thresholds + stop file | [2026-01](../archive/quirks/2026-01-resolved-quirks.md#q-002-sdk-abort-events-not-emitted) |
 | Q-001 | Workflow filename influences agent behavior | Excluded from prompts | [2026-01](../archive/quirks/2026-01-resolved-quirks.md#q-001-workflow-filename-influences-agent-behavior) |
+
+---
+
+## Q-021: `---` Separator Requires `--` Prefix on CLI
+
+**Priority:** P2 - Ergonomics  
+**Discovered:** 2026-01-26  
+**Status:** 🟡 Open
+
+### Description
+
+The `---` turn separator documented in `iterate --help` fails when used directly:
+
+```bash
+# Fails: Click interprets --- as an option
+sdqctl iterate "Focus on X" --- workflow.conv
+# Error: No such option: ---
+
+# Works: Use -- to stop option parsing first
+sdqctl iterate -n 2 -- "Focus on X" --- workflow.conv
+```
+
+### Root Cause
+
+Click's argument parser sees `---` (starts with `-`) and attempts to parse it as an option before the arguments reach `parse_targets()`.
+
+### Workarounds
+
+1. **Use `--` before targets** (recommended):
+   ```bash
+   sdqctl iterate -n 2 -- "prompt" --- workflow.conv
+   ```
+
+2. **Put all options first, then targets without `---`**:
+   ```bash
+   sdqctl iterate -n 2 "prompt" workflow.conv  # elides by default
+   ```
+
+3. **Use `--prologue` instead of inline**:
+   ```bash
+   sdqctl iterate -n 2 --prologue "Focus on X" workflow.conv
+   ```
+
+### Fix Options
+
+1. **Document the `--` requirement** in help text (low effort)
+2. **Change separator to `:::` or `//`** (breaking change, but Click-safe)
+3. **Use Click's `token_normalize_func`** to escape `---` before parsing
+4. **Add `--separator TEXT`** option to override default
+
+### Recommendation
+
+Option 1 (documentation) for immediate fix, consider Option 2 for v0.2.0.
 
 ---
 
