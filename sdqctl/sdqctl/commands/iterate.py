@@ -41,13 +41,13 @@ from ..core.session import Session
 from ..utils.output import PromptWriter
 from .compact_steps import execute_checkpoint_step, execute_compact_step
 from .iterate_helpers import (
-    SESSION_MODES,
-    TURN_SEPARATOR,
-    TurnGroup,
+    SESSION_MODES,  # noqa: F401 - re-exported
+    TURN_SEPARATOR,  # noqa: F401 - re-exported
+    TurnGroup,  # noqa: F401 - re-exported
     build_infinite_session_config,
     check_existing_stop_file,
     create_or_resume_session,
-    is_workflow_file,
+    is_workflow_file,  # noqa: F401 - re-exported
     parse_targets,
     perform_compaction,
     recreate_fresh_session,

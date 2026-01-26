@@ -62,8 +62,8 @@ sdqctl/
 │   ├── base.py           # AdapterBase, AdapterConfig, AdapterSession
 │   ├── registry.py       # Adapter discovery and registration
 │   ├── stats.py          # SessionStats, TurnStats, CompactionEvent
-│   ├── events.py         # EventCollector for JSONL export
-│   ├── copilot.py        # GitHub Copilot SDK adapter
+│   ├── events.py         # EventCollector, CopilotEventHandler, helpers
+│   ├── copilot.py        # GitHub Copilot SDK adapter (670 lines)
 │   └── mock.py           # Mock adapter for testing
 │
 ├── commands/             # CLI command implementations

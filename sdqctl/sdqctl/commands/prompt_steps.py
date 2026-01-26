@@ -6,8 +6,7 @@ during workflow execution cycles.
 """
 
 import logging
-from dataclasses import dataclass, field
-from pathlib import Path
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from ..core.conversation import build_prompt_with_injection

@@ -6,6 +6,16 @@
 
 ---
 
+## Ready Queue (3 Actionable Items)
+
+| # | Item | Priority | Effort | Notes |
+|---|------|----------|--------|-------|
+| 1 | Add integration tests | P2 | Medium | Ongoing: Total 1288 tests. Focus: adapter integration, CLI integration, end-to-end workflows. |
+| 2 | cli.py modularization | P2 | Medium | 966 lines. Extract `init` command (~150 lines) and `resume` command (~160 lines) to separate modules. |
+| 3 | Deprecate `run` command | P2 | Low | Forward to `iterate -n 1` with warning. See [ITERATE-CONSOLIDATION.md](ITERATE-CONSOLIDATION.md). |
+
+---
+
 ## Active Priorities
 
 ### P0: Critical
@@ -24,8 +34,6 @@
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| Add integration tests | Medium | Ongoing: +42 tests this session. Total 1256 tests. |
-| Copilot adapter modularization | Medium | 1145 lines → split into events.py, stats.py, session.py |
 | Performance benchmark suite | Medium | **Blocked by OQ-005** - needs scope decision. Track regressions. |
 
 ### P3: Low
@@ -51,6 +59,7 @@
 
 | Item | Date | Notes |
 |------|------|-------|
+| **Copilot adapter modularization (P2)** | 2026-01-26 | Complete: 1143 → 670 lines (-473, 41%). Extracted CopilotEventHandler class to events.py. +32 tests. Total 1288 tests. |
 | **Session resilience Phase 4 (P2)** | 2026-01-26 | Compaction summary display complete. +3 tests. Shows effectiveness ratio in completion output. Total 1256 tests. |
 | **Session resilience Phase 3 (P2)** | 2026-01-26 | Predictive rate limiting complete. +9 tests. Added estimated_remaining_requests, estimated_minutes_remaining, warning integration. Total 1253 tests. |
 | **Session resilience Phase 2 (P2)** | 2026-01-26 | Checkpoint resume testing complete. +4 tests. Documented rate-limit recovery in COMMANDS.md. |
@@ -184,18 +193,41 @@ core/conversation/
 | Document extension points | Low | ✅ Complete |
 | Add key abstractions section | Low | ✅ Complete |
 
-### Copilot Adapter Modularization (P3)
+### Copilot Adapter Modularization (P3) - ✅ COMPLETE
 
-**Problem**: `copilot.py` is 1,000+ lines with inline event handling
+**Problem**: `copilot.py` was 1,143 lines with inline event handling
 
-**Proposed structure**:
+**Completed**: 2026-01-26
+
+**Final structure**:
 ```
-adapters/copilot/
-  __init__.py      # CopilotAdapter (main class)
-  events.py        # CopilotEventHandler
-  stats.py         # SessionStats tracking
-  session.py       # Session management
+adapters/
+  copilot.py       # CopilotAdapter main class (670 lines)
+  events.py        # EventCollector + CopilotEventHandler + helpers (585 lines)
+  stats.py         # SessionStats, TurnStats, CompactionEvent (191 lines)
 ```
+
+**Result**: 1,143 → 670 lines (41% reduction). Event handling extracted to `CopilotEventHandler` class.
+
+### CLI Modularization (P2) - 🔲 READY
+
+**Problem**: `cli.py` is 966 lines with embedded `init` and `resume` commands
+
+**Proposed extraction**:
+```
+commands/
+  init.py     # init command + _create_copilot_files (~150 lines)
+  resume.py   # resume command + _resume_async (~160 lines)
+```
+
+**Expected result**: cli.py 966 → ~650 lines
+
+| Task | Effort | Status |
+|------|--------|--------|
+| Extract init command to commands/init.py | Low | 🔲 Ready |
+| Extract resume command to commands/resume.py | Low | 🔲 Ready |
+| Update cli.py imports | Low | 🔲 Ready |
+| Add tests for extracted modules | Low | 🔲 Ready |
 
 ### Integration Test Expansion (P3)
 
@@ -210,10 +242,10 @@ adapters/copilot/
 
 | Metric | Current | Target | Notes |
 |--------|---------|--------|-------|
-| Max file size | 858 lines | <500 lines | file.py (down from 1,819) |
-| Lint issues (E501/F841) | 197 | 0 | |
+| Max file size | 670 lines | <500 lines | copilot.py (down from 1,143) |
+| Lint issues (E501/F841) | 0 | 0 | ✅ Clean |
 | Integration test files | 1 | 5+ | |
-| Code duplication (run/cycle) | ~500 lines | <100 lines | |
+| Code duplication (run/cycle) | ~100 lines | <100 lines | ✅ Helpers extracted |
 
 ### QUIRKS Grooming (P3) - ✅ COMPLETE
 
@@ -282,7 +314,7 @@ def _check_minimal_response(
 | [PIPELINE-ARCHITECTURE](PIPELINE-ARCHITECTURE.md) | ✅ Complete | --from-json + schema_version |
 | [STPA-INTEGRATION](STPA-INTEGRATION.md) | ✅ Complete | Templates + traceability verifier |
 | [CLI-ERGONOMICS](CLI-ERGONOMICS.md) | ✅ Complete | Help implemented |
-| [ITERATE-CONSOLIDATION](ITERATE-CONSOLIDATION.md) | ✅ Complete | All 6 phases complete. Mixed mode, separators, elision. |
+| [ITERATE-CONSOLIDATION](ITERATE-CONSOLIDATION.md) | 🟡 Partial | Phases 1-6 complete. **`run` deprecation NOT done** - still exists as separate 973-line command. |
 | [MODEL-REQUIREMENTS](MODEL-REQUIREMENTS.md) | ✅ Complete | All 4 phases |
 | [CONSULT-DIRECTIVE](CONSULT-DIRECTIVE.md) | ✅ Complete | Phase 1-4 complete. CONSULT-TIMEOUT added. |
 | [ARTIFACT-TAXONOMY](ARTIFACT-TAXONOMY.md) | ✅ Complete | Taxonomy + CLI |

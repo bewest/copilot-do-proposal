@@ -9,7 +9,7 @@ import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..core.conversation import ConversationStep
+    pass
 
 logger = logging.getLogger("sdqctl.commands.elide")
 

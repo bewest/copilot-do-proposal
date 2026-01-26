@@ -9,7 +9,6 @@ Usage:
 """
 
 import logging
-import shlex
 import subprocess
 import sys
 import time

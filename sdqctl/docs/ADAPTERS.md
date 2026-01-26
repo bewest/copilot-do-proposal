@@ -119,6 +119,33 @@ if stats.rate_limited:
     print(f"🛑 Rate limited: {stats.rate_limit_message}")
 ```
 
+### Event Handler Architecture
+
+The Copilot adapter uses `CopilotEventHandler` (in `adapters/events.py`) to process SDK events:
+
+```python
+from sdqctl.adapters.events import CopilotEventHandler
+from sdqctl.adapters.stats import SessionStats
+
+# Create handler with progress callback
+stats = SessionStats()
+handler = CopilotEventHandler(stats, progress_fn=print)
+
+# Handler is registered once per session, reused across sends
+copilot_session.on(handler.handle)
+```
+
+**Event types handled:**
+| Category | Events |
+|----------|--------|
+| Session | `session.start`, `session.idle`, `session.error`, `session.truncation` |
+| Turns | `assistant.turn_start`, `assistant.turn_end`, `assistant.intent` |
+| Messages | `assistant.message`, `assistant.message_delta`, `assistant.reasoning` |
+| Usage | `assistant.usage`, `session.usage_info` |
+| Tools | `tool.execution_start`, `tool.execution_complete` |
+| Compaction | `session.compaction_start`, `session.compaction_complete` |
+| Control | `abort`, `session.handoff`, `session.model_change` |
+
 ---
 
 ## mock (Testing Adapter)

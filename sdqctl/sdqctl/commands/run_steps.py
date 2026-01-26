@@ -8,7 +8,6 @@ import logging
 import shlex
 import subprocess
 import time
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
 if TYPE_CHECKING:
@@ -16,7 +15,8 @@ if TYPE_CHECKING:
     from ..core.conversation import ConversationFile
     from ..core.session import Session
 
-from .utils import resolve_run_directory, run_async as run_async_util, truncate_output
+from .utils import resolve_run_directory, truncate_output
+from .utils import run_async as run_async_util
 
 logger = logging.getLogger("sdqctl.commands.run_steps")
 
