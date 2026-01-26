@@ -162,6 +162,7 @@ sdqctl run workflow.conv | less
 ### Core Modules
 
 - **`sdqctl/utils/output.py`**: TTY detection, PromptWriter, console instances
+- **`sdqctl/utils/decorators.py`**: Error handling decorators for CLI commands
 - **`sdqctl/core/progress.py`**: Progress functions, WorkflowProgress class
 - **`sdqctl/core/logging.py`**: Verbosity levels, stderr logging
 
@@ -197,6 +198,33 @@ wp.start()
 wp.prompt_sending(cycle=1, prompt=1, context_pct=23.5, preview="Analyze...")
 wp.prompt_complete(cycle=1, prompt=1, duration=3.2, context_pct=31.0)
 wp.done()
+```
+
+#### `handle_io_errors` Decorator
+
+Wraps CLI commands with consistent I/O error handling:
+
+```python
+from sdqctl.utils import handle_io_errors, handle_io_errors_async
+
+@click.command()
+@handle_io_errors()
+def my_command():
+    """FileNotFoundError, PermissionError, OSError caught automatically."""
+    content = Path("file.txt").read_text()
+    ...
+
+# With JSON error output
+@click.command()
+@handle_io_errors(json_errors=True, exit_code=2)
+def json_command():
+    ...
+
+# Async variant
+@click.command()
+@handle_io_errors_async()
+async def async_command():
+    ...
 ```
 
 #### `WorkflowContext` and `WorkflowLoggerAdapter`
