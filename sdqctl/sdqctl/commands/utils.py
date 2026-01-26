@@ -133,3 +133,35 @@ def git_commit_checkpoint(
     except FileNotFoundError:
         return False  # git not installed
 
+
+def resolve_run_directory(
+    run_cwd: Optional[str],
+    cwd: Optional[str],
+    source_path: Optional[Path],
+) -> Path:
+    """Resolve the working directory for RUN commands.
+
+    Priority:
+    1. run_cwd (RUN-CWD directive) - relative to source_path or CWD
+    2. cwd (CWD directive) - absolute or relative
+    3. Current working directory
+
+    Args:
+        run_cwd: RUN-CWD directive value (optional)
+        cwd: CWD directive value (optional)
+        source_path: Path to the .conv file (optional)
+
+    Returns:
+        Resolved absolute Path for command execution
+    """
+    if run_cwd:
+        run_dir = Path(run_cwd)
+        if not run_dir.is_absolute():
+            base = source_path.parent if source_path else Path.cwd()
+            run_dir = base / run_dir
+        return run_dir
+    elif cwd:
+        return Path(cwd)
+    else:
+        return Path.cwd()
+

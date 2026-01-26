@@ -188,3 +188,56 @@ class TestRunAsyncReturnTypes:
         result = run_async(exception_value())
         assert isinstance(result, ValueError)
         assert str(result) == "not raised"
+
+
+class TestResolveRunDirectory:
+    """Test resolve_run_directory utility function."""
+
+    def test_returns_cwd_when_no_overrides(self):
+        """Returns current working directory when no overrides specified."""
+        from pathlib import Path
+        from sdqctl.commands.utils import resolve_run_directory
+
+        result = resolve_run_directory(None, None, None)
+        assert result == Path.cwd()
+
+    def test_uses_cwd_directive(self):
+        """Uses CWD directive when specified."""
+        from pathlib import Path
+        from sdqctl.commands.utils import resolve_run_directory
+
+        result = resolve_run_directory(None, "/tmp", None)
+        assert result == Path("/tmp")
+
+    def test_run_cwd_overrides_cwd(self):
+        """RUN-CWD takes priority over CWD."""
+        from pathlib import Path
+        from sdqctl.commands.utils import resolve_run_directory
+
+        result = resolve_run_directory("/opt", "/tmp", None)
+        assert result == Path("/opt")
+
+    def test_relative_run_cwd_resolved_to_source(self, tmp_path):
+        """Relative RUN-CWD is resolved relative to source file."""
+        from pathlib import Path
+        from sdqctl.commands.utils import resolve_run_directory
+
+        source_path = tmp_path / "workflow.conv"
+        result = resolve_run_directory("subdir", None, source_path)
+        assert result == tmp_path / "subdir"
+
+    def test_relative_run_cwd_no_source_uses_cwd(self):
+        """Relative RUN-CWD uses CWD when no source file."""
+        from pathlib import Path
+        from sdqctl.commands.utils import resolve_run_directory
+
+        result = resolve_run_directory("subdir", None, None)
+        assert result == Path.cwd() / "subdir"
+
+    def test_absolute_run_cwd_not_modified(self):
+        """Absolute RUN-CWD is used as-is."""
+        from pathlib import Path
+        from sdqctl.commands.utils import resolve_run_directory
+
+        result = resolve_run_directory("/absolute/path", None, Path("/some/source.conv"))
+        assert result == Path("/absolute/path")

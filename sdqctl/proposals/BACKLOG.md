@@ -24,16 +24,15 @@
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| Extract StepExecutor from iterate.py | Medium | Q-020 done. See [Architecture Roadmap](#architecture-roadmap). |
-| Modularize run.py (~1626 lines) | Medium | Largest command file. Continue modularization theme. |
+| Modularize run.py (~1520 lines) | Medium | Largest command file. Continue modularization theme. |
 | Add integration tests | Medium | Beyond loop stress testing. Adapter + end-to-end scenarios. |
+| Performance benchmark suite | Medium | Track regressions. Promoted from P3. |
 
 ### P3: Low
 
 | Item | Effort | Notes |
 |------|--------|-------|
 | Default verbosity key actions | Low | **Blocked by OQ-004** → [VERBOSITY-DEFAULTS.md](VERBOSITY-DEFAULTS.md) |
-| Performance benchmark suite | Medium | Track regressions |
 | Session resilience & observability | Medium | [SESSION-RESILIENCE.md](SESSION-RESILIENCE.md) - Rate limit prediction, checkpoint resume, compaction metrics |
 
 ### Future (Unstarted)
@@ -53,6 +52,7 @@
 
 | Item | Date | Notes |
 |------|------|-------|
+| **StepExecutor reassessed (P2)** | 2026-01-26 | Analyzed: ~100 lines shared (not ~500). Extracted resolve_run_directory(). 6 tests. Full StepExecutor deferred. |
 | **CONSULT-TIMEOUT (P2)** | 2026-01-26 | Phase 4: Timeout directive, expiration check on resume, clear error. 10 new tests. |
 | **Compaction Simplification (P1)** | 2026-01-26 | Phase 5: Remove default prologue/epilogue. SDK-INFINITE-SESSIONS now complete. |
 | **E501 run.py clean** | 2026-01-26 | Fixed 45 issues in run.py (now 0). Core commands E501 clean. |
@@ -78,27 +78,38 @@
 > **Source**: Code review session 2026-01-25  
 > **Objective**: Improve maintainability without disrupting features
 
-### Execution Engine Extraction (P2)
+### Execution Engine Extraction (P2) - ⚠️ REASSESSED
 
-**Problem**: `run.py` and `iterate.py` duplicate step execution logic (~500 lines overlap)
+**Original Problem**: `run.py` and `iterate.py` duplicate step execution logic (~500 lines overlap)
 
-**Solution**: Create `core/executor.py`
+**Analysis (2026-01-26):**
+- run.py: 14 step type handlers (full single-run executor)
+- iterate.py: 5 step type handlers (cycle wrapper with session context)
+- Overlap: 5 types (`checkpoint`, `compact`, `prompt`, `verify_trace`, `verify_coverage`)
+- **Finding**: Handlers share patterns but are NOT 1:1 duplicates. Each is context-aware:
+  - run.py checkpoint: writes output, git commits
+  - iterate.py checkpoint: simple session checkpoint
+  - run.py prompt: single execution
+  - iterate.py prompt: cycle context injection, stop file, continuation prompts
+
+**Revised Assessment**: ~100 lines of truly shared code (patterns), not ~500.
+
+**Revised Solution**: Extract shared helpers, not full StepExecutor
 
 ```python
-class StepExecutor:
-    """Unified execution engine for workflow steps."""
-    async def execute_prompt(self, step, session, adapter) -> StepResult
-    async def execute_run(self, step, session, config) -> StepResult
-    async def execute_verify(self, step, session) -> StepResult
-    async def execute_compact(self, step, session, adapter) -> StepResult
+# commands/utils.py additions
+def resolve_run_directory(run_cwd, cwd, source_path) -> Path
 ```
 
 | Task | Effort | Status |
 |------|--------|--------|
-| Design StepExecutor interface | Low | 🔲 Open |
-| Extract common execution logic from run.py | Medium | 🔲 Open |
-| Refactor cycle.py to use StepExecutor | Medium | 🔲 Open |
-| Add StepExecutor tests | Medium | 🔲 Open |
+| Extract run directory resolution | Low | ✅ Done (2026-01-26) |
+| Extract output formatting helpers | Low | 🔲 Deferred (already in truncate_output) |
+| Document why full StepExecutor deferred | Low | ✅ Done (this note) |
+
+**Completed (2026-01-26):** `resolve_run_directory()` extracted, 3 duplicated blocks replaced, 6 tests added.
+
+**Deferred**: Full StepExecutor refactor to Future (High effort, high risk for modest gain)
 
 ### Shared ExecutionContext (P2) - ✅ COMPLETE
 

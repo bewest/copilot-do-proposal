@@ -31,7 +31,13 @@ from ..core.loop_detector import get_stop_file_instruction
 from ..core.progress import WorkflowProgress, progress
 from ..core.session import Session
 from ..utils.output import PromptWriter, handle_error, print_json_error
-from .utils import git_commit_checkpoint, run_async, run_subprocess, truncate_output
+from .utils import (
+    git_commit_checkpoint,
+    resolve_run_directory,
+    run_async,
+    run_subprocess,
+    truncate_output,
+)
 
 logger = get_logger(__name__)
 
@@ -884,19 +890,9 @@ async def _run_async(
                         progress(f"  🔧 Running: {cmd[:50]}...")
 
                         try:
-                            # Determine working directory
-                            if conv.run_cwd:
-                                run_dir = Path(conv.run_cwd)
-                                if not run_dir.is_absolute():
-                                    base = (
-                                        conv.source_path.parent
-                                        if conv.source_path else Path.cwd()
-                                    )
-                                    run_dir = base / run_dir
-                            elif conv.cwd:
-                                run_dir = Path(conv.cwd)
-                            else:
-                                run_dir = Path.cwd()
+                            run_dir = resolve_run_directory(
+                                conv.run_cwd, conv.cwd, conv.source_path
+                            )
 
                             result = _run_subprocess(
                                 cmd,
@@ -1099,19 +1095,9 @@ async def _run_async(
 
                         run_start = time.time()
                         try:
-                            # Determine working directory: run_cwd overrides cwd
-                            if conv.run_cwd:
-                                run_dir = Path(conv.run_cwd)
-                                if not run_dir.is_absolute():
-                                    base = (
-                                        conv.source_path.parent
-                                        if conv.source_path else Path.cwd()
-                                    )
-                                    run_dir = base / run_dir
-                            elif conv.cwd:
-                                run_dir = Path(conv.cwd)
-                            else:
-                                run_dir = Path.cwd()
+                            run_dir = resolve_run_directory(
+                                conv.run_cwd, conv.cwd, conv.source_path
+                            )
 
                             result = _run_subprocess(
                                 command,
@@ -1267,16 +1253,9 @@ After fixing, the command will be retried automatically."""
                     logger.info(f"🔧 RUN-ASYNC: {command}")
                     progress(f"  🔧 Starting background: {command[:50]}...")
 
-                    # Determine working directory
-                    if conv.run_cwd:
-                        run_dir = Path(conv.run_cwd)
-                        if not run_dir.is_absolute():
-                            base = conv.source_path.parent if conv.source_path else Path.cwd()
-                            run_dir = base / run_dir
-                    elif conv.cwd:
-                        run_dir = Path(conv.cwd)
-                    else:
-                        run_dir = Path.cwd()
+                    run_dir = resolve_run_directory(
+                        conv.run_cwd, conv.cwd, conv.source_path
+                    )
 
                     # Build environment
                     run_env = None
