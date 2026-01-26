@@ -1,8 +1,8 @@
 # SDK Infinite Sessions Integration
 
-> **Status**: ✅ Complete (Phase 1-4)  
+> **Status**: Phase 1-4 ✅ Complete, Phase 5 🔲 Proposed  
 > **Date**: 2026-01-24  
-> **Updated**: 2026-01-25  
+> **Updated**: 2026-01-26  
 > **Priority**: P1 (High Impact)  
 > **Scope**: Native SDK compaction for cycle mode  
 > **SDK Available**: ✅ Yes - `../../copilot-sdk/python` (Protocol Version 2)
@@ -428,3 +428,149 @@ grep "compaction" output.log
 ### Tests
 
 All 130 conversation tests pass including 4 new tests for infinite session directives.
+
+---
+
+## Phase 5: Compaction Simplification (Proposed)
+
+> **Status**: 🔲 Proposed  
+> **Priority**: P1 (High)  
+> **Date**: 2026-01-26
+
+### Problem
+
+Current client-side compaction injects unnecessary content beyond `/compact`:
+
+```python
+# Current behavior in compact_with_session_reset()
+context_parts = []
+
+# Add compaction prologue (always injected)
+if compaction_prologue:
+    context_parts.append(compaction_prologue)
+else:
+    context_parts.append(
+        "This conversation has been compacted. Summary of previous context:"
+    )
+
+# Add the summary from /compact
+context_parts.append(summary)
+
+# Add compaction epilogue (always injected)
+if compaction_epilogue:
+    context_parts.append(compaction_epilogue)
+else:
+    context_parts.append("Continue from the context above.")
+```
+
+**Issues:**
+1. **Redundant framing** - `/compact` already produces a continuation-ready summary
+2. **Token waste** - Default prologue/epilogue consume tokens for no benefit
+3. **Inconsistency** - SDK v2 native compaction doesn't use these wrappers
+4. **Complexity** - Extra code paths to maintain
+
+### Solution
+
+Simplify compaction to prefer native handling:
+
+1. **SDK v2 infinite sessions** (default) - Fully SDK-managed, no injection
+2. **Plain `/compact`** (fallback) - Just send `/compact`, no wrapper content
+
+```python
+# Proposed behavior
+async def compact_with_session_reset(...):
+    # Get summary via /compact (no extra content)
+    compact_prompt = "/compact"
+    if preserve:
+        compact_prompt = f"/compact Preserve: {', '.join(preserve)}"
+    
+    summary = await self.send(session, compact_prompt)
+    
+    # Create new session
+    await self.destroy_session(session)
+    new_session = await self.create_session(config)
+    
+    # Inject summary directly (no wrapper)
+    await self.send(new_session, summary)
+    
+    # ONLY add prologue/epilogue if explicitly configured
+    if compaction_prologue or compaction_epilogue:
+        wrapper = []
+        if compaction_prologue:
+            wrapper.append(compaction_prologue)
+        wrapper.append(summary)
+        if compaction_epilogue:
+            wrapper.append(compaction_epilogue)
+        await self.send(new_session, "\n\n".join(wrapper))
+    else:
+        await self.send(new_session, summary)
+    
+    return new_session, CompactionResult(...)
+```
+
+### Behavior Change
+
+| Scenario | Before | After |
+|----------|--------|-------|
+| SDK v2 enabled | SDK manages | SDK manages (unchanged) |
+| `/compact` without directives | Adds default prologue/epilogue | Just summary |
+| `COMPACT-PROLOGUE` set | Uses custom prologue | Uses custom prologue |
+| `COMPACT-EPILOGUE` set | Uses custom epilogue | Uses custom epilogue |
+| Both directives set | Uses both | Uses both |
+
+### COMPACT-PROLOGUE/EPILOGUE Directives
+
+These remain available as **optional overrides** for workflows that need custom context framing:
+
+```dockerfile
+# Only inject wrapper content if explicitly requested
+COMPACT-PROLOGUE Previous analysis summary:
+COMPACT-EPILOGUE Continue the security audit with the context above.
+
+COMPACT
+```
+
+**When to use:**
+- Multi-phase workflows where context framing helps
+- Handoff between different task types
+- When the raw summary needs interpretation guidance
+
+**Default behavior (no directives):**
+- Just inject the `/compact` summary with no wrapper
+
+### Implementation Tasks
+
+| Task | Effort | File |
+|------|--------|------|
+| Remove default prologue/epilogue | Low | `adapters/copilot.py` |
+| Conditional wrapper injection | Low | `adapters/copilot.py` |
+| Update `get_compaction_prompt()` | Low | `core/session.py` |
+| Update documentation | Low | `docs/CONTEXT-MANAGEMENT.md` |
+| Add tests for new behavior | Low | `tests/test_copilot_adapter.py` |
+
+### Migration
+
+**Backward compatible**: Workflows explicitly using `COMPACT-PROLOGUE` or `COMPACT-EPILOGUE` continue to work unchanged.
+
+**Breaking for**: Workflows that relied on the implicit default wrapper content. These are likely rare since the defaults were generic.
+
+### Testing
+
+```python
+def test_compact_without_directives_no_wrapper():
+    """Compaction without directives should not inject wrapper."""
+    # Setup
+    result = await adapter.compact_with_session_reset(
+        session, config, preserve=[], 
+        compaction_prologue=None, compaction_epilogue=None
+    )
+    # Verify: new session received only the summary, no wrapper
+    
+def test_compact_with_prologue_injects_wrapper():
+    """COMPACT-PROLOGUE should wrap the summary."""
+    result = await adapter.compact_with_session_reset(
+        session, config, preserve=[],
+        compaction_prologue="Previous context:", compaction_epilogue=None
+    )
+    # Verify: new session received "Previous context:\n\n{summary}"
+```

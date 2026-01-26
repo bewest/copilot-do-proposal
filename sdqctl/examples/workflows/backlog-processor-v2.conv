@@ -236,9 +236,7 @@ COMPACT
 # === Phase 7: Candidate Discovery ===
 PROMPT ## Phase 7: Candidate Discovery
 
-**Role shift**: You are now a project manager surveying the work landscape.
-
-Use your context from Phases 1-6 to identify future work opportunities.
+Given our progress let's do project management.
 
 ### 7.1 Scan Sources
 
@@ -269,7 +267,7 @@ Enumerate clearly with proper taxonomy:
 
 Prefer variety across types. Include brief notes for reader context.
 
-# No COMPACT here - context from implementation is valuable for routing
+ELIDE
 
 # === Phase 8: Queue Routing ===
 PROMPT ## Phase 8: Queue Routing
@@ -327,7 +325,7 @@ For each candidate, decide destination:
 # === Phase 9: Archive & Integrate ===
 PROMPT ## Phase 9: Archive & Integrate
 
-**Role shift**: You are now a librarian maintaining the knowledge base.
+Let's use what we've discussed to help maintain the knowledge base.
 Tracking and progress files that are too long become ineffective trackers of active progress.
 Consider subtle categorizing, chunking and archiving.
 

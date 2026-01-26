@@ -18,7 +18,7 @@
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| *(No P1 items)* | | |
+| Compaction Simplification (Phase 5) | Low | Remove default prologue/epilogue injection. See [SDK-INFINITE-SESSIONS.md](SDK-INFINITE-SESSIONS.md#phase-5-compaction-simplification-proposed). |
 
 ### P2: Medium
 
@@ -35,6 +35,7 @@
 | Add integration tests | Medium | Beyond loop stress testing |
 | Default verbosity key actions | Low | **Blocked by OQ-004** → [VERBOSITY-DEFAULTS.md](VERBOSITY-DEFAULTS.md) |
 | Performance benchmark suite | Medium | Track regressions |
+| Session resilience & observability | Medium | [SESSION-RESILIENCE.md](SESSION-RESILIENCE.md) - Rate limit prediction, checkpoint resume, compaction metrics |
 
 ### Future (Unstarted)
 
@@ -275,6 +276,7 @@ def _check_minimal_response(
 | [SDK-INFINITE-SESSIONS](SDK-INFINITE-SESSIONS.md) | ✅ Complete | Native SDK compaction |
 | [SDK-SESSION-PERSISTENCE](SDK-SESSION-PERSISTENCE.md) | ✅ Complete | sessions resume + SESSION-NAME |
 | [SDK-METADATA-APIS](SDK-METADATA-APIS.md) | ✅ Complete | Adapter methods + status |
+| [SESSION-RESILIENCE](SESSION-RESILIENCE.md) | ⚗️ Research | Rate limit prediction, checkpoint resume, compaction metrics |
 
 ---
 
