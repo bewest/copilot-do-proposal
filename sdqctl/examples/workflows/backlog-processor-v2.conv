@@ -28,7 +28,7 @@
 MODEL claude-sonnet-4-20250514
 ADAPTER copilot
 MODE implement
-MAX-CYCLES 1
+# MAX-CYCLES 1
 
 # === Context Management ===
 CONTEXT-LIMIT 60%
@@ -92,6 +92,7 @@ Review the Ready Queue in BACKLOG.md and select ONE item to implement.
 ```
 
 If ALL items are blocked, list blockers and create STOPAUTOMATION file.
+Evaluate a comprehensive plan for our selected task.
 
 COMPACT
 
@@ -102,7 +103,8 @@ Implement the selected task now. **Edit files directly, don't just describe.**
 
 **For Implementation tasks:**
 1. Read relevant source files
-2. Make changes with minimal modifications
+# 2. Make changes with minimal modifications
+2. Make the appropriate changes relevant for our task.
 3. Add or update tests if applicable
 
 **For Documentation tasks:**
@@ -211,15 +213,11 @@ COMPACT
 # === Phase 6: Commit ===
 PROMPT ## Phase 6: Commit
 
-Commit all changes from Phases 1-5.
-
-```bash
-git add -A
-git status
-git commit -m "[type]: [brief description]"
-```
+Commit all relevant changes from our work appropriately.
 
 Use conventional commits: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
+and enumerate according to our taxonomy if possible.
+
 
 **Output:**
 ```
@@ -244,7 +242,7 @@ Use your context from Phases 1-6 to identify future work opportunities.
 
 ### 7.1 Scan Sources
 
-Review these for potential work items:
+Review these for potential work items considering our recent progress:
 1. **proposals/*.md** - "Future Work", unchecked phases, deferred items
 2. **docs/QUIRKS.md** - Active quirks (🟡 Open status)
 3. **docs/OPEN-QUESTIONS.md** - Recently answered questions that unlock work
@@ -292,14 +290,14 @@ For each candidate, decide destination:
 
 ### 8.2 Execute Routing
 
-**Make the actual edits:**
+**Make the actual edits needed for grooming:**
 
 1. **BACKLOG.md Ready Queue** (target: 3 items)
-   - Add actionable items with priority and effort
+   - Add taskable items with priority and effort/complexity
    - If >3 items, keep highest priority 3
 
 2. **docs/OPEN-QUESTIONS.md** (Pending section)
-   - Add questions needing human input
+   - Add questions needing human input or additional research
    - Include context and options if known
 
 3. **proposals/*.md** (Future Work section)
@@ -330,17 +328,21 @@ For each candidate, decide destination:
 PROMPT ## Phase 9: Archive & Integrate
 
 **Role shift**: You are now a librarian maintaining the knowledge base.
+Tracking and progress files that are too long become ineffective trackers of active progress.
+Consider subtle categorizing, chunking and archiving.
 
 ### 9.1 Size Check
 
 Review these files for bloat (check line counts):
 - `proposals/BACKLOG.md` - target <300 lines active content
 - `docs/QUIRKS.md` - target <200 lines active content
-- `docs/OPEN-QUESTIONS.md` - answered items should move out
+- `docs/OPEN-QUESTIONS.md` - answered items should be fully integrated into project details and then move out
 
 ### 9.2 Archive Actions
 
 **Completed proposals** (all phases ✅, >30 days old):
+- Important persistent knowledge captured in project documentation and only
+  ephemeral discussion of work remains?
 - Move full content to `archive/proposals/YYYY-MM-name.md`
 - Leave 1-line summary with link in Proposals Status table
 
@@ -355,6 +357,7 @@ Review these files for bloat (check line counts):
 **Answered questions**:
 - Move from Pending to Answered section
 - If >14 days answered, move to `archive/questions/`
+
 
 ### 9.3 Cross-Reference Verification
 
