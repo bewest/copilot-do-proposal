@@ -36,14 +36,14 @@ No critical items.
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| Fix E501 lint issues (192 remaining) | Low | Refactor during normal development |
+| Fix E501 lint issues (202 remaining) | Low | Refactor during normal development |
 | Review F841 unused variables (5) | Low | Needs manual review |
 | Update "cycle command" comments to "iterate" | Low | GETTING-STARTED.md, VALIDATION-WORKFLOW.md |
 | Split conversation.py (~1768 lines) | High | parser.py, validator.py, directives.py |
 | Modularize copilot.py (~1000 lines) | Medium | events.py, stats.py, session.py |
 | Add integration tests | Medium | Beyond loop stress testing |
 | Add py.typed marker | Low | Enable downstream type checking |
-| Default verbosity key actions | Low | Q-004: show key actions without `-v` |
+| Default verbosity key actions | Low | See [SDK-LEARNINGS](../docs/SDK-LEARNINGS.md) |
 | Test parametrization and markers | Low | `@pytest.mark.unit/integration` |
 | Performance benchmark suite | Medium | Track regressions |
 | Add `test_exceptions.py` | Low | Test exit codes, JSON serialization |
