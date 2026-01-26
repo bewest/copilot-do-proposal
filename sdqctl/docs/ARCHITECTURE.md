@@ -79,6 +79,9 @@ sdqctl/
 │   ├── refcat.py         # REFCAT extraction
 │   ├── flow.py           # Workflow parsing info
 │   ├── help.py           # Help topics display
+│   ├── blocks.py         # ON-FAILURE/ON-SUCCESS block execution
+│   ├── elide.py          # Elision step processing
+│   ├── verify_steps.py   # VERIFY/VERIFY-TRACE/VERIFY-COVERAGE handlers
 │   └── utils.py          # Shared command utilities
 │
 ├── verifiers/            # Verification subsystem

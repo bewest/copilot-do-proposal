@@ -24,7 +24,7 @@
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| Modularize run.py (~1300 lines) | Medium | Phase 2 done: blocks.py extracted (-107 lines). Total -224 lines from 1523. |
+| Modularize run.py (~1184 lines) | Medium | Phase 3 done: verify_steps.py extracted (-115 lines). Total -339 lines from 1523. |
 | Add integration tests | Medium | ✅ Phase 1 done: 15 adapter + workflow tests. Extend coverage. |
 | Performance benchmark suite | Medium | Track regressions. Promoted from P3. |
 
@@ -52,6 +52,7 @@
 
 | Item | Date | Notes |
 |------|------|-------|
+| **verify_steps.py extraction (P2)** | 2026-01-26 | Modularize run.py Phase 3: Extract verify handlers (-115 lines). 5 new tests. |
 | **Observability metrics (P3)** | 2026-01-26 | SESSION-RESILIENCE Phase 1: CompactionEvent, timing props, 5 new tests. |
 | **Metrics instrumentation (P2)** | 2026-01-26 | SESSION-RESILIENCE Phase 0-0.5: Parse quota_snapshots, rate limit detection. 6 new tests. |
 | **StepExecutor reassessed (P2)** | 2026-01-26 | Analyzed: ~100 lines shared (not ~500). Extracted resolve_run_directory(). 6 tests. Full StepExecutor deferred. |
