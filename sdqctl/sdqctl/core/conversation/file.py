@@ -105,9 +105,12 @@ class ConversationFile:
     compact_epilogue: Optional[str] = None  # Content after compacted summary
 
     # Infinite sessions (SDK native compaction)
-    infinite_sessions: Optional[bool] = None  # None=use adapter default, True=enabled, False=disabled
-    compaction_min: Optional[float] = None  # Minimum density to trigger (0.0-1.0), None=use default
-    compaction_threshold: Optional[float] = None  # SDK background threshold (0.0-1.0), None=use default
+    # None=use adapter default, True=enabled, False=disabled
+    infinite_sessions: Optional[bool] = None
+    # Minimum density to trigger (0.0-1.0), None=use default
+    compaction_min: Optional[float] = None
+    # SDK background threshold (0.0-1.0), None=use default
+    compaction_threshold: Optional[float] = None
 
     # Checkpointing
     checkpoint_after: Optional[str] = None  # each-cycle, each-prompt, never
@@ -136,8 +139,10 @@ class ConversationFile:
     verify_on_error: str = "fail"  # fail, continue, warn
     verify_output: str = "on-error"  # on-error, always, never
     verify_limit: Optional[int] = None  # Max output chars (None = unlimited)
-    verify_trace_links: list[tuple[str, str]] = field(default_factory=list)  # [(from_id, to_id), ...]
-    verify_coverage_checks: list[tuple[str, str, float]] = field(default_factory=list)  # [(metric, op, threshold), ...]
+    # [(from_id, to_id), ...]
+    verify_trace_links: list[tuple[str, str]] = field(default_factory=list)
+    # [(metric, op, threshold), ...]
+    verify_coverage_checks: list[tuple[str, str, float]] = field(default_factory=list)
 
     # REFCAT - Reference Catalog (line-level file excerpts)
     refcat_refs: list[str] = field(default_factory=list)  # @file.py#L10-L50
@@ -152,8 +157,10 @@ class ConversationFile:
     included_files: list[Path] = field(default_factory=list)  # Paths of included .conv files
 
     # Flow control
-    pause_points: list[tuple[int, str]] = field(default_factory=list)  # (after_prompt_index, message)
-    consult_points: list[tuple[int, str]] = field(default_factory=list)  # (after_prompt_index, topic)
+    # (after_prompt_index, message)
+    pause_points: list[tuple[int, str]] = field(default_factory=list)
+    # (after_prompt_index, topic)
+    consult_points: list[tuple[int, str]] = field(default_factory=list)
 
     # Debug configuration
     debug_categories: list[str] = field(default_factory=list)  # session, tool, intent, event, all
@@ -165,7 +172,12 @@ class ConversationFile:
     directives: list[Directive] = field(default_factory=list)
 
     @classmethod
-    def parse(cls, content: str, source_path: Optional[Path] = None, _include_stack: Optional[set] = None) -> "ConversationFile":
+    def parse(
+        cls,
+        content: str,
+        source_path: Optional[Path] = None,
+        _include_stack: Optional[set] = None
+    ) -> "ConversationFile":
         """Parse a ConversationFile from string content.
 
         Args:
@@ -185,7 +197,7 @@ class ConversationFile:
         current_multiline: Optional[tuple[DirectiveType, list[str], int]] = None
 
         # Track block context for ON-FAILURE/ON-SUCCESS
-        # block_context is None when not in a block, or ("on_failure"|"on_success", steps_list, run_step)
+        # block_context: None or ("on_failure"|"on_success", steps_list, run_step)
         block_context: Optional[tuple[str, list[ConversationStep], ConversationStep]] = None
         last_run_step: Optional[ConversationStep] = None
 
@@ -222,23 +234,33 @@ class ConversationFile:
                 # Check for block control directives
                 if directive.type == DirectiveType.ON_FAILURE:
                     if last_run_step is None:
-                        raise ValueError(f"Line {line_num}: ON-FAILURE without preceding RUN")
+                        raise ValueError(
+                            f"Line {line_num}: ON-FAILURE without preceding RUN"
+                        )
                     if block_context is not None:
-                        raise ValueError(f"Line {line_num}: Nested ON-FAILURE/ON-SUCCESS blocks not allowed")
+                        raise ValueError(
+                            f"Line {line_num}: Nested ON-FAILURE/ON-SUCCESS not allowed"
+                        )
                     block_context = ("on_failure", [], last_run_step)
                     continue
 
                 elif directive.type == DirectiveType.ON_SUCCESS:
                     if last_run_step is None:
-                        raise ValueError(f"Line {line_num}: ON-SUCCESS without preceding RUN")
+                        raise ValueError(
+                            f"Line {line_num}: ON-SUCCESS without preceding RUN"
+                        )
                     if block_context is not None:
-                        raise ValueError(f"Line {line_num}: Nested ON-FAILURE/ON-SUCCESS blocks not allowed")
+                        raise ValueError(
+                            f"Line {line_num}: Nested ON-FAILURE/ON-SUCCESS not allowed"
+                        )
                     block_context = ("on_success", [], last_run_step)
                     continue
 
                 elif directive.type == DirectiveType.END:
                     if block_context is None:
-                        raise ValueError(f"Line {line_num}: END without matching ON-FAILURE/ON-SUCCESS")
+                        raise ValueError(
+                            f"Line {line_num}: END without matching ON-FAILURE/ON-SUCCESS"
+                        )
                     block_type, block_steps, run_step = block_context
                     if block_type == "on_failure":
                         run_step.on_failure = block_steps
@@ -262,7 +284,7 @@ class ConversationFile:
                     elif block_context:
                         # Add to current block
                         apply_directive_to_block(block_context[1], directive)
-                        # Track if this is a RUN within the block (for potential nested blocks - not allowed)
+                        # Track RUN within block (nested blocks not allowed)
                     else:
                         apply_directive(conv, directive)
                         # Track RUN steps for ON-FAILURE/ON-SUCCESS attachment
@@ -293,14 +315,18 @@ class ConversationFile:
         return conv
 
     @classmethod
-    def from_file(cls, path: Path | str, _include_stack: Optional[set] = None) -> "ConversationFile":
+    def from_file(
+        cls, path: Path | str, _include_stack: Optional[set] = None
+    ) -> "ConversationFile":
         """Load and parse a ConversationFile from disk."""
         path = Path(path)
         content = path.read_text()
         return cls.parse(content, source_path=path, _include_stack=_include_stack)
 
     @classmethod
-    def _process_include(cls, conv: "ConversationFile", directive: Directive, include_stack: set) -> None:
+    def _process_include(
+        cls, conv: "ConversationFile", directive: Directive, include_stack: set
+    ) -> None:
         """Process INCLUDE directive by merging included file content.
 
         Args:
@@ -645,7 +671,9 @@ class ConversationFile:
 
         return errors
 
-    def validate_verify_trace_links(self, base_path: Optional[Path] = None) -> list[tuple[str, str]]:
+    def validate_verify_trace_links(
+        self, base_path: Optional[Path] = None
+    ) -> list[tuple[str, str]]:
         """Validate VERIFY-TRACE links by checking if artifacts exist in documentation.
 
         This is a static validation that checks if the referenced artifact IDs
@@ -766,7 +794,11 @@ class ConversationFile:
         for ref in self.refcat_refs:
             lines.append(f"REFCAT {ref}")
 
-        if self.context_files or self.context_files_optional or self.context_exclude or self.refcat_refs:
+        has_context = (
+            self.context_files or self.context_files_optional
+            or self.context_exclude or self.refcat_refs
+        )
+        if has_context:
             lines.append("")
 
         # Compaction
