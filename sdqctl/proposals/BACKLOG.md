@@ -17,16 +17,27 @@
 
 ---
 
-## Ready Queue (0 Actionable Items)
+## Ready Queue (3 Actionable Items)
 
-**All work packages complete** - 2026-01-27  
-**WP-006 LSP Integration**: ✅ Complete (8/8 items)  
-**WP-002 Continuous Monitoring**: ✅ Complete (6/6 items)  
-**WP-003 Backlog Hygiene**: ✅ Complete (3/3 items)
+**Groomed from WP-003 and WP-004** - 2026-01-27  
+**Priority**: WP-003 Upstream Contribution now unblocked (WP-002 complete)
 
-*No P0-P2 items. Future items (P3 R&D) available for grooming.*
+### WP-003: Upstream Contribution (Priority 1)
 
-### WP-006: LSP Integration (Priority 1)
+| # | Item | Priority | Effort | Status |
+|---|------|----------|--------|--------|
+| 1 | Implement `sdqctl delegate <GAP-ID>` command | P3 | Low | |
+| 2 | Implement `sdqctl upstream status` command | P3 | Low | |
+
+### WP-004: Plugin Security (Priority 2)
+
+| # | Item | Priority | Effort | Status |
+|---|------|----------|--------|--------|
+| 3 | Implement plugin sandboxing/security | P3 | Medium | |
+
+---
+
+### WP-006: LSP Integration ✅ Complete (8/8)
 
 | # | Item | Priority | Effort | Phase | Status |
 |---|------|----------|--------|-------|--------|
@@ -56,6 +67,7 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
+| docs/COLOPHON.md | ✅ Complete | Dogfooding story, metrics, construction journey |
 | WP-002 #9-14: Drift detection | ✅ Complete | monitoring module, drift CLI, 19 tests |
 | WP-006 #6-8: LSP type + directive | ✅ Complete | Type lookup, JSON output, .conv integration |
 | WP-005: STPA Deep Integration | ✅ Complete | Audit, patterns, usage guide, roadmap |
