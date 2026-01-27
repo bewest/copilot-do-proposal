@@ -13,12 +13,12 @@ from typing import Optional
 
 import click
 
-from .iterate import iterate
+from .blocks import execute_block_steps  # noqa: F401
 
 # Backward-compatible re-exports for tests
 from .elide import process_elided_steps  # noqa: F401
+from .iterate import iterate
 from .utils import run_subprocess, truncate_output  # noqa: F401
-from .blocks import execute_block_steps  # noqa: F401
 
 # Aliases for internal use (keep _ prefix for backward compat with tests)
 _run_subprocess = run_subprocess

@@ -860,7 +860,9 @@ async def _cycle_async(
 
                         elif step_type == "compact":
                             # Use effective_min which defaults to 30% if not set
-                            effective_min_compact = compaction_min if compaction_min is not None else 30
+                            effective_min_compact = (
+                                compaction_min if compaction_min is not None else 30
+                            )
                             await execute_compact_step(
                                 step, conv, session, ai_adapter, adapter_session,
                                 effective_min_compact, console, progress_print

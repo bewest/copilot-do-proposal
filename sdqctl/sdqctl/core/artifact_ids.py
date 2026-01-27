@@ -8,7 +8,6 @@ This module is separate from commands/artifact.py to:
 """
 
 import re
-from collections import defaultdict
 from pathlib import Path
 from typing import Optional
 

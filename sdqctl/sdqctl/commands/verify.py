@@ -13,7 +13,7 @@ from typing import Optional
 import click
 from rich.console import Console
 
-from ..verifiers import VERIFIERS, VerificationResult
+from ..verifiers import VERIFIERS
 from .verify_output import add_fix_suggestions, apply_strict_mode, output_result
 
 console = Console()

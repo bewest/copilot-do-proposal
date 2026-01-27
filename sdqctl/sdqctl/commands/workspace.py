@@ -126,9 +126,11 @@ def status(as_json: bool):
             continue
 
         changes = "✗ dirty" if status_info["has_changes"] else "✓ clean"
-        click.echo(
-            f"{repo.name:<35} {status_info['branch']:<20} {changes:<10} {status_info['last_commit']:<20}"
+        line = (
+            f"{repo.name:<35} {status_info['branch']:<20} "
+            f"{changes:<10} {status_info['last_commit']:<20}"
         )
+        click.echo(line)
 
 
 @workspace.command("search")

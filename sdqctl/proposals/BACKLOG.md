@@ -6,20 +6,19 @@
 
 ---
 
-## Ready Queue (10 Actionable Items)
+## Ready Queue (9 Actionable Items)
 
 | # | Item | Priority | Effort | Notes |
 |---|------|----------|--------|-------|
-| 1 | Fix 4 lint issues (E501, F401) | P3 | Low | 2 line-too-long, 2 unused-import. Auto-fixable. |
-| 2 | Create `proposals/backlogs/` directory structure | P3 | Low | WP-001 step 1: 5 domain .md files with headers (testing, cli, sdk-integration, architecture, directives). |
-| 3 | Define `metrics.json` schema | P3 | Low | WP-001 step 2: JSON schema for iteration metrics in docs/. |
-| 4 | Migrate testing items to `backlogs/testing.md` | P3 | Low | WP-001 step 3: Move ~17 test-related completed items. |
-| 5 | Add metrics collection to iterate.py | P3 | Low | WP-001 step 4: ~20 lines, emit to session dir. |
-| 6 | Define `.sdqctl/directives.yaml` schema | P3 | Low | WP-004 step 1: JSON schema for plugin manifest. All OQs resolved. |
-| 7 | Audit existing STPA artifacts | P3 | Low | WP-005 step 1: Count UCAs, SCs, coverage in ecosystem workspace. All OQs resolved. |
-| 8 | Define custom severity scale with ISO 14971 mapping | P3 | Low | WP-005 step 2: Simple 3-5 level scale with standard mapping. |
-| 9 | Implement directive discovery from manifest | P3 | Medium | WP-004 step 2: Load directives.yaml, register handlers. |
-| 10 | Performance benchmark suite | P3 | Medium | **UNBLOCKED** - OQ-005 resolved. Scope: code + workflow + SDK (comprehensive). |
+| 1 | Create `proposals/backlogs/` directory structure | P3 | Low | WP-001 step 1: 5 domain .md files with headers (testing, cli, sdk-integration, architecture, directives). |
+| 2 | Define `metrics.json` schema | P3 | Low | WP-001 step 2: JSON schema for iteration metrics in docs/. |
+| 3 | Migrate testing items to `backlogs/testing.md` | P3 | Low | WP-001 step 3: Move ~17 test-related completed items. |
+| 4 | Add metrics collection to iterate.py | P3 | Low | WP-001 step 4: ~20 lines, emit to session dir. |
+| 5 | Define `.sdqctl/directives.yaml` schema | P3 | Low | WP-004 step 1: JSON schema for plugin manifest. All OQs resolved. |
+| 6 | Audit existing STPA artifacts | P3 | Low | WP-005 step 1: Count UCAs, SCs, coverage in ecosystem workspace. All OQs resolved. |
+| 7 | Define custom severity scale with ISO 14971 mapping | P3 | Low | WP-005 step 2: Simple 3-5 level scale with standard mapping. |
+| 8 | Implement directive discovery from manifest | P3 | Medium | WP-004 step 2: Load directives.yaml, register handlers. |
+| 9 | Performance benchmark suite | P3 | Medium | **UNBLOCKED** - OQ-005 resolved. Scope: code + workflow + SDK (comprehensive). |
 
 ---
 
@@ -140,6 +139,7 @@ Items not yet assigned to work packages:
 
 | Item | Date | Notes |
 |------|------|-------|
+| **Fix 5 lint issues (P3)** | 2026-01-27 | Fixed 2 E501 (line-too-long), 2 F401 (unused-import), 1 I001 (import-sort) in iterate.py, workspace.py, verify.py, artifact_ids.py, run.py. All 1476 tests pass. |
 | **Agent output on stdout (P3)** | 2026-01-27 | Added `agent_response()` function. Agent responses now print to stdout by default. Respects `--quiet`. 4 tests. Total 1476 tests. |
 | **`--introduction` and `--until` flags (P3)** | 2026-01-27 | Added `--introduction` (cycle 1 only) and `--until N` (cycles 1-N) prompt injection. 5 tests. Total 1472 tests. |
 | **Default verbosity key actions (P3)** | 2026-01-27 | Verified existing implementation meets OQ-004 requirements: spinner, phase, context %, events, cycle/step progress all visible at default verbosity. |
