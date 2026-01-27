@@ -24,6 +24,9 @@ Questions that have been answered and can be routed to work queues.
 
 | ID | Question | Answer | Answered | Routed To |
 |----|----------|--------|----------|-----------|
+| OQ-LSP-001 | Language server lifecycle? | Hybrid: on-demand with idle timeout + join existing server | 2026-01-27 | proposals/LSP-INTEGRATION.md |
+| OQ-LSP-004 | LSP error handling? | Fail fast default, `--lsp-fallback` CLI switch for REFCAT fallback | 2026-01-27 | proposals/LSP-INTEGRATION.md |
+| OQ-SE-002 | Self-grooming pattern? | Document in ITERATION-PATTERNS.md, implement in v3 workflow | 2026-01-27 | docs/ITERATION-PATTERNS.md |
 | OQ-006 | What is the `--once` flag use case? | Superseded by `--introduction` (cycle 1) and `--until N` (cycles 1-N) | 2026-01-27 | ✅ Complete (2026-01-27) |
 | OQ-005 | What should the performance benchmark suite measure? | All: code perf + workflow timing + SDK latency (comprehensive) | 2026-01-27 | ✅ Complete (2026-01-27) |
 | OQ-004 | What output should appear at default verbosity? | Spinner, phase name, context %, key events, workflow, cycle/step progress | 2026-01-27 | ✅ Complete (2026-01-27) |

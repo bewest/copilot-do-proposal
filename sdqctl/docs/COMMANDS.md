@@ -14,6 +14,7 @@ Complete reference for all sdqctl CLI commands.
 | `flow` | Batch/parallel execution | `sdqctl flow workflows/*.conv --parallel 4` |
 | `render` | Preview prompts (no AI) | `sdqctl render run workflow.conv` |
 | `verify` | Static verification | `sdqctl verify refs` |
+| `lsp` | Language server queries | `sdqctl lsp status` |
 | `refcat` | Extract file content | `sdqctl refcat @file.py#L10-L50` |
 | `sessions` | Session management | `sdqctl sessions list` |
 | `resume` | Resume paused workflow | `sdqctl resume checkpoint.json` |
@@ -322,6 +323,45 @@ sdqctl verify plugin --list
 
 # Run a plugin verifier
 sdqctl verify plugin hello-world
+```
+
+---
+
+## lsp
+
+Language Server Protocol integration for semantic code queries.
+
+```bash
+sdqctl lsp SUBCOMMAND [OPTIONS]
+```
+
+**Subcommands:**
+| Subcommand | Purpose |
+|------------|---------|
+| `status` | Show available language servers |
+| `detect` | Detect project language |
+| `type` | Get type definition (Phase 2) |
+| `symbol` | Get symbol info (Phase 2) |
+
+**Supported Languages:**
+| Language | Server |
+|----------|--------|
+| TypeScript | typescript-language-server |
+| Swift | sourcekit-lsp |
+| Kotlin | kotlin-language-server |
+| Python | pylsp / pyright |
+
+**Examples:**
+```bash
+# Show language server availability
+sdqctl lsp status
+sdqctl lsp status --json
+
+# Detect project language
+sdqctl lsp detect ./externals/Loop
+
+# Get type definition (Phase 2)
+sdqctl lsp type Treatment -p ./src
 ```
 
 ---

@@ -23,16 +23,16 @@
 
 ### WP-006: LSP Integration (Priority 1)
 
-| # | Item | Priority | Effort | Phase |
-|---|------|----------|--------|-------|
-| 1 | Create `sdqctl/lsp/__init__.py` module structure | P3 | Low | Phase 1 |
-| 2 | Define `LSPClient` base interface | P3 | Low | Phase 1 |
-| 3 | Add `lsp` subcommand to CLI with placeholder | P3 | Low | Phase 1 |
-| 4 | Implement TypeScript server detection | P3 | Low | Phase 1 |
-| 5 | Add `sdqctl lsp status` command | P3 | Low | Phase 1 |
-| 6 | Implement `sdqctl lsp type <name>` for TypeScript | P3 | Low | Phase 2 |
-| 7 | Add JSON output mode for LSP type definitions | P3 | Low | Phase 2 |
-| 8 | Add `LSP type` directive for .conv workflows | P3 | Low | Phase 2 |
+| # | Item | Priority | Effort | Phase | Status |
+|---|------|----------|--------|-------|--------|
+| 1 | Create `sdqctl/lsp/__init__.py` module structure | P3 | Low | Phase 1 | ✅ Done |
+| 2 | Define `LSPClient` base interface | P3 | Low | Phase 1 | ✅ Done |
+| 3 | Add `lsp` subcommand to CLI with placeholder | P3 | Low | Phase 1 | ✅ Done |
+| 4 | Implement TypeScript server detection | P3 | Low | Phase 1 | |
+| 5 | Add `sdqctl lsp status` command | P3 | Low | Phase 1 | ✅ Done |
+| 6 | Implement `sdqctl lsp type <name>` for TypeScript | P3 | Low | Phase 2 | |
+| 7 | Add JSON output mode for LSP type definitions | P3 | Low | Phase 2 | |
+| 8 | Add `LSP type` directive for .conv workflows | P3 | Low | Phase 2 | |
 
 ### WP-002: Continuous Monitoring (Priority 2 - after WP-006 Phase 2)
 
@@ -186,11 +186,11 @@ Comprehensive research on STPA integration for Nightscout ecosystem, delivering 
 Language Server Protocol integration for semantic code context - type extraction, cross-project comparison, and intelligent code analysis.
 
 **Phase 1: Foundation** (Low-effort items)
-- [ ] Create `sdqctl/lsp/__init__.py` module structure
-- [ ] Define `LSPClient` base interface with connect/disconnect
-- [ ] Add `lsp` subcommand to CLI with placeholder
+- [x] Create `sdqctl/lsp/__init__.py` module structure ✅ 2026-01-27
+- [x] Define `LSPClient` base interface with connect/disconnect ✅ 2026-01-27
+- [x] Add `lsp` subcommand to CLI with placeholder ✅ 2026-01-27
 - [ ] Implement TypeScript server detection (tsserver in PATH or node_modules)
-- [ ] Add `sdqctl lsp status` to show available servers
+- [x] Add `sdqctl lsp status` to show available servers ✅ 2026-01-27
 
 **Phase 2: TypeScript Type Extraction** (Low-effort items)
 - [ ] Implement `sdqctl lsp type <name>` for TypeScript
@@ -249,6 +249,7 @@ Design principles distilled from recent development iterations:
 
 | Item | Date | Notes |
 |------|------|-------|
+| **LSP module structure (P3)** | 2026-01-27 | WP-006 Phase 1: Created sdqctl/lsp/ with LSPClient protocol, TypeDefinition, SymbolInfo, detect_language(). Added `lsp` CLI with status/detect/type/symbol. 19 tests. 1516 total. |
 | **Hello world plugin (P3)** | 2026-01-27 | WP-004 step 3: Created demo plugin in ecosystem repo. Added `sdqctl verify plugin` command. 5 plugins registered, 1497 tests pass. |
 | **STPA improvement roadmap (P3)** | 2026-01-27 | WP-005 step 5 (FINAL): Created docs/STPA-ROADMAP.md. 3 phases, 12 tasks, success metrics. **WP-005 COMPLETE**. |
 | **STPA usage guide (P3)** | 2026-01-27 | WP-005 step 4: Created docs/STPA-USAGE-GUIDE.md. ~2000 words, quick start, full workflow, templates (UCA/SC/CF), tool integration, pitfalls, checklist. |

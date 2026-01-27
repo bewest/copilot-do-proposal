@@ -1,6 +1,6 @@
 # Proposal: LSP Integration for Semantic Code Context
 
-> **Status**: Draft  
+> **Status**: In Progress (Phase 1 complete)  
 > **Date**: 2026-01-27  
 > **Author**: sdqctl development  
 > **Scope**: Language Server Protocol integration for type-aware code analysis  
@@ -149,18 +149,32 @@ Option C: **Hybrid** (recommended)
 
 ## Implementation Phases
 
-### Phase 1: Foundation (1-2 iterations)
+### Phase 1: Foundation (1-2 iterations) ✅ COMPLETE
 
-- [ ] Define LSP client interface in `sdqctl/lsp/`
+- [x] Define LSP client interface in `sdqctl/lsp/` ✅ 2026-01-27
+- [x] Add `lsp` CLI subcommand with status/detect ✅ 2026-01-27
+- [x] Language detection (TypeScript, Swift, Kotlin, Python) ✅ 2026-01-27
 - [ ] Implement basic `sdqctl lsp type <name>` for single repo
 - [ ] Support TypeScript (most common, good tooling)
 - [ ] Add `LSP type` directive (basic form)
 
 **Deliverables**:
-- Working TypeScript type extraction
-- Basic CLI and directive support
+- `sdqctl/lsp/__init__.py` - LSPClient protocol, TypeDefinition, detect_language() ✅
+- `sdqctl/commands/lsp.py` - CLI with status, detect, type, symbol ✅
+- `tests/test_lsp.py` - 19 tests ✅
 
-### Phase 2: Multi-Language (1-2 iterations)
+### Phase 2: TypeScript Type Extraction (1-2 iterations)
+
+- [ ] Implement TypeScript language server client
+- [ ] Implement `sdqctl lsp type <name>` for TypeScript
+- [ ] Add JSON output mode for type definitions
+- [ ] Add `LSP type` directive for .conv workflows
+
+**Deliverables**:
+- Working TypeScript type extraction
+- Directive support for workflows
+
+### Phase 3: Multi-Language (1-2 iterations)
 
 - [ ] Add Swift support (sourcekit-lsp)
 - [ ] Add Kotlin support (kotlin-language-server)
@@ -171,7 +185,7 @@ Option C: **Hybrid** (recommended)
 - Support for Nightscout ecosystem primary languages
 - Efficient server management
 
-### Phase 3: Cross-Project Analysis (1 iteration)
+### Phase 4: Cross-Project Analysis (1 iteration)
 
 - [ ] Implement `sdqctl lsp compare-types` across repos
 - [ ] Add `LSP compare` directive
@@ -252,11 +266,27 @@ PROMPT Analyze this function and its call sites. Document the bolus flow.
 
 | ID | Question | Options | Status |
 |----|----------|---------|--------|
-| OQ-LSP-001 | Language server lifecycle | On-demand vs persistent | Open |
+| OQ-LSP-001 | Language server lifecycle | On-demand vs persistent vs hybrid | ✅ Answered |
 | OQ-LSP-002 | Multi-repo indexing | Per-repo vs unified workspace | Open |
 | OQ-LSP-003 | Caching strategy | In-memory vs disk cache | Open |
-| OQ-LSP-004 | Error handling | Fallback to REFCAT vs fail | Open |
+| OQ-LSP-004 | Error handling | Fallback to REFCAT vs fail | ✅ Answered |
 | OQ-LSP-005 | Output format | Markdown vs JSON vs both | Open |
+
+### OQ-LSP-001: Language Server Lifecycle (Answered 2026-01-27)
+
+**Decision**: Hybrid approach with join capability
+
+- **On-demand with idle timeout**: Start server when needed, keep alive for 5 minutes of idle
+- **Join existing server**: Detect and connect to already-running LSP servers (e.g., from VS Code)
+- **Rationale**: Balances resource efficiency with query performance; joining existing servers avoids duplicate indexing
+
+### OQ-LSP-004: Error Handling (Answered 2026-01-27)
+
+**Decision**: Fail fast by default, configurable fallback via CLI switch
+
+- **Default**: Fail with clear error when LSP query fails (server unavailable, symbol not found)
+- **Fallback**: `--lsp-fallback refcat` to attempt REFCAT text extraction as backup
+- **Rationale**: Users need explicit control over failure behavior; silent fallbacks hide problems
 
 ---
 

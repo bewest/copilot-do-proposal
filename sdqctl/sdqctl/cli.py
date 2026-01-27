@@ -24,6 +24,7 @@ from .commands.flow import flow
 from .commands.help import help_cmd
 from .commands.init import init
 from .commands.iterate import iterate
+from .commands.lsp import lsp
 from .commands.refcat import refcat
 from .commands.render import render
 from .commands.resume import resume
@@ -103,6 +104,7 @@ cli.add_command(apply)
 cli.add_command(status)
 cli.add_command(render)
 cli.add_command(verify)
+cli.add_command(lsp)
 cli.add_command(refcat)
 cli.add_command(artifact)
 cli.add_command(sessions)
