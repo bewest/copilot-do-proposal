@@ -233,12 +233,12 @@ class VerifyResult:
 
 ## Open Questions
 
-| ID | Question | Options | Status |
-|----|----------|---------|--------|
-| OQ-PLUG-001 | Plugin discovery mechanism | File convention vs manifest vs both | Open |
-| OQ-PLUG-002 | Security model | Full access vs sandboxed API | Open |
-| OQ-PLUG-003 | Directive vs command plugins | Extend VERIFY vs new subcommands | Open |
-| OQ-PLUG-004 | Plugin distribution | Git submodules vs package registry | Open |
+| ID | Question | Options | Decision (2026-01-27) |
+|----|----------|---------|----------------------|
+| OQ-PLUG-001 | Plugin discovery mechanism | File convention vs manifest vs both | **Manifest** (`.sdqctl/directives.yaml`) |
+| OQ-PLUG-002 | Security model | Full access vs sandboxed API | **Full access** (trust workspace plugins) |
+| OQ-PLUG-003 | Directive vs command plugins | Extend VERIFY vs new subcommands | **New directive types** (VERIFY, TRACE, CHECK, etc.) |
+| OQ-PLUG-004 | Plugin distribution | Git submodules vs package registry | **Workspace-local only** (`.sdqctl/` in repo) |
 
 ---
 
