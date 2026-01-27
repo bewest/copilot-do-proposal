@@ -17,9 +17,9 @@
 
 ---
 
-## Ready Queue (1 Actionable Item)
+## Ready Queue (0 Actionable Items)
 
-**Groomed from WP-003 and WP-004** - 2026-01-27  
+**All items complete or blocked** - 2026-01-27  
 **Note**: WP-003 blocked pending human review of OQ-UP-001..004
 
 ### WP-003: Upstream Contribution (Priority 1) - BLOCKED
@@ -31,11 +31,11 @@
 
 **Blocker**: 4 open questions in UPSTREAM-CONTRIBUTIONS.md routed to OPEN-QUESTIONS.md
 
-### WP-004: Plugin Security (Priority 2)
+### WP-004: Plugin Security (Priority 2) ✅ Complete
 
 | # | Item | Priority | Effort | Status |
 |---|------|----------|--------|--------|
-| 3 | Implement plugin sandboxing/security | P3 | Medium | |
+| 3 | Implement plugin sandboxing/security | P3 | Medium | ✅ Done |
 
 ---
 
@@ -69,12 +69,13 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
+| WP-004 #3: Plugin security | ✅ Complete | plugin command, capability validation, 30 tests |
 | docs/COLOPHON.md | ✅ Complete | Dogfooding story, metrics, construction journey |
 | WP-002 #9-14: Drift detection | ✅ Complete | monitoring module, drift CLI, 19 tests |
 | WP-006 #6-8: LSP type + directive | ✅ Complete | Type lookup, JSON output, .conv integration |
 | WP-005: STPA Deep Integration | ✅ Complete | Audit, patterns, usage guide, roadmap |
-| WP-004: Plugin System (partial) | ✅ Complete | Schema, discovery, hello world, authoring docs |
-| docs/COMMANDS.md | ✅ Updated | LSP + drift sections |
+| WP-004: Plugin System (Phase 1-3) | ✅ Complete | Schema, discovery, validation, security |
+| docs/COMMANDS.md | ✅ Updated | LSP + drift + plugin sections |
 | WP-003 #2: Documentation audit | ✅ Complete | 29 docs scanned, findings below |
 
 *Older items → [`archive/2026-01-backlog-migration.md`](../archive/2026-01-backlog-migration.md)*

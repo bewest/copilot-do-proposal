@@ -14,6 +14,7 @@ Complete reference for all sdqctl CLI commands.
 | `flow` | Batch/parallel execution | `sdqctl flow workflows/*.conv --parallel 4` |
 | `render` | Preview prompts (no AI) | `sdqctl render run workflow.conv` |
 | `verify` | Static verification | `sdqctl verify refs` |
+| `plugin` | Plugin management | `sdqctl plugin validate` |
 | `lsp` | Language server queries | `sdqctl lsp type Treatment` |
 | `drift` | Detect alignment drift | `sdqctl drift detect --since 2026-01-01` |
 | `refcat` | Extract file content | `sdqctl refcat @file.py#L10-L50` |
@@ -372,6 +373,49 @@ sdqctl lsp type Bolus -l typescript         # Explicit language
 - Extracts full signature with fields and methods
 - Includes JSDoc comments when present
 - Supports `--json` for structured output
+
+---
+
+## plugin
+
+Plugin management commands for validating and discovering sdqctl plugins.
+
+```bash
+sdqctl plugin SUBCOMMAND [OPTIONS]
+```
+
+**Subcommands:**
+| Subcommand | Purpose |
+|------------|---------|
+| `list` | List discovered plugins |
+| `validate` | Validate plugin structure and manifest |
+| `capabilities` | List available plugin capabilities |
+
+**Examples:**
+```bash
+# List discovered plugins
+sdqctl plugin list
+sdqctl plugin list --json
+
+# Validate plugin manifest
+sdqctl plugin validate                    # Current directory
+sdqctl plugin validate ./my-plugin        # Specific path
+sdqctl plugin validate --strict           # Fail on warnings
+
+# Show available capabilities
+sdqctl plugin capabilities
+```
+
+**Capabilities:**
+| Capability | Description | Default |
+|------------|-------------|---------|
+| `read_files` | Read files within workspace | ✅ |
+| `run_commands` | Execute shell commands | ✅ |
+| `write_files` | Write files to specific paths | |
+| `network` | Make network requests | |
+| `adapter_access` | Access AI adapter APIs directly | |
+
+**See Also:** [PLUGIN-AUTHORING.md](PLUGIN-AUTHORING.md)
 
 ---
 

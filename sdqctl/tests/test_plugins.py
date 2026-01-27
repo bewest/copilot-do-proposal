@@ -432,3 +432,135 @@ sys.exit(1)
         assert result.passed is False
         assert len(result.errors) == 1
         assert "missing file" in result.errors[0].message
+
+
+class TestDirectiveHandlerCapabilities:
+    """Tests for capability validation."""
+
+    def test_valid_capabilities(self):
+        """Accept valid capabilities."""
+        handler = DirectiveHandler(
+            name="test",
+            directive_type="VERIFY",
+            handler="echo ok",
+            description="Test",
+            requires=["read_files", "run_commands"],
+        )
+        assert handler.validate_capabilities() == []
+
+    def test_invalid_capability(self):
+        """Detect invalid capabilities."""
+        handler = DirectiveHandler(
+            name="test",
+            directive_type="VERIFY",
+            handler="echo ok",
+            description="Test",
+            requires=["read_files", "invalid_cap", "network"],
+        )
+        invalid = handler.validate_capabilities()
+        assert invalid == ["invalid_cap"]
+
+    def test_all_valid_capabilities(self):
+        """All defined capabilities are valid."""
+        handler = DirectiveHandler(
+            name="test",
+            directive_type="VERIFY",
+            handler="echo ok",
+            description="Test",
+            requires=list(DirectiveHandler.VALID_CAPABILITIES),
+        )
+        assert handler.validate_capabilities() == []
+
+
+class TestPluginCommand:
+    """Tests for sdqctl plugin CLI commands."""
+
+    def test_plugin_list_empty(self, tmp_path):
+        """List plugins when none discovered."""
+        from click.testing import CliRunner
+        from sdqctl.commands.plugin import plugin
+
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path):
+            result = runner.invoke(plugin, ["list"])
+            assert result.exit_code == 0
+            assert "No plugins discovered" in result.output
+
+    def test_plugin_list_json_empty(self, tmp_path):
+        """List plugins as JSON when empty."""
+        from click.testing import CliRunner
+        from sdqctl.commands.plugin import plugin
+        import json
+
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path):
+            result = runner.invoke(plugin, ["list", "--json"])
+            assert result.exit_code == 0
+            data = json.loads(result.output)
+            assert data["plugins"] == []
+            assert data["manifests"] == []
+
+    def test_plugin_capabilities(self):
+        """List available capabilities."""
+        from click.testing import CliRunner
+        from sdqctl.commands.plugin import plugin
+
+        runner = CliRunner()
+        result = runner.invoke(plugin, ["capabilities"])
+        assert result.exit_code == 0
+        assert "read_files" in result.output
+        assert "write_files" in result.output
+        assert "(default)" in result.output
+
+    def test_plugin_validate_no_manifest(self, tmp_path):
+        """Validate fails when no manifest found."""
+        from click.testing import CliRunner
+        from sdqctl.commands.plugin import plugin
+
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path):
+            result = runner.invoke(plugin, ["validate"])
+            assert result.exit_code == 1
+            assert "not found" in result.output
+
+    def test_plugin_validate_valid_manifest(self, tmp_path):
+        """Validate passes for valid manifest."""
+        from click.testing import CliRunner
+        from sdqctl.commands.plugin import plugin
+
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path):
+            sdqctl_dir = Path(".sdqctl")
+            sdqctl_dir.mkdir()
+            (sdqctl_dir / "directives.yaml").write_text("""
+version: 1
+directives:
+  VERIFY:
+    test-check:
+      handler: echo ok
+      description: "Test verification"
+""")
+            result = runner.invoke(plugin, ["validate"])
+            assert result.exit_code == 0
+            assert "Validation passed" in result.output
+
+    def test_plugin_validate_missing_handler(self, tmp_path):
+        """Validate fails for missing handler script."""
+        from click.testing import CliRunner
+        from sdqctl.commands.plugin import plugin
+
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path):
+            sdqctl_dir = Path(".sdqctl")
+            sdqctl_dir.mkdir()
+            (sdqctl_dir / "directives.yaml").write_text("""
+version: 1
+directives:
+  VERIFY:
+    test-check:
+      handler: python tools/nonexistent.py
+      description: "Test verification"
+""")
+            result = runner.invoke(plugin, ["validate"])
+            assert result.exit_code == 1
+            assert "not found" in result.output

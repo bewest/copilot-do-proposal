@@ -26,6 +26,7 @@ from .commands.drift import drift
 from .commands.init import init
 from .commands.iterate import iterate
 from .commands.lsp import lsp
+from .commands.plugin import plugin
 from .commands.refcat import refcat
 from .commands.render import render
 from .commands.resume import resume
@@ -106,6 +107,7 @@ cli.add_command(status)
 cli.add_command(render)
 cli.add_command(verify)
 cli.add_command(lsp)
+cli.add_command(plugin)
 cli.add_command(drift)
 cli.add_command(refcat)
 cli.add_command(artifact)

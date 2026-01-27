@@ -54,6 +54,7 @@ The `--prologue` and `--epilogue` options (and their ConversationFile equivalent
 | `apply` | Apply workflow to multiple components | [COMMANDS.md](docs/COMMANDS.md#apply) |
 | `render` | Preview prompts without AI execution | [COMMANDS.md](docs/COMMANDS.md#render) |
 | `verify` | Static verification (refs, links, traceability) | [COMMANDS.md](docs/COMMANDS.md#verify) |
+| `plugin` | Plugin management (list, validate) | [COMMANDS.md](docs/COMMANDS.md#plugin) |
 | `lsp` | Language server queries (type lookup) | [COMMANDS.md](docs/COMMANDS.md#lsp) |
 | `drift` | Detect changes in external repositories | [COMMANDS.md](docs/COMMANDS.md#drift) |
 | `refcat` | Extract file content with line precision | [COMMANDS.md](docs/COMMANDS.md#refcat) |

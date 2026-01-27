@@ -1,6 +1,6 @@
 # Proposal: Plugin System for Ecosystem Extensions
 
-> **Status**: In Progress (Phase 3 pending - security/sandboxing)  
+> **Status**: In Progress (Phase 4 pending - ecosystem adoption)  
 > **Date**: 2026-01-27  
 > **Author**: sdqctl development  
 > **Scope**: Allow external workspaces to extend sdqctl with custom directives/commands
@@ -136,16 +136,17 @@ Combine manifest-based discovery with Python SDK for complex cases:
 - `externals/rag-nightscout-ecosystem-alignment/.sdqctl/directives.yaml` - Demo manifest ✅
 - `externals/rag-nightscout-ecosystem-alignment/tools/verify_hello.py` - Demo plugin ✅
 
-### Phase 3: Security & Polish (1 iteration)
+### Phase 3: Security & Polish (1 iteration) ✅ COMPLETE
 
-- [ ] Implement sandboxing or capability allowlist
+- [x] Implement sandboxing or capability allowlist ✅ 2026-01-27
 - [x] Add `sdqctl verify plugin --list` - Show discovered plugins ✅ 2026-01-27
-- [ ] Add `sdqctl plugin validate <path>` - Validate plugin structure
-- [ ] Error handling and diagnostics for plugin failures
+- [x] Add `sdqctl plugin validate <path>` - Validate plugin structure ✅ 2026-01-27
+- [x] Error handling and diagnostics for plugin failures ✅ 2026-01-27
 
 **Deliverables:**
-- Security model documentation
-- Plugin management commands
+- `sdqctl/commands/plugin.py` - Plugin management commands ✅
+- Capability validation in `DirectiveHandler` ✅
+- 9 new tests (30 total in test_plugins.py) ✅
 
 ### Phase 4: Ecosystem Adoption (1 iteration)
 

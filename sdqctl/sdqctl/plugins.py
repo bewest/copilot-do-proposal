@@ -29,7 +29,20 @@ class DirectiveHandler:
     description: str
     args: list[dict[str, Any]] = field(default_factory=list)
     timeout: int = 30
-    requires: list[str] = field(default_factory=list)
+    requires: list[str] = field(default_factory=list)  # Capabilities
+    
+    # Valid capabilities
+    VALID_CAPABILITIES = frozenset({
+        "read_files",      # Read files in workspace
+        "write_files",     # Write to specific paths
+        "run_commands",    # Execute shell commands
+        "network",         # Make network requests
+        "adapter_access",  # Full adapter API access
+    })
+    
+    def validate_capabilities(self) -> list[str]:
+        """Return list of invalid capabilities."""
+        return [c for c in self.requires if c not in self.VALID_CAPABILITIES]
 
 
 @dataclass
