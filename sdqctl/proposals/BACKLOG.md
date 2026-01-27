@@ -27,7 +27,7 @@
 
 | # | Item | Priority | Effort | Status |
 |---|------|----------|--------|--------|
-| 1 | Trim RECENTLY COMPLETED section (max 20 lines) | P2 | Low | Ready |
+| 1 | Trim RECENTLY COMPLETED section (max 20 lines) | P2 | Low | ✅ Done |
 | 2 | Documentation audit - find outdated docs | P2 | Medium | Ready |
 | 3 | Backlog organization - archive old material | P2 | Medium | Ready |
 
@@ -64,10 +64,12 @@
 | Item | Status | Notes |
 |------|--------|-------|
 | WP-002 #9-14: Drift detection | ✅ Complete | monitoring module, drift CLI, 19 tests |
-| WP-006 #6: `lsp type` command | ✅ Complete | Pattern-based TypeScript type lookup |
-| WP-006 #7: JSON output mode | ✅ Complete | `--json` flag for structured output |
-| WP-006 #8: LSP directive | ✅ Complete | .conv workflow integration |
+| WP-006 #6-8: LSP type + directive | ✅ Complete | Type lookup, JSON output, .conv integration |
+| WP-005: STPA Deep Integration | ✅ Complete | Audit, patterns, usage guide, roadmap |
+| WP-004: Plugin System (partial) | ✅ Complete | Schema, discovery, hello world, authoring docs |
 | docs/COMMANDS.md | ✅ Updated | LSP + drift sections |
+
+*Older items → [`archive/2026-01-backlog-migration.md`](../archive/2026-01-backlog-migration.md)*
 
 ## Recently Groomed (2026-01-27)
 
@@ -264,70 +266,6 @@ Design principles distilled from recent development iterations:
 | **Warmup/priming pattern** | Feedback team | First-cycle-only context injection (`--introduce`) is a common need. One-time focus doesn't need to repeat. |
 | **LSP complements REFCAT** | Analysis workflow | Text extraction (REFCAT) and semantic queries (LSP) serve different needs. Both valuable. |
 | **STPA needs guides, not just proposals** | WP-005 outcome | Comprehensive usage guides with templates are more valuable than abstract framework proposals. |
-
----
-
-## Recently Completed
-
-| Item | Date | Notes |
-|------|------|-------|
-| **LSP module structure (P3)** | 2026-01-27 | WP-006 Phase 1: Created sdqctl/lsp/ with LSPClient protocol, TypeDefinition, SymbolInfo, detect_language(). Added `lsp` CLI with status/detect/type/symbol. 19 tests. 1516 total. |
-| **Hello world plugin (P3)** | 2026-01-27 | WP-004 step 3: Created demo plugin in ecosystem repo. Added `sdqctl verify plugin` command. 5 plugins registered, 1497 tests pass. |
-| **STPA improvement roadmap (P3)** | 2026-01-27 | WP-005 step 5 (FINAL): Created docs/STPA-ROADMAP.md. 3 phases, 12 tasks, success metrics. **WP-005 COMPLETE**. |
-| **STPA usage guide (P3)** | 2026-01-27 | WP-005 step 4: Created docs/STPA-USAGE-GUIDE.md. ~2000 words, quick start, full workflow, templates (UCA/SC/CF), tool integration, pitfalls, checklist. |
-| **Cross-project UCA pattern discovery (P3)** | 2026-01-27 | WP-005 step 3: Created traceability/stpa/cross-project-patterns.md. 3 pattern categories (Sync, Remote, Override), 11 UCAs, 12 proposed SCs. |
-| **Plugin authoring documentation (P3)** | 2026-01-27 | WP-004 step 5: Created docs/PLUGIN-AUTHORING.md. Quick start, manifest reference, examples, troubleshooting. |
-| **Performance benchmark suite (P3)** | 2026-01-27 | Created benchmarks/: bench_parsing.py, bench_rendering.py, bench_workflow.py, bench_sdk.py, run.py. Covers code perf, workflow timing, SDK latency. |
-| **Directive discovery from manifest (P3)** | 2026-01-27 | WP-004 step 2: Created sdqctl/plugins.py. Loads .sdqctl/directives.yaml, registers PluginVerifier handlers. 21 tests. Total 1497 tests. |
-| **Define severity scale (P3)** | 2026-01-27 | WP-005 step 2: Created docs/stpa-severity-scale.md. 4-level scale (S1-S4) with ISO 14971 mapping. 6 UCAs classified. |
-| **Audit STPA artifacts (P3)** | 2026-01-27 | WP-005 step 1: Created reports/stpa-audit-2026-01-27.md. Found 6 UCAs, 2 SCs, 122 GAPs. SC coverage 17%, HAZ missing. |
-| **Define directives.yaml schema (P3)** | 2026-01-27 | WP-004 step 1: Created docs/directives-schema.json. Defines version, directives map, handlers, args, timeout, requires. |
-| **Add metrics collection (P3)** | 2026-01-27 | WP-001 step 4: Created core/metrics.py, emit_metrics() to session dir. ~80 lines. Tracks tokens, cycles, duration. |
-| **Migrate testing items (P3)** | 2026-01-27 | WP-001 step 3: Moved 17 test-related items to proposals/backlogs/testing.md. |
-| **Define `metrics.json` schema (P3)** | 2026-01-27 | WP-001 step 2: Created docs/metrics-schema.json with work_output, token_efficiency, duration metrics. JSON Schema draft-07. |
-| **Create `proposals/backlogs/` directory (P3)** | 2026-01-27 | WP-001 step 1: Created 5 domain backlog files (testing, cli, sdk-integration, architecture, directives) with headers and cross-references. |
-| **Fix 5 lint issues (P3)** | 2026-01-27 | Fixed 2 E501 (line-too-long), 2 F401 (unused-import), 1 I001 (import-sort) in iterate.py, workspace.py, verify.py, artifact_ids.py, run.py. All 1476 tests pass. |
-| **Agent output on stdout (P3)** | 2026-01-27 | Added `agent_response()` function. Agent responses now print to stdout by default. Respects `--quiet`. 4 tests. Total 1476 tests. |
-| **`--introduction` and `--until` flags (P3)** | 2026-01-27 | Added `--introduction` (cycle 1 only) and `--until N` (cycles 1-N) prompt injection. 5 tests. Total 1472 tests. |
-| **Default verbosity key actions (P3)** | 2026-01-27 | Verified existing implementation meets OQ-004 requirements: spinner, phase, context %, events, cycle/step progress all visible at default verbosity. |
-| **Work package markers (P3)** | 2026-01-27 | Added WP-001 (SDK Economy), WP-002 (Monitoring), WP-003 (Upstream). Consolidated items from Future section. |
-| **Disambiguation flags (P3)** | 2026-01-27 | Added `--prompt/-p` and `--file/-f` to iterate command. Clarifies ambiguous input. 5 tests. Total 1467 tests. |
-| **Interactive help (P3)** | 2026-01-27 | Added `--interactive` / `-i` flag for browsable help. Features: list, topic lookup, prefix match, overview. 7 tests. Total 1462 tests. |
-| **REFCAT glob support (P3)** | 2026-01-27 | Added glob expansion for REFCAT directive. `REFCAT @src/**/*.py` now expands to individual files. 9 tests. Total 1455 tests. |
-| **HELP-INLINE directive (P3)** | 2026-01-27 | Added HELP-INLINE for mid-workflow help injection. Merges with next prompt. 6 tests. |
-| **Ecosystem help topics (P3)** | 2026-01-27 | Added gap-ids, 5-facet, stpa, conformance, nightscout topics. 5 tests. Total 1446 tests. |
-| **Q-019A: Progress timestamps (P3)** | 2026-01-26 | Added `set_timestamps()` to core/progress.py. Enabled when `-v` used. +4 tests. Total 1300 tests. |
-| **iterate.py exit code alignment** | 2026-01-26 | Verified: MissingContextFiles already returns exit code 2 via `ExitCode.MISSING_FILES`. No fix needed. |
-| **copilot.py further modularization (P2)** | 2026-01-26 | Reassessed: 670 lines includes 121 blank + docstrings. Core logic ~500 lines. Already extracted events.py (585) + stats.py (191). No further extraction needed. |
-| **Q-021: `---` separator documentation (P2)** | 2026-01-26 | Documented `--` prefix requirement in `iterate --help` and COMMANDS.md. |
-| **traceability.py modularization (P2)** | 2026-01-26 | Complete: 685 → 571 lines (-17%). Extracted traceability_coverage.py (135 lines). |
-| **verify.py modularization (P2)** | 2026-01-26 | Complete: 641 → 532 lines (-17%). Extracted verify_output.py (114 lines). |
-| **artifact.py modularization (P2)** | 2026-01-26 | Complete: 689 → 500 lines (-27%). Extracted core/artifact_ids.py (213 lines). |
-| **help.py modularization (P2)** | 2026-01-26 | Complete: 698 → 156 lines (-78%). Extracted COMMAND_HELP to core/help_commands.py (550 lines). |
-| **Compaction config unification (P2)** | 2026-01-26 | Complete: COMPACTION-MAX directive, CLI naming alignment, None defaults. +8 tests. Total 1296 tests. |
-| **`run` command deprecation (P2)** | 2026-01-26 | Complete: 972 → 125 lines. Thin wrapper forwards to `iterate -n 1`. All 1288 tests pass. |
-| **CLI modularization (P2)** | 2026-01-26 | Complete: 966 → 413 lines (-553, 57%). Extracted init.py (276 lines) and resume.py (292 lines). |
-| **Copilot adapter modularization (P2)** | 2026-01-26 | Complete: 1143 → 670 lines (-473, 41%). Extracted CopilotEventHandler class to events.py. +32 tests. Total 1288 tests. |
-| **Session resilience Phase 4 (P2)** | 2026-01-26 | Compaction summary display complete. +3 tests. Shows effectiveness ratio in completion output. Total 1256 tests. |
-| **Session resilience Phase 3 (P2)** | 2026-01-26 | Predictive rate limiting complete. +9 tests. Added estimated_remaining_requests, estimated_minutes_remaining, warning integration. Total 1253 tests. |
-| **Session resilience Phase 2 (P2)** | 2026-01-26 | Checkpoint resume testing complete. +4 tests. Documented rate-limit recovery in COMMANDS.md. |
-| **SESSION-RESILIENCE (P2)** | 2026-01-26 | **PROPOSAL COMPLETE** - All 5 phases (0-4). Quota tracking, rate limit prediction, checkpoint resume, compaction metrics. |
-| **iterate.py Modularization (P2)** | 2026-01-26 | Complete: 1397 → 791 lines (-606, 43%). Extracted 5 modules: iterate_helpers.py, compact_steps.py, prompt_steps.py, json_pipeline.py, output_steps.py. +26 tests. Target <800 ✅ |
-| **run.py Modularization (P2)** | 2026-01-26 | Complete: 1523 → 973 lines (-550, 36%). Extracted elide.py, blocks.py, verify_steps.py, run_steps.py. +9 tests. Target <1000 ✅ |
-| **SESSION-RESILIENCE Phase 0-1 (P2/P3)** | 2026-01-26 | Metrics instrumentation, CompactionEvent, timing props. +11 tests. |
-| **StepExecutor reassessed (P2)** | 2026-01-26 | Analyzed: ~100 lines shared (not ~500). Extracted resolve_run_directory(). Full StepExecutor deferred. |
-| **CONSULT-TIMEOUT (P2)** | 2026-01-26 | Phase 4: Timeout directive, expiration check on resume, clear error. 10 new tests. |
-| **Compaction Simplification (P1)** | 2026-01-26 | Phase 5: Remove default prologue/epilogue. SDK-INFINITE-SESSIONS now complete. |
-| **E501 lint cleanup** | 2026-01-26 | Fixed 69 issues in run.py, iterate.py, file.py. Core commands E501 clean. |
-| **claude/openai adapter stubs (P2)** | 2026-01-26 | Created stubs with NotImplementedError. Registered in registry. |
-| **Q-020 Context % fix (P0)** | 2026-01-26 | Sync tokens after each `ai_adapter.send()` in run.py and iterate.py. |
-| **ARCHITECTURE.md (P1)** | 2026-01-26 | Created docs/ARCHITECTURE.md: module structure, data flow, key abstractions, extension points. |
-| **ConversationFile Split (P0)** | 2026-01-26 | Modularized 1819-line file into 7 modules. Largest file now 858 lines. |
-| **Shared utilities extraction** | 2026-01-26 | Error handling decorators, I/O utilities, VerifierBase scan_files, ExecutionContext. +32 tests. |
-| **Phase 6: Mixed Prompt Support** | 2026-01-26 | Variadic targets, `---` separator, elision into boundaries. 16 new tests. |
-
-*Test-related items migrated to [`proposals/backlogs/testing.md`](backlogs/testing.md)*  
-*Older items archived to [`archive/2026-01-backlog-migration.md`](../archive/2026-01-backlog-migration.md)*
 
 ---
 
