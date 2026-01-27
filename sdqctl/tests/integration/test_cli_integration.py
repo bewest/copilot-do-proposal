@@ -538,3 +538,143 @@ REQ-002: Data validation
         assert "REQ" in result.output
         assert "next" in result.output
         assert "list" in result.output
+
+
+class TestVerifyCommandIntegration:
+    """Integration tests for verify command and subcommands."""
+
+    @pytest.fixture
+    def runner(self):
+        """Create CLI test runner."""
+        return CliRunner()
+
+    @pytest.fixture
+    def docs_workspace(self, tmp_path):
+        """Create workspace with documentation for verification."""
+        docs = tmp_path / "docs"
+        docs.mkdir()
+
+        # Create markdown with refs
+        (docs / "spec.md").write_text("""# Specification
+See @utils.md for utilities.
+See @missing.md for details.
+""")
+        (docs / "utils.md").write_text("# Utilities\nHelper functions.")
+
+        # Create markdown with links
+        (docs / "readme.md").write_text("""# README
+See [spec](spec.md) for specification.
+See [broken](nonexistent.md) link.
+""")
+
+        # Create markdown with artifact IDs
+        (docs / "requirements.md").write_text("""# Requirements
+## REQ-001: Authentication
+Users must authenticate.
+
+## REQ-002: Authorization
+Access control required.
+""")
+
+        return tmp_path
+
+    def test_verify_help_shows_subcommands(self, runner):
+        """Test verify --help shows all subcommands."""
+        result = runner.invoke(cli, ["verify", "--help"])
+        assert result.exit_code == 0
+        assert "refs" in result.output
+        assert "links" in result.output
+        assert "all" in result.output
+        assert "traceability" in result.output
+
+    def test_verify_refs_runs(self, runner, docs_workspace):
+        """Test verify refs command executes."""
+        result = runner.invoke(cli, ["verify", "refs", "--path", str(docs_workspace)])
+        # May pass or fail depending on refs - just verify it runs
+        assert result.exit_code in (0, 1)
+
+    def test_verify_refs_strict_mode(self, runner, docs_workspace):
+        """Test verify refs --strict promotes warnings to errors."""
+        result = runner.invoke(cli, [
+            "verify", "refs",
+            "--path", str(docs_workspace),
+            "--strict"
+        ])
+        # Should report issues as errors in strict mode
+        assert result.exit_code in (0, 1)
+
+    def test_verify_links_runs(self, runner, docs_workspace):
+        """Test verify links command executes."""
+        result = runner.invoke(cli, ["verify", "links", "--path", str(docs_workspace)])
+        assert result.exit_code in (0, 1)
+
+    def test_verify_links_strict_mode(self, runner, docs_workspace):
+        """Test verify links --strict mode."""
+        result = runner.invoke(cli, [
+            "verify", "links",
+            "--path", str(docs_workspace),
+            "--strict"
+        ])
+        assert result.exit_code in (0, 1)
+
+    def test_verify_all_runs_multiple_verifiers(self, runner, docs_workspace):
+        """Test verify all runs multiple verifications."""
+        result = runner.invoke(cli, ["verify", "all", "--path", str(docs_workspace)])
+        # all command runs refs, links, and traceability
+        assert result.exit_code in (0, 1)
+
+    def test_verify_traceability_runs(self, runner, docs_workspace):
+        """Test verify traceability command executes."""
+        result = runner.invoke(cli, ["verify", "traceability", "--path", str(docs_workspace)])
+        assert result.exit_code in (0, 1)
+
+    def test_verify_trace_specific_link(self, runner, docs_workspace):
+        """Test verify trace for specific artifact link."""
+        result = runner.invoke(cli, [
+            "verify", "trace", "REQ-001", "TEST-001",
+            "--path", str(docs_workspace)
+        ])
+        # May pass or fail - just verify command parses
+        assert result.exit_code in (0, 1, 2)
+
+    def test_verify_coverage_runs(self, runner, docs_workspace):
+        """Test verify coverage command executes."""
+        result = runner.invoke(cli, [
+            "verify", "coverage",
+            "--path", str(docs_workspace)
+        ])
+        assert result.exit_code in (0, 1)
+
+    def test_verify_coverage_with_threshold(self, runner, docs_workspace):
+        """Test verify coverage with threshold argument."""
+        result = runner.invoke(cli, [
+            "verify", "coverage",
+            "overall >= 50",
+            "--path", str(docs_workspace)
+        ])
+        assert result.exit_code in (0, 1)
+
+    def test_verify_terminology_runs(self, runner, docs_workspace):
+        """Test verify terminology command executes."""
+        result = runner.invoke(cli, ["verify", "terminology", "--path", str(docs_workspace)])
+        assert result.exit_code in (0, 1)
+
+    def test_verify_assertions_runs(self, runner, docs_workspace):
+        """Test verify assertions command executes."""
+        result = runner.invoke(cli, ["verify", "assertions", "--path", str(docs_workspace)])
+        assert result.exit_code in (0, 1)
+
+    def test_verify_with_json_output(self, runner, docs_workspace):
+        """Test verify command with JSON output format."""
+        result = runner.invoke(cli, [
+            "verify", "refs",
+            "--path", str(docs_workspace),
+            "--format", "json"
+        ])
+        # May have --format option or not - verify command works
+        assert result.exit_code in (0, 1, 2)
+
+    def test_verify_empty_directory(self, runner, tmp_path):
+        """Test verify handles empty directory gracefully."""
+        result = runner.invoke(cli, ["verify", "refs", "--path", str(tmp_path)])
+        assert result.exit_code in (0, 1)

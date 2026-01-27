@@ -355,3 +355,157 @@ PROMPT Second phase after compaction.
         step_types = [s.type for s in conv.steps]
         assert "compact" in step_types
         assert step_types.count("prompt") == 2
+
+
+class TestConsultWorkflows:
+    """Test CONSULT directive workflow integration."""
+
+    @pytest.fixture
+    def consult_workflow(self, tmp_path):
+        """Create workflow with CONSULT directive."""
+        conv = tmp_path / "consult.conv"
+        conv.write_text("""# Consult Workflow Test
+MODEL mock
+ADAPTER mock
+SESSION-NAME design-review
+
+PROMPT Analyze this proposal and identify open questions.
+
+CONSULT Design Decisions
+
+PROMPT Implement the resolved design based on answers.
+""")
+        return conv
+
+    @pytest.fixture
+    def consult_with_timeout(self, tmp_path):
+        """Create workflow with CONSULT-TIMEOUT directive."""
+        conv = tmp_path / "consult-timeout.conv"
+        conv.write_text("""# Consult with Timeout
+MODEL mock
+ADAPTER mock
+
+CONSULT-TIMEOUT 7d
+
+PROMPT Analyze and identify questions.
+
+CONSULT Architecture Review
+
+PROMPT Continue after consultation.
+""")
+        return conv
+
+    @pytest.fixture
+    def multi_consult_workflow(self, tmp_path):
+        """Create workflow with multiple CONSULT steps."""
+        conv = tmp_path / "multi-consult.conv"
+        conv.write_text("""# Multi-Consult Workflow
+MODEL mock
+ADAPTER mock
+SESSION-NAME multi-review
+
+PROMPT Initial analysis phase.
+
+CONSULT Technical Review
+
+PROMPT Implement technical changes.
+
+CONSULT Security Review
+
+PROMPT Apply security recommendations.
+""")
+        return conv
+
+    def test_consult_workflow_parses(self, consult_workflow):
+        """Test CONSULT workflow parses correctly."""
+        conv = ConversationFile.from_file(consult_workflow)
+
+        # CONSULT stored in consult_points, not steps
+        assert len(conv.consult_points) > 0
+        assert len(conv.steps) >= 2  # At least 2 prompts
+
+    def test_consult_point_has_topic(self, consult_workflow):
+        """Test CONSULT point captures topic."""
+        conv = ConversationFile.from_file(consult_workflow)
+
+        assert len(conv.consult_points) == 1
+        step_idx, topic = conv.consult_points[0]
+        assert "Design Decisions" in topic
+
+    def test_consult_timeout_parses(self, consult_with_timeout):
+        """Test CONSULT-TIMEOUT directive is parsed."""
+        conv = ConversationFile.from_file(consult_with_timeout)
+
+        # CONSULT-TIMEOUT should set a timeout value
+        assert conv.consult_timeout is not None
+
+    def test_multi_consult_workflow_parses(self, multi_consult_workflow):
+        """Test multiple CONSULT points parse correctly."""
+        conv = ConversationFile.from_file(multi_consult_workflow)
+
+        assert len(conv.consult_points) == 2
+        topics = [topic for _, topic in conv.consult_points]
+        assert "Technical Review" in topics[0]
+        assert "Security Review" in topics[1]
+
+    def test_consult_with_session_name(self, consult_workflow):
+        """Test CONSULT workflow with SESSION-NAME directive."""
+        conv = ConversationFile.from_file(consult_workflow)
+
+        assert conv.session_name == "design-review"
+
+    def test_consult_point_step_index(self, consult_workflow):
+        """Test CONSULT point references correct step index."""
+        conv = ConversationFile.from_file(consult_workflow)
+
+        # consult_points contains (step_index, topic) tuples
+        assert len(conv.consult_points) == 1
+        step_idx, _ = conv.consult_points[0]
+        assert isinstance(step_idx, int)
+        assert step_idx >= 0
+
+
+class TestPauseWorkflows:
+    """Test PAUSE directive workflow integration."""
+
+    @pytest.fixture
+    def pause_workflow(self, tmp_path):
+        """Create workflow with PAUSE directive."""
+        conv = tmp_path / "pause.conv"
+        conv.write_text("""# Pause Workflow Test
+MODEL mock
+ADAPTER mock
+
+PROMPT Analyze the code for issues.
+
+PAUSE Review findings before proceeding
+
+PROMPT Apply recommended fixes.
+""")
+        return conv
+
+    def test_pause_workflow_parses(self, pause_workflow):
+        """Test PAUSE workflow parses correctly."""
+        conv = ConversationFile.from_file(pause_workflow)
+
+        # PAUSE stored in pause_points, not steps
+        assert len(conv.pause_points) > 0
+        assert len(conv.steps) >= 2  # At least 2 prompts
+
+    def test_pause_point_has_message(self, pause_workflow):
+        """Test PAUSE point captures message."""
+        conv = ConversationFile.from_file(pause_workflow)
+
+        assert len(conv.pause_points) == 1
+        step_idx, message = conv.pause_points[0]
+        assert "Review findings" in message
+
+    def test_pause_point_step_index(self, pause_workflow):
+        """Test PAUSE point references correct step index."""
+        conv = ConversationFile.from_file(pause_workflow)
+
+        # pause_points contains (step_index, message) tuples
+        assert len(conv.pause_points) == 1
+        step_idx, _ = conv.pause_points[0]
+        assert isinstance(step_idx, int)
+        assert step_idx >= 0

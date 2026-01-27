@@ -10,9 +10,9 @@
 
 | # | Item | Priority | Effort | Notes |
 |---|------|----------|--------|-------|
-| 1 | Improve test documentation | P3 | Low | Document test markers, fixtures, parametrization patterns. |
-| 2 | Add verifier command integration tests | P3 | Low | Test verify command variants. |
-| 3 | Add consult command integration tests | P3 | Low | Test consult workflow execution. |
+| 1 | HELP-INLINE directive | P3 | Medium | Allow HELP anywhere, not just prologues. |
+| 2 | REFCAT glob support | P3 | Medium | `REFCAT @externals/**/*Treatment*.swift`. |
+| 3 | Ecosystem help topics | P3 | Low | gap-ids, 5-facet, stpa, conformance, nightscout. |
 
 ---
 
@@ -46,9 +46,6 @@
 
 | Item | Source | Notes |
 |------|--------|-------|
-| HELP-INLINE directive | [HELP-INLINE.md](HELP-INLINE.md) | Allow HELP anywhere, not just prologues |
-| REFCAT glob support | [REFCAT-DESIGN.md](REFCAT-DESIGN.md) | `REFCAT @externals/**/*Treatment*.swift` |
-| Ecosystem help topics | [HELP-INLINE.md](HELP-INLINE.md) | gap-ids, 5-facet, stpa, conformance, nightscout |
 | LSP support for refcat | References | Language Server Protocol for IDE integration |
 | Interactive help (`--interactive`) | References | Browsable help system |
 | Multiple .conv files in mixed mode | Phase 6 deferred | Complex; requires positional prologue tracking |
@@ -76,6 +73,9 @@
 
 | Item | Date | Notes |
 |------|------|-------|
+| **Test documentation (P3)** | 2026-01-27 | Created tests/README.md: markers, fixtures, parametrization patterns, best practices. |
+| **Verify command integration tests (P3)** | 2026-01-27 | Added TestVerifyCommandIntegration (14 tests): refs, links, traceability, coverage, terminology, assertions. |
+| **Consult/Pause workflow tests (P3)** | 2026-01-27 | Added TestConsultWorkflows (6 tests) + TestPauseWorkflows (3 tests). Total 1435 tests. |
 | **Add CLI integration tests (P2)** | 2026-01-27 | Created test_cli_integration.py with 17 tests: render (4), validate (2), iterate (3), cycle (2), status (2), help (4). |
 | **Add end-to-end workflow tests (P2)** | 2026-01-27 | Extended test_workflow_integration.py with 5 new classes: EndToEndWorkflows (2), ErrorHandling (1), Verify (1), Compact (1). Total 1386 tests. |
 | **Add parametrized test variants (P3)** | 2026-01-27 | Added TestDirectiveVariants (18 cases) and parametrized TestConsultTimeoutErrors (4 cases) to test_conversation_errors.py. |
