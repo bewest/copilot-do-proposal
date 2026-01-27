@@ -178,11 +178,11 @@ These can be applied now via prompt updates:
 
 | Change | Effort | Notes |
 |--------|--------|-------|
-| Work package markers in BACKLOG.md | Low | `## Work Package:` sections |
-| Domain-partitioned queues | Medium | Separate files per domain? |
+| Work package markers in BACKLOG.md | Low | ✅ **DONE** - Added WP-001, WP-002, WP-003 |
+| Domain-partitioned queues | Medium | Separate files per domain? → WP-001 |
 | `sdqctl workpackage` command | Medium | CLI for managing packages |
-| Iteration metrics tracking | Medium | Items/cycle, lines/cycle |
-| backlog-processor-v3.conv | Medium | Full optimization |
+| Iteration metrics tracking | Medium | Items/cycle, lines/cycle → WP-001 |
+| backlog-processor-v3.conv | Medium | Full optimization → WP-001 |
 
 ---
 

@@ -12,7 +12,7 @@
 |---|------|----------|--------|-------|
 | 1 | LSP support for refcat | P3 | High | Language Server Protocol for IDE integration. |
 | 2 | Multiple .conv files in mixed mode | P3 | High | Complex; requires positional prologue tracking |
-| 3 | Work package markers in BACKLOG.md | P3 | Medium | `## Work Package:` sections for batch selection |
+| 3 | WP-001 first item: Domain-partitioned queues | P3 | Medium | Part of SDK Economy work package |
 
 ---
 
@@ -42,25 +42,51 @@
 |------|--------|-------|
 | Default verbosity key actions | Low | **Blocked by OQ-004** → [VERBOSITY-DEFAULTS.md](VERBOSITY-DEFAULTS.md) |
 
+---
+
+## Work Packages
+
+Pre-grouped items that can complete together in 1-2 iterations. Prioritized within Ready Queue.
+
+### WP-001: SDK Economy Optimization (P3)
+
+Related items for improving iteration efficiency:
+- [ ] Domain-partitioned queues (Medium) - Separate backlogs per domain
+- [ ] Iteration metrics tracking (Medium) - Items/cycle, lines/cycle metrics
+- [ ] backlog-processor-v3.conv (High) - Full economy optimization
+
+**Dependencies**: Work package markers (this item) must complete first.  
+**Estimated**: 2 iterations, ~200 lines
+
+### WP-002: Continuous Monitoring (P3 R&D)
+
+Related items for external repo monitoring:
+- [ ] `sdqctl watch` - Monitor external repos for changes
+- [ ] `sdqctl drift` - One-shot drift detection
+
+**Dependencies**: None (R&D track)  
+**Estimated**: 2 iterations, ~400 lines
+
+### WP-003: Upstream Contribution (P3 R&D)
+
+Related items for contributing fixes upstream:
+- [ ] `sdqctl delegate <GAP-ID>` - Draft upstream fixes
+- [ ] `sdqctl upstream status` - Track contribution status
+
+**Dependencies**: WP-002 (needs drift detection)  
+**Estimated**: 2 iterations, ~300 lines
+
+---
+
 ### Future (Unstarted)
+
+Items not yet assigned to work packages:
 
 | Item | Source | Notes |
 |------|--------|-------|
 | `--once` flag for non-repeating CLI prompts | [OQ-006] | **Blocked** - needs use case definition |
 | Performance benchmark suite | [OQ-005] | **Blocked** - needs scope decision |
-| Domain-partitioned queues | [SDK-ECONOMY.md](SDK-ECONOMY.md) | Separate backlogs per domain? Needs research |
-| Iteration metrics tracking | [SDK-ECONOMY.md](SDK-ECONOMY.md) | Items/cycle, lines/cycle metrics |
-| backlog-processor-v3.conv | [SDK-ECONOMY.md](SDK-ECONOMY.md) | Full economy optimization, after v2 validation |
-
-### Agentic Automation (R&D)
-
-| Item | Source | Notes |
-|------|--------|-------|
-| `sdqctl agent analyze <topic>` | [AGENTIC-ANALYSIS.md](AGENTIC-ANALYSIS.md) | Autonomous multi-cycle deep-dive with 5-facet updates |
-| `sdqctl watch` | [CONTINUOUS-MONITORING.md](CONTINUOUS-MONITORING.md) | Monitor external repos for alignment-relevant changes |
-| `sdqctl drift` | [CONTINUOUS-MONITORING.md](CONTINUOUS-MONITORING.md) | One-shot drift detection since last analysis |
-| `sdqctl delegate <GAP-ID>` | [UPSTREAM-CONTRIBUTIONS.md](UPSTREAM-CONTRIBUTIONS.md) | Draft upstream fixes for identified gaps |
-| `sdqctl upstream status` | [UPSTREAM-CONTRIBUTIONS.md](UPSTREAM-CONTRIBUTIONS.md) | Track contribution status across repos |
+| `sdqctl agent analyze <topic>` | [AGENTIC-ANALYSIS.md](AGENTIC-ANALYSIS.md) | Autonomous multi-cycle deep-dive (R&D) |
 
 ---
 
@@ -68,6 +94,7 @@
 
 | Item | Date | Notes |
 |------|------|-------|
+| **Work package markers (P3)** | 2026-01-27 | Added WP-001 (SDK Economy), WP-002 (Monitoring), WP-003 (Upstream). Consolidated items from Future section. |
 | **Disambiguation flags (P3)** | 2026-01-27 | Added `--prompt/-p` and `--file/-f` to iterate command. Clarifies ambiguous input. 5 tests. Total 1467 tests. |
 | **Interactive help (P3)** | 2026-01-27 | Added `--interactive` / `-i` flag for browsable help. Features: list, topic lookup, prefix match, overview. 7 tests. Total 1462 tests. |
 | **REFCAT glob support (P3)** | 2026-01-27 | Added glob expansion for REFCAT directive. `REFCAT @src/**/*.py` now expands to individual files. 9 tests. Total 1455 tests. |
