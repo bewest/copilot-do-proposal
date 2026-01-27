@@ -859,7 +859,9 @@ The SDK requires Protocol Version 2 for all new features. Ensure Copilot CLI is 
 
 ### Next Steps
 
-1. **P1: Infinite Sessions** - Integrate for `cycle` mode (see proposal)
-2. **P1: Metadata APIs** - Enhance `sdqctl status` command
-3. **P2: Session Persistence** - Enable resume workflows
+1. ~~**P1: Infinite Sessions** - Integrate for `cycle` mode (see proposal)~~ ✅ Complete
+2. ~~**P1: Metadata APIs** - Enhance `sdqctl status` command~~ ✅ Complete
+3. ~~**P2: Session Persistence** - Enable resume workflows~~ ✅ Complete
 4. **P2: Error Handling** - Adopt cookbook patterns in adapter
+5. **P3: Workspace Path** - Capture `session.workspace_path` for artifacts
+6. **P3: Custom Session IDs** - Allow `session_id="name"` in `create_session()`

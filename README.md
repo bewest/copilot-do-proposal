@@ -891,11 +891,11 @@ ruff check sdqctl/
 - ✅ **RUN-RETRY Directive** - AI-assisted retry on command failure ([docs](#run-retry-ai-assisted-retry))
 - ✅ **INCLUDE Directive** - Compose workflows from reusable fragments
 - ✅ **REQUIRE Directive** - Pre-flight checks for files and commands
+- ✅ **Infinite Sessions** - Native SDK compaction with `INFINITE-SESSIONS` directive and `--compaction-threshold` options ([proposal](proposals/SDK-INFINITE-SESSIONS.md))
+- ✅ **Session Persistence** - Resume/list/delete sessions with `sdqctl sessions` commands and `SESSION-NAME` directive ([proposal](proposals/SDK-SESSION-PERSISTENCE.md))
 
 ### Waiting on SDK
 
-- 🔜 **Infinite Sessions** - Native SDK compaction (requires SDK v2 protocol)
-- 🔜 **Session Persistence** - Resume/list/delete sessions (requires SDK v2 protocol)
 - 🔜 **SDK ABORT Event Handling** - Code ready to handle abort signals, but SDK does not currently emit them ([details](./COPILOT-SDK-INTEGRATION.md#gap-sdk-abort-event-not-observed))
 
 ### Planned Features
