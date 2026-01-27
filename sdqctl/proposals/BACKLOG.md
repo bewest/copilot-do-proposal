@@ -16,15 +16,14 @@
 
 ---
 
-## Ready Queue (5 Actionable Items)
+## Ready Queue (4 Actionable Items)
 
 | # | Item | Priority | Effort | Notes |
 |---|------|----------|--------|-------|
-| 1 | Define `.sdqctl/directives.yaml` schema | P3 | Low | WP-004 step 1: JSON schema for plugin manifest. All OQs resolved. |
-| 2 | Audit existing STPA artifacts | P3 | Low | WP-005 step 1: Count UCAs, SCs, coverage in ecosystem workspace. All OQs resolved. |
-| 3 | Define custom severity scale with ISO 14971 mapping | P3 | Low | WP-005 step 2: Simple 3-5 level scale with standard mapping. |
-| 4 | Implement directive discovery from manifest | P3 | Medium | WP-004 step 2: Load directives.yaml, register handlers. |
-| 5 | Performance benchmark suite | P3 | Medium | **UNBLOCKED** - OQ-005 resolved. Scope: code + workflow + SDK (comprehensive). |
+| 1 | Audit existing STPA artifacts | P3 | Low | WP-005 step 1: Count UCAs, SCs, coverage in ecosystem workspace. All OQs resolved. |
+| 2 | Define custom severity scale with ISO 14971 mapping | P3 | Low | WP-005 step 2: Simple 3-5 level scale with standard mapping. |
+| 3 | Implement directive discovery from manifest | P3 | Medium | WP-004 step 2: Load directives.yaml, register handlers. |
+| 4 | Performance benchmark suite | P3 | Medium | **UNBLOCKED** - OQ-005 resolved. Scope: code + workflow + SDK (comprehensive). |
 
 ---
 
@@ -106,7 +105,7 @@ Related items for contributing fixes upstream:
 
 Enable ecosystem teams to extend sdqctl with custom directives/commands independently of sdqctl release cycle.
 
-- [ ] Define `.sdqctl/directives.yaml` manifest schema
+- [x] Define `.sdqctl/directives.yaml` manifest schema ✅ 2026-01-27
 - [ ] Implement directive discovery from manifest
 - [ ] Hello world plugin in externals/rag-nightscout-ecosystem-alignment
 - [ ] Security/sandboxing implementation
@@ -145,6 +144,7 @@ Items not yet assigned to work packages:
 
 | Item | Date | Notes |
 |------|------|-------|
+| **Define directives.yaml schema (P3)** | 2026-01-27 | WP-004 step 1: Created docs/directives-schema.json. Defines version, directives map, handlers, args, timeout, requires. |
 | **Add metrics collection (P3)** | 2026-01-27 | WP-001 step 4: Created core/metrics.py, emit_metrics() to session dir. ~80 lines. Tracks tokens, cycles, duration. |
 | **Migrate testing items (P3)** | 2026-01-27 | WP-001 step 3: Moved 17 test-related items to proposals/backlogs/testing.md. |
 | **Define `metrics.json` schema (P3)** | 2026-01-27 | WP-001 step 2: Created docs/metrics-schema.json with work_output, token_efficiency, duration metrics. JSON Schema draft-07. |

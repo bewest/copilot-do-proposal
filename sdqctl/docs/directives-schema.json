@@ -1,0 +1,118 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sdqctl.dev/schemas/directives.json",
+  "title": "Plugin Directives Manifest",
+  "description": "Schema for .sdqctl/directives.yaml plugin manifest",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Schema version for forward compatibility"
+    },
+    "directives": {
+      "type": "object",
+      "description": "Map of directive types to their subcommands",
+      "additionalProperties": {
+        "$ref": "#/definitions/directiveType"
+      }
+    }
+  },
+  "required": ["version", "directives"],
+  "definitions": {
+    "directiveType": {
+      "type": "object",
+      "description": "A directive type (e.g., VERIFY, TRACE) with subcommands",
+      "additionalProperties": {
+        "$ref": "#/definitions/directiveHandler"
+      }
+    },
+    "directiveHandler": {
+      "type": "object",
+      "description": "Handler configuration for a directive subcommand",
+      "properties": {
+        "handler": {
+          "type": "string",
+          "description": "Command to execute (shell command or 'python path/to/script.py')"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description shown in help"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/argSpec"
+          },
+          "description": "Optional argument specifications"
+        },
+        "timeout": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 30,
+          "description": "Execution timeout in seconds"
+        },
+        "requires": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Required capabilities (e.g., 'shell', 'network')"
+        }
+      },
+      "required": ["handler", "description"]
+    },
+    "argSpec": {
+      "type": "object",
+      "description": "Argument specification for handler",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Argument name"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["string", "path", "number", "boolean"],
+          "default": "string",
+          "description": "Argument type for validation"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether argument is required"
+        },
+        "description": {
+          "type": "string",
+          "description": "Argument description for help"
+        }
+      },
+      "required": ["name"]
+    }
+  },
+  "examples": [
+    {
+      "version": 1,
+      "directives": {
+        "VERIFY": {
+          "stpa-hazards": {
+            "handler": "python tools/verify_stpa.py",
+            "description": "Verify STPA hazard traceability"
+          },
+          "ecosystem-gaps": {
+            "handler": "python tools/verify_gaps.py",
+            "description": "Verify gap coverage across projects"
+          }
+        },
+        "TRACE": {
+          "uca": {
+            "handler": "python tools/trace_uca.py",
+            "description": "Trace UCA to requirements and tests",
+            "args": [
+              {"name": "uca-id", "type": "string", "required": true}
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
