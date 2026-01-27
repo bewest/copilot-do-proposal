@@ -1,6 +1,6 @@
 # sdqctl Proposal Backlog
 
-> **Last Updated**: 2026-01-26  
+> **Last Updated**: 2026-01-27  
 > **Purpose**: Track active work items and proposals only  
 > **Archive**: Completed work → [`archive/2026-01-backlog-migration.md`](../archive/2026-01-backlog-migration.md)
 
@@ -10,9 +10,9 @@
 
 | # | Item | Priority | Effort | Notes |
 |---|------|----------|--------|-------|
-| 1 | Add integration tests | P2 | Medium | Ongoing: Total 1300 tests. Focus: adapter integration, CLI integration, end-to-end workflows. |
-| 2 | Add session-scoped fixtures | P3 | Low | Improve test performance with shared fixtures. |
-| 3 | Add error path tests | P3 | Low | Test malformed .conv input handling. |
+| 1 | Add integration tests | P2 | Medium | Ongoing: Total 1329 tests. Focus: CLI integration, end-to-end workflows. |
+| 2 | Add parametrized test variants | P3 | Low | Improve variant coverage with @pytest.mark.parametrize. |
+| 3 | Extend adapter integration tests | P3 | Low | Add tests for copilot adapter error paths (stubs exist). |
 
 ---
 
@@ -63,6 +63,8 @@
 
 | Item | Date | Notes |
 |------|------|-------|
+| **Add error path tests (P3)** | 2026-01-27 | Created test_conversation_errors.py with 29 tests for malformed .conv input, invalid directives, missing files, block errors, encoding, edge cases. Total 1329 tests. |
+| **Add session-scoped fixtures (P3)** | 2026-01-27 | Added session_workspace, shared_mock_adapter, shared_adapter_config to tests/conftest.py for reduced test overhead. |
 | **Document test markers + refcat patterns (P3)** | 2026-01-26 | Added test marker examples and cross-repo refcat patterns to README.md. |
 | **Add @pytest.mark.slow (P3)** | 2026-01-26 | Marked 1 slow test (timeout test). Enables `pytest -m "not slow"` for faster runs (~1s savings). |
 | **Expand test markers (P3)** | 2026-01-26 | Added tests/integration/conftest.py with auto-marker. 15 integration tests now selectable with `-m integration`. |
@@ -366,10 +368,10 @@ Documented in [`docs/SECURITY-MODEL.md`](../docs/SECURITY-MODEL.md).
 
 | Gap | Impact | Status |
 |-----|--------|--------|
-| No error path tests | Unknown failure behavior | 🔲 Open |
+| No error path tests | Unknown failure behavior | ✅ Complete (29 tests in test_conversation_errors.py) |
 | Missing parametrization | Incomplete variant coverage | 🔲 Open |
 | No test markers | Can't run selective tests | ✅ Complete (5 files, 219 tests) |
-| Fixtures not scoped | Slow test runs | 🔲 Open |
+| Fixtures not scoped | Slow test runs | ✅ Complete (session-scoped fixtures added) |
 | No `test_exceptions.py` | Exit codes untested | ✅ Complete |
 | No `test_renderer_core.py` | Renderer logic untested | ✅ Complete |
 | No `test_command_utils.py` | `run_async()` untested | ✅ Complete |

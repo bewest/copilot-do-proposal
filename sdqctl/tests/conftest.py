@@ -7,6 +7,55 @@ from pathlib import Path
 import tempfile
 
 
+# =============================================================================
+# Session-Scoped Fixtures (shared across entire test session)
+# =============================================================================
+
+
+@pytest.fixture(scope="session")
+def session_workspace(tmp_path_factory):
+    """Session-scoped workspace for tests that don't modify files.
+    
+    Persists across all tests in the session, reducing filesystem overhead.
+    Use for read-only tests or tests that create isolated subdirectories.
+    """
+    workspace = tmp_path_factory.mktemp("session_workspace")
+    
+    # Create common test file structure
+    (workspace / "lib").mkdir()
+    (workspace / "lib" / "auth.js").write_text("// auth code\nfunction login() {}")
+    (workspace / "lib" / "utils.js").write_text("// utils code\nfunction format() {}")
+    (workspace / "lib" / "secret.js").write_text("// secret - should be denied")
+    (workspace / "tests").mkdir()
+    (workspace / "tests" / "auth.test.js").write_text("// auth tests")
+    (workspace / "src").mkdir()
+    (workspace / "src" / "main.py").write_text("# main app")
+    
+    return workspace
+
+
+@pytest.fixture(scope="session")
+def shared_mock_adapter():
+    """Session-scoped mock adapter for tests that don't need isolation.
+    
+    Avoids repeated adapter instantiation overhead.
+    """
+    from sdqctl.adapters.mock import MockAdapter
+    return MockAdapter()
+
+
+@pytest.fixture(scope="session")
+def shared_adapter_config():
+    """Session-scoped adapter config for common test scenarios."""
+    from sdqctl.adapters.base import AdapterConfig
+    return AdapterConfig(model="test-model")
+
+
+# =============================================================================
+# Function-Scoped Fixtures (per-test isolation)
+# =============================================================================
+
+
 @pytest.fixture
 def temp_workspace(tmp_path):
     """Create a temporary workspace with test files."""
