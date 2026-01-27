@@ -11,8 +11,8 @@
 | # | Item | Priority | Effort | Notes |
 |---|------|----------|--------|-------|
 | 1 | Improve test documentation | P3 | Low | Document test markers, fixtures, parametrization patterns. |
-| 2 | Add sessions command integration tests | P3 | Low | Test sessions list, delete, cleanup. |
-| 3 | Add artifact command integration tests | P3 | Low | Test artifact discovery and reporting. |
+| 2 | Add verifier command integration tests | P3 | Low | Test verify command variants. |
+| 3 | Add consult command integration tests | P3 | Low | Test consult workflow execution. |
 
 ---
 
@@ -83,6 +83,7 @@
 | **Parametrized tests + adapter integration (P3)** | 2026-01-27 | Directive variants (18 cases), adapter error paths (15 tests). Total 1349 tests. |
 | **CLI + workflow integration tests (P2)** | 2026-01-27 | CLI integration (17 tests), end-to-end workflow (5 tests). Total 1386 tests. |
 | **Flow + Apply integration tests (P3)** | 2026-01-27 | Flow command (6 tests), Apply command (6 tests). Total 1398 tests. |
+| **Sessions + Artifact integration tests (P3)** | 2026-01-27 | Sessions command (7 tests), Artifact command (7 tests). Total 1412 tests. |
 | **`run` command deprecation (P2)** | 2026-01-26 | Complete: 972 → 125 lines. Thin wrapper forwards to `iterate -n 1`. All 1288 tests pass. |
 | **CLI modularization (P2)** | 2026-01-26 | Complete: 966 → 413 lines (-553, 57%). Extracted init.py (276 lines) and resume.py (292 lines). |
 | **Copilot adapter modularization (P2)** | 2026-01-26 | Complete: 1143 → 670 lines (-473, 41%). Extracted CopilotEventHandler class to events.py. +32 tests. Total 1288 tests. |

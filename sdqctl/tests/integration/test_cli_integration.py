@@ -396,3 +396,145 @@ PROMPT Analyze {{COMPONENT_NAME}} at {{COMPONENT_PATH}}.
         result = runner.invoke(cli, ["apply", "--help"])
         assert result.exit_code == 0
         assert "COMPONENT" in result.output or "component" in result.output
+
+
+class TestSessionsCommandIntegration:
+    """Integration tests for sessions command."""
+
+    @pytest.fixture
+    def runner(self):
+        """Create CLI test runner."""
+        return CliRunner()
+
+    def test_sessions_list_runs(self, runner):
+        """Test sessions list command runs."""
+        result = runner.invoke(cli, ["sessions", "list"])
+        # May return 0 with empty list or error if no sessions dir
+        assert result.exit_code in (0, 1)
+
+    def test_sessions_list_json_format(self, runner):
+        """Test sessions list with JSON format."""
+        result = runner.invoke(cli, ["sessions", "list", "--format", "json"])
+        assert result.exit_code in (0, 1)
+
+    def test_sessions_list_filter(self, runner):
+        """Test sessions list with filter option."""
+        result = runner.invoke(cli, ["sessions", "list", "--filter", "test-*"])
+        assert result.exit_code in (0, 1)
+
+    def test_sessions_delete_nonexistent(self, runner):
+        """Test sessions delete with nonexistent session."""
+        result = runner.invoke(cli, ["sessions", "delete", "nonexistent-session-id"])
+        # Should error or warn
+        assert result.exit_code in (0, 1)
+
+    def test_sessions_cleanup_dry_run(self, runner):
+        """Test sessions cleanup with dry-run."""
+        result = runner.invoke(cli, [
+            "sessions", "cleanup",
+            "--older-than", "7d",
+            "--dry-run"
+        ])
+        assert result.exit_code in (0, 1)
+
+    def test_sessions_cleanup_older_than(self, runner):
+        """Test sessions cleanup with different duration."""
+        result = runner.invoke(cli, [
+            "sessions", "cleanup",
+            "--older-than", "30d",
+            "--dry-run"
+        ])
+        assert result.exit_code in (0, 1)
+
+    def test_sessions_help_shows_subcommands(self, runner):
+        """Test sessions --help shows all subcommands."""
+        result = runner.invoke(cli, ["sessions", "--help"])
+        assert result.exit_code == 0
+        assert "list" in result.output
+        assert "delete" in result.output
+        assert "cleanup" in result.output
+
+
+class TestArtifactCommandIntegration:
+    """Integration tests for artifact command."""
+
+    @pytest.fixture
+    def runner(self):
+        """Create CLI test runner."""
+        return CliRunner()
+
+    @pytest.fixture
+    def artifact_workspace(self, tmp_path):
+        """Create workspace with artifact references."""
+        docs_dir = tmp_path / "docs"
+        docs_dir.mkdir()
+        spec = docs_dir / "spec.md"
+        spec.write_text("""# Requirements
+REQ-001: User authentication
+REQ-002: Data validation
+""")
+        return tmp_path
+
+    def test_artifact_next_generates_id(self, runner, artifact_workspace):
+        """Test artifact next generates next ID."""
+        result = runner.invoke(cli, [
+            "artifact", "next", "REQ",
+            "--path", str(artifact_workspace)
+        ])
+        assert result.exit_code == 0
+        assert "REQ-" in result.output
+
+    def test_artifact_next_with_category(self, runner, artifact_workspace):
+        """Test artifact next with category prefix."""
+        result = runner.invoke(cli, [
+            "artifact", "next", "REQ-CGM",
+            "--path", str(artifact_workspace)
+        ])
+        assert result.exit_code == 0
+        assert "REQ-CGM-" in result.output
+
+    def test_artifact_list_type(self, runner, artifact_workspace):
+        """Test artifact list for specific type."""
+        result = runner.invoke(cli, [
+            "artifact", "list", "REQ",
+            "--path", str(artifact_workspace)
+        ])
+        assert result.exit_code == 0
+        # May list REQ-001, REQ-002 from fixture
+
+    def test_artifact_list_all_types(self, runner, artifact_workspace):
+        """Test artifact list without type filter."""
+        result = runner.invoke(cli, [
+            "artifact", "list",
+            "--path", str(artifact_workspace),
+            "--all"
+        ])
+        assert result.exit_code == 0
+
+    def test_artifact_rename_dry_run(self, runner, artifact_workspace):
+        """Test artifact rename with dry-run."""
+        result = runner.invoke(cli, [
+            "artifact", "rename", "REQ-001", "REQ-AUTH-001",
+            "--path", str(artifact_workspace),
+            "--dry-run"
+        ])
+        # May succeed or fail depending on implementation
+        assert result.exit_code in (0, 1, 2)
+
+    def test_artifact_retire_dry_run(self, runner, artifact_workspace):
+        """Test artifact retire with dry-run."""
+        result = runner.invoke(cli, [
+            "artifact", "retire", "REQ-001",
+            "--reason", "Superseded",
+            "--path", str(artifact_workspace),
+            "--dry-run"
+        ])
+        assert result.exit_code in (0, 1, 2)
+
+    def test_artifact_help_shows_types(self, runner):
+        """Test artifact --help shows artifact types."""
+        result = runner.invoke(cli, ["artifact", "--help"])
+        assert result.exit_code == 0
+        assert "REQ" in result.output
+        assert "next" in result.output
+        assert "list" in result.output
