@@ -16,11 +16,11 @@
 
 ---
 
-## Ready Queue (1 Actionable Item)
+## Ready Queue (0 Actionable Items)
 
 | # | Item | Priority | Effort | Notes |
 |---|------|----------|--------|-------|
-| 1 | Performance benchmark suite | P3 | Medium | **UNBLOCKED** - OQ-005 resolved. Scope: code + workflow + SDK (comprehensive). |
+| *(No items in ready queue)* | | | | |
 
 ---
 
@@ -143,6 +143,7 @@ Items not yet assigned to work packages:
 
 | Item | Date | Notes |
 |------|------|-------|
+| **Performance benchmark suite (P3)** | 2026-01-27 | Created benchmarks/: bench_parsing.py, bench_rendering.py, bench_workflow.py, bench_sdk.py, run.py. Covers code perf, workflow timing, SDK latency. |
 | **Directive discovery from manifest (P3)** | 2026-01-27 | WP-004 step 2: Created sdqctl/plugins.py. Loads .sdqctl/directives.yaml, registers PluginVerifier handlers. 21 tests. Total 1497 tests. |
 | **Define severity scale (P3)** | 2026-01-27 | WP-005 step 2: Created docs/stpa-severity-scale.md. 4-level scale (S1-S4) with ISO 14971 mapping. 6 UCAs classified. |
 | **Audit STPA artifacts (P3)** | 2026-01-27 | WP-005 step 1: Created reports/stpa-audit-2026-01-27.md. Found 6 UCAs, 2 SCs, 122 GAPs. SC coverage 17%, HAZ missing. |

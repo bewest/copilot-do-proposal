@@ -1,7 +1,7 @@
 # sdqctl Architecture
 
 > **Purpose**: Technical reference for contributors. Covers module structure, data flow, and extension points.  
-> **Last Updated**: 2026-01-26
+> **Last Updated**: 2026-01-27
 
 ---
 
