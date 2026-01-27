@@ -16,18 +16,17 @@
 
 ---
 
-## Ready Queue (8 Actionable Items)
+## Ready Queue (7 Actionable Items)
 
 | # | Item | Priority | Effort | Notes |
 |---|------|----------|--------|-------|
-| 1 | Define `metrics.json` schema | P3 | Low | WP-001 step 2: JSON schema for iteration metrics in docs/. |
-| 2 | Migrate testing items to `backlogs/testing.md` | P3 | Low | WP-001 step 3: Move ~17 test-related completed items. |
-| 3 | Add metrics collection to iterate.py | P3 | Low | WP-001 step 4: ~20 lines, emit to session dir. |
-| 4 | Define `.sdqctl/directives.yaml` schema | P3 | Low | WP-004 step 1: JSON schema for plugin manifest. All OQs resolved. |
-| 5 | Audit existing STPA artifacts | P3 | Low | WP-005 step 1: Count UCAs, SCs, coverage in ecosystem workspace. All OQs resolved. |
-| 6 | Define custom severity scale with ISO 14971 mapping | P3 | Low | WP-005 step 2: Simple 3-5 level scale with standard mapping. |
-| 7 | Implement directive discovery from manifest | P3 | Medium | WP-004 step 2: Load directives.yaml, register handlers. |
-| 8 | Performance benchmark suite | P3 | Medium | **UNBLOCKED** - OQ-005 resolved. Scope: code + workflow + SDK (comprehensive). |
+| 1 | Migrate testing items to `backlogs/testing.md` | P3 | Low | WP-001 step 3: Move ~17 test-related completed items. |
+| 2 | Add metrics collection to iterate.py | P3 | Low | WP-001 step 4: ~20 lines, emit to session dir. |
+| 3 | Define `.sdqctl/directives.yaml` schema | P3 | Low | WP-004 step 1: JSON schema for plugin manifest. All OQs resolved. |
+| 4 | Audit existing STPA artifacts | P3 | Low | WP-005 step 1: Count UCAs, SCs, coverage in ecosystem workspace. All OQs resolved. |
+| 5 | Define custom severity scale with ISO 14971 mapping | P3 | Low | WP-005 step 2: Simple 3-5 level scale with standard mapping. |
+| 6 | Implement directive discovery from manifest | P3 | Medium | WP-004 step 2: Load directives.yaml, register handlers. |
+| 7 | Performance benchmark suite | P3 | Medium | **UNBLOCKED** - OQ-005 resolved. Scope: code + workflow + SDK (comprehensive). |
 
 ---
 
@@ -148,6 +147,7 @@ Items not yet assigned to work packages:
 
 | Item | Date | Notes |
 |------|------|-------|
+| **Define `metrics.json` schema (P3)** | 2026-01-27 | WP-001 step 2: Created docs/metrics-schema.json with work_output, token_efficiency, duration metrics. JSON Schema draft-07. |
 | **Create `proposals/backlogs/` directory (P3)** | 2026-01-27 | WP-001 step 1: Created 5 domain backlog files (testing, cli, sdk-integration, architecture, directives) with headers and cross-references. |
 | **Fix 5 lint issues (P3)** | 2026-01-27 | Fixed 2 E501 (line-too-long), 2 F401 (unused-import), 1 I001 (import-sort) in iterate.py, workspace.py, verify.py, artifact_ids.py, run.py. All 1476 tests pass. |
 | **Agent output on stdout (P3)** | 2026-01-27 | Added `agent_response()` function. Agent responses now print to stdout by default. Respects `--quiet`. 4 tests. Total 1476 tests. |
