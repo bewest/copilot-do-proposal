@@ -60,6 +60,16 @@
 | Iteration metrics tracking | [SDK-ECONOMY.md](SDK-ECONOMY.md) | Items/cycle, lines/cycle metrics |
 | backlog-processor-v3.conv | [SDK-ECONOMY.md](SDK-ECONOMY.md) | Full economy optimization, after v2 validation |
 
+### Agentic Automation (R&D)
+
+| Item | Source | Notes |
+|------|--------|-------|
+| `sdqctl agent analyze <topic>` | [AGENTIC-ANALYSIS.md](AGENTIC-ANALYSIS.md) | Autonomous multi-cycle deep-dive with 5-facet updates |
+| `sdqctl watch` | [CONTINUOUS-MONITORING.md](CONTINUOUS-MONITORING.md) | Monitor external repos for alignment-relevant changes |
+| `sdqctl drift` | [CONTINUOUS-MONITORING.md](CONTINUOUS-MONITORING.md) | One-shot drift detection since last analysis |
+| `sdqctl delegate <GAP-ID>` | [UPSTREAM-CONTRIBUTIONS.md](UPSTREAM-CONTRIBUTIONS.md) | Draft upstream fixes for identified gaps |
+| `sdqctl upstream status` | [UPSTREAM-CONTRIBUTIONS.md](UPSTREAM-CONTRIBUTIONS.md) | Track contribution status across repos |
+
 ---
 
 ## Recently Completed
