@@ -13,16 +13,15 @@
 | SDK | [backlogs/sdk-integration.md](backlogs/sdk-integration.md) | Copilot SDK, adapters, sessions |
 | Architecture | [backlogs/architecture.md](backlogs/architecture.md) | Module structure, refactoring |
 | Directives | [backlogs/directives.md](backlogs/directives.md) | Directive system, plugins |
-| Live updated backlog requests from human mid run | [backlogs/directives.md](backlogs/LIVE-BACKLOG.md) | Directive system, plugins |
+| Live updated backlog requests from human mid run | [backlogs/directives.md](LIVE-BACKLOG.md) | Directive system, plugins |
 
 ---
 
-## Ready Queue (6 Actionable Items)
+## Ready Queue (0 Actionable Items)
 
-**Groomed from WP-006 and WP-002** - 2026-01-27  
-**Priority**: Complete WP-006 Phase 2 (LSP) before WP-002 (Monitoring)  
-**WP-006 Phase 1**: ✅ Complete (5/5 items)  
-**WP-006 Phase 2**: ✅ Complete (3/3 items done)
+**Both work packages complete** - 2026-01-27  
+**WP-006 LSP Integration**: ✅ Complete (8/8 items)  
+**WP-002 Continuous Monitoring**: ✅ Complete (6/6 items)
 
 ### WP-006: LSP Integration (Priority 1)
 
@@ -37,16 +36,16 @@
 | 7 | Add JSON output mode for LSP type definitions | P3 | Low | Phase 2 | ✅ Done |
 | 8 | Add `LSP type` directive for .conv workflows | P3 | Low | Phase 2 | ✅ Done |
 
-### WP-002: Continuous Monitoring (Priority 2 - after WP-006 Phase 2)
+### WP-002: Continuous Monitoring ✅ Complete (6/6)
 
-| # | Item | Priority | Effort | Phase |
-|---|------|----------|--------|-------|
-| 9 | Create `sdqctl/monitoring/__init__.py` module structure | P3 | Low | Phase 1 |
-| 10 | Define `ChangeDetector` interface for git diff analysis | P3 | Low | Phase 1 |
-| 11 | Add `drift` subcommand to CLI with placeholder | P3 | Low | Phase 1 |
-| 12 | Implement git log parsing for commit range analysis | P3 | Low | Phase 1 |
-| 13 | Add `--since` date filter for drift detection | P3 | Low | Phase 1 |
-| 14 | Implement `sdqctl drift --report` markdown output | P3 | Low | Phase 2 |
+| # | Item | Priority | Effort | Phase | Status |
+|---|------|----------|--------|-------|--------|
+| 9 | Create `sdqctl/monitoring/__init__.py` module structure | P3 | Low | Phase 1 | ✅ Done |
+| 10 | Define `ChangeDetector` interface for git diff analysis | P3 | Low | Phase 1 | ✅ Done |
+| 11 | Add `drift` subcommand to CLI with placeholder | P3 | Low | Phase 1 | ✅ Done |
+| 12 | Implement git log parsing for commit range analysis | P3 | Low | Phase 1 | ✅ Done |
+| 13 | Add `--since` date filter for drift detection | P3 | Low | Phase 1 | ✅ Done |
+| 14 | Implement `sdqctl drift --report` markdown output | P3 | Low | Phase 1 | ✅ Done |
 
 ---
 
@@ -54,10 +53,11 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
+| WP-002 #9-14: Drift detection | ✅ Complete | monitoring module, drift CLI, 19 tests |
 | WP-006 #6: `lsp type` command | ✅ Complete | Pattern-based TypeScript type lookup |
 | WP-006 #7: JSON output mode | ✅ Complete | `--json` flag for structured output |
-| LSP test coverage | ✅ Added | 10 new tests (36 total) |
-| docs/COMMANDS.md | ✅ Updated | LSP section with type lookup examples |
+| WP-006 #8: LSP directive | ✅ Complete | .conv workflow integration |
+| docs/COMMANDS.md | ✅ Updated | LSP + drift sections |
 
 ## Recently Groomed (2026-01-27)
 

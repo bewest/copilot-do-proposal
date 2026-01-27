@@ -22,6 +22,7 @@ from .commands.apply import apply
 from .commands.artifact import artifact
 from .commands.flow import flow
 from .commands.help import help_cmd
+from .commands.drift import drift
 from .commands.init import init
 from .commands.iterate import iterate
 from .commands.lsp import lsp
@@ -105,6 +106,7 @@ cli.add_command(status)
 cli.add_command(render)
 cli.add_command(verify)
 cli.add_command(lsp)
+cli.add_command(drift)
 cli.add_command(refcat)
 cli.add_command(artifact)
 cli.add_command(sessions)

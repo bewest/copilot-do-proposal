@@ -15,6 +15,7 @@ Complete reference for all sdqctl CLI commands.
 | `render` | Preview prompts (no AI) | `sdqctl render run workflow.conv` |
 | `verify` | Static verification | `sdqctl verify refs` |
 | `lsp` | Language server queries | `sdqctl lsp type Treatment` |
+| `drift` | Detect alignment drift | `sdqctl drift detect --since 2026-01-01` |
 | `refcat` | Extract file content | `sdqctl refcat @file.py#L10-L50` |
 | `sessions` | Session management | `sdqctl sessions list` |
 | `resume` | Resume paused workflow | `sdqctl resume checkpoint.json` |
@@ -371,6 +372,60 @@ sdqctl lsp type Bolus -l typescript         # Explicit language
 - Extracts full signature with fields and methods
 - Includes JSDoc comments when present
 - Supports `--json` for structured output
+
+---
+
+## drift
+
+Monitor external repositories for alignment-relevant changes.
+
+```bash
+sdqctl drift SUBCOMMAND [OPTIONS]
+```
+
+**Subcommands:**
+| Subcommand | Purpose |
+|------------|---------|
+| `status` | Show monitored repositories |
+| `detect` | Detect changes with impact classification |
+
+**Impact Levels:**
+| Level | Description | Examples |
+|-------|-------------|----------|
+| CRITICAL | Model/type deletions | `D types/Treatment.ts` |
+| HIGH | Treatment/bolus changes | `M lib/bolus/*.swift` |
+| MEDIUM | Glucose/CGM changes | `M glucose/reading.py` |
+| LOW | Other changes | `M README.md` |
+
+**Options:**
+| Option | Purpose |
+|--------|---------|
+| `-s, --since DATE` | Only changes after date (YYYY-MM-DD) |
+| `-p, --paths PATTERN` | Filter by path patterns (multiple allowed) |
+| `-r, --repo NAME` | Specific repositories (multiple allowed) |
+| `--report PATH` | Write markdown report to file |
+| `--json` | JSON output |
+
+**Examples:**
+```bash
+# Show monitored repositories
+sdqctl drift status
+
+# Detect recent changes
+sdqctl drift detect --since 2026-01-01
+
+# Filter by path patterns
+sdqctl drift detect --paths "*/treatments/*" --paths "*/models/*"
+
+# Check specific repos
+sdqctl drift detect --repo Loop --repo AAPS
+
+# Generate markdown report
+sdqctl drift detect --since 2026-01-01 --report docs/drift-report.md
+
+# JSON output for automation
+sdqctl drift detect --since 2026-01-01 --json
+```
 
 ---
 
