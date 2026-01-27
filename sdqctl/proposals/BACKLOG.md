@@ -16,10 +16,11 @@
 
 ---
 
-## Ready Queue (14 Actionable Items)
+## Ready Queue (9 Actionable Items)
 
 **Groomed from WP-006 and WP-002** - 2026-01-27  
-**Priority**: Complete WP-006 (LSP) before WP-002 (Monitoring)
+**Priority**: Complete WP-006 Phase 2 (LSP) before WP-002 (Monitoring)  
+**WP-006 Phase 1**: ✅ Complete (5/5 items)
 
 ### WP-006: LSP Integration (Priority 1)
 
@@ -28,7 +29,7 @@
 | 1 | Create `sdqctl/lsp/__init__.py` module structure | P3 | Low | Phase 1 | ✅ Done |
 | 2 | Define `LSPClient` base interface | P3 | Low | Phase 1 | ✅ Done |
 | 3 | Add `lsp` subcommand to CLI with placeholder | P3 | Low | Phase 1 | ✅ Done |
-| 4 | Implement TypeScript server detection | P3 | Low | Phase 1 | |
+| 4 | Implement TypeScript server detection | P3 | Low | Phase 1 | ✅ Done |
 | 5 | Add `sdqctl lsp status` command | P3 | Low | Phase 1 | ✅ Done |
 | 6 | Implement `sdqctl lsp type <name>` for TypeScript | P3 | Low | Phase 2 | |
 | 7 | Add JSON output mode for LSP type definitions | P3 | Low | Phase 2 | |

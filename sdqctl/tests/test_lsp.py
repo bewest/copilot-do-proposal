@@ -135,9 +135,17 @@ class TestClientRegistry:
     def test_get_client_unknown_language(self, tmp_path):
         assert get_client("unknown", tmp_path) is None
 
-    def test_get_client_no_implementation(self, tmp_path):
-        # No clients registered yet
-        assert get_client("typescript", tmp_path) is None
+    def test_get_client_typescript_returns_client(self, tmp_path):
+        # TypeScriptClient is registered, but tsserver not available
+        # so get_client returns None (initialization fails)
+        import shutil
+        original_which = shutil.which
+        shutil.which = lambda x: None
+        try:
+            result = get_client("typescript", tmp_path)
+            assert result is None  # No tsserver, so init fails
+        finally:
+            shutil.which = original_which
 
     def test_list_available_servers(self):
         result = list_available_servers()
@@ -149,16 +157,148 @@ class TestRegisterClient:
     """Test client registration decorator."""
 
     def test_register_decorator(self):
-        # Create a mock client class
-        @register_client(Language.TYPESCRIPT)
-        class MockTSClient:
-            language = Language.TYPESCRIPT
-            is_available = False
-
-            def initialize(self, project_root):
-                return False
-
-        # Verify registration worked
-        from sdqctl.lsp import _CLIENTS
+        # TypeScriptClient is already registered
+        from sdqctl.lsp import _CLIENTS, TypeScriptClient
 
         assert Language.TYPESCRIPT in _CLIENTS
+        assert _CLIENTS[Language.TYPESCRIPT] == TypeScriptClient
+
+
+class TestDetectTsserver:
+    """Test TypeScript server detection."""
+
+    def test_detect_local_tsserver(self, tmp_path):
+        """Detect tsserver in local node_modules."""
+        from sdqctl.lsp import detect_tsserver
+
+        # Create fake local tsserver
+        bin_dir = tmp_path / "node_modules" / ".bin"
+        bin_dir.mkdir(parents=True)
+        tsserver = bin_dir / "tsserver"
+        tsserver.write_text("#!/bin/sh\necho tsserver")
+
+        result = detect_tsserver(tmp_path)
+        assert result == tsserver
+
+    def test_detect_no_tsserver(self, tmp_path, monkeypatch):
+        """Return None when tsserver not found."""
+        from sdqctl.lsp import detect_tsserver
+
+        # Patch shutil.which to return None
+        monkeypatch.setattr("shutil.which", lambda x: None)
+
+        result = detect_tsserver(tmp_path)
+        assert result is None
+
+    def test_detect_global_tsserver(self, tmp_path, monkeypatch):
+        """Detect tsserver in global PATH."""
+        from sdqctl.lsp import detect_tsserver
+
+        # Patch shutil.which to return a fake path
+        monkeypatch.setattr("shutil.which", lambda x: "/usr/local/bin/tsserver" if x == "tsserver" else None)
+
+        result = detect_tsserver(tmp_path)
+        assert result == Path("/usr/local/bin/tsserver")
+
+
+class TestTypeScriptClient:
+    """Test TypeScript client implementation."""
+
+    def test_client_is_registered(self):
+        """TypeScriptClient should be registered for TYPESCRIPT."""
+        from sdqctl.lsp import _CLIENTS, TypeScriptClient
+
+        assert Language.TYPESCRIPT in _CLIENTS
+        assert _CLIENTS[Language.TYPESCRIPT] == TypeScriptClient
+
+    def test_is_available_when_tsserver_exists(self, tmp_path):
+        """is_available returns True when tsserver found."""
+        from sdqctl.lsp import TypeScriptClient
+
+        # Create fake local tsserver
+        bin_dir = tmp_path / "node_modules" / ".bin"
+        bin_dir.mkdir(parents=True)
+        (bin_dir / "tsserver").write_text("#!/bin/sh")
+
+        client = TypeScriptClient()
+        client._project_root = tmp_path
+        assert client.is_available is True
+
+    def test_is_available_when_missing(self, tmp_path, monkeypatch):
+        """is_available returns False when tsserver not found."""
+        from sdqctl.lsp import TypeScriptClient
+
+        monkeypatch.setattr("shutil.which", lambda x: None)
+
+        client = TypeScriptClient()
+        client._project_root = tmp_path
+        assert client.is_available is False
+
+    def test_initialize_success(self, tmp_path):
+        """initialize returns True when tsserver available."""
+        from sdqctl.lsp import TypeScriptClient
+
+        # Create fake local tsserver
+        bin_dir = tmp_path / "node_modules" / ".bin"
+        bin_dir.mkdir(parents=True)
+        (bin_dir / "tsserver").write_text("#!/bin/sh")
+
+        client = TypeScriptClient()
+        assert client.initialize(tmp_path) is True
+        assert client._initialized is True
+
+    def test_initialize_failure(self, tmp_path, monkeypatch):
+        """initialize returns False when tsserver unavailable."""
+        from sdqctl.lsp import TypeScriptClient
+
+        monkeypatch.setattr("shutil.which", lambda x: None)
+
+        client = TypeScriptClient()
+        assert client.initialize(tmp_path) is False
+        assert client._initialized is False
+
+    def test_get_type_returns_not_implemented(self, tmp_path):
+        """get_type returns LSPError for Phase 2."""
+        from sdqctl.lsp import TypeScriptClient
+
+        # Create fake local tsserver
+        bin_dir = tmp_path / "node_modules" / ".bin"
+        bin_dir.mkdir(parents=True)
+        (bin_dir / "tsserver").write_text("#!/bin/sh")
+
+        client = TypeScriptClient()
+        client.initialize(tmp_path)
+        result = client.get_type("Treatment")
+
+        assert isinstance(result, LSPError)
+        assert result.code == "NOT_IMPLEMENTED"
+
+    def test_version_from_package_json(self, tmp_path):
+        """version reads from typescript package.json."""
+        from sdqctl.lsp import TypeScriptClient
+        import json
+
+        # Create fake local tsserver
+        bin_dir = tmp_path / "node_modules" / ".bin"
+        bin_dir.mkdir(parents=True)
+        (bin_dir / "tsserver").write_text("#!/bin/sh")
+
+        # Create fake package.json
+        ts_dir = tmp_path / "node_modules" / "typescript"
+        ts_dir.mkdir(parents=True)
+        (ts_dir / "package.json").write_text(json.dumps({"version": "5.3.2"}))
+
+        client = TypeScriptClient()
+        client.initialize(tmp_path)
+        assert client.version == "5.3.2"
+
+    def test_get_client_returns_typescript_client(self, tmp_path):
+        """get_client returns initialized TypeScriptClient."""
+        # Create fake local tsserver
+        bin_dir = tmp_path / "node_modules" / ".bin"
+        bin_dir.mkdir(parents=True)
+        (bin_dir / "tsserver").write_text("#!/bin/sh")
+
+        client = get_client("typescript", tmp_path)
+        assert client is not None
+        assert client._initialized is True

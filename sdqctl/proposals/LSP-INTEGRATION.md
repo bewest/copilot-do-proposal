@@ -154,14 +154,13 @@ Option C: **Hybrid** (recommended)
 - [x] Define LSP client interface in `sdqctl/lsp/` ✅ 2026-01-27
 - [x] Add `lsp` CLI subcommand with status/detect ✅ 2026-01-27
 - [x] Language detection (TypeScript, Swift, Kotlin, Python) ✅ 2026-01-27
-- [ ] Implement basic `sdqctl lsp type <name>` for single repo
-- [ ] Support TypeScript (most common, good tooling)
-- [ ] Add `LSP type` directive (basic form)
+- [x] TypeScript server detection (tsserver in PATH or node_modules) ✅ 2026-01-27
 
 **Deliverables**:
 - `sdqctl/lsp/__init__.py` - LSPClient protocol, TypeDefinition, detect_language() ✅
+- `sdqctl/lsp/__init__.py` - TypeScriptClient, detect_tsserver() ✅
 - `sdqctl/commands/lsp.py` - CLI with status, detect, type, symbol ✅
-- `tests/test_lsp.py` - 19 tests ✅
+- `tests/test_lsp.py` - 30 tests ✅
 
 ### Phase 2: TypeScript Type Extraction (1-2 iterations)
 

@@ -234,6 +234,119 @@ def list_available_servers() -> dict[Language, bool]:
     return result
 
 
+def detect_tsserver(project_root: Path | None = None) -> Path | None:
+    """Detect TypeScript server (tsserver) location.
+
+    Checks in order:
+    1. Local node_modules/.bin/tsserver (if project_root provided)
+    2. Global tsserver in PATH
+
+    Args:
+        project_root: Optional project directory to check for local install
+
+    Returns:
+        Path to tsserver executable, or None if not found
+    """
+    import shutil
+
+    # Check local node_modules first
+    if project_root:
+        local_tsserver = project_root / "node_modules" / ".bin" / "tsserver"
+        if local_tsserver.exists():
+            return local_tsserver
+
+    # Check global PATH
+    global_tsserver = shutil.which("tsserver")
+    if global_tsserver:
+        return Path(global_tsserver)
+
+    return None
+
+
+@register_client(Language.TYPESCRIPT)
+class TypeScriptClient:
+    """TypeScript language server client using tsserver."""
+
+    def __init__(self):
+        self._tsserver_path: Path | None = None
+        self._project_root: Path | None = None
+        self._initialized = False
+
+    @property
+    def is_available(self) -> bool:
+        """Check if tsserver is available."""
+        return detect_tsserver(self._project_root) is not None
+
+    @property
+    def server_path(self) -> Path | None:
+        """Get the detected tsserver path."""
+        if self._tsserver_path is None:
+            self._tsserver_path = detect_tsserver(self._project_root)
+        return self._tsserver_path
+
+    @property
+    def version(self) -> str | None:
+        """Get TypeScript version."""
+        if not self.server_path:
+            return None
+        # tsserver doesn't have --version, check typescript package
+        if self._project_root:
+            pkg_json = self._project_root / "node_modules" / "typescript" / "package.json"
+            if pkg_json.exists():
+                import json
+                try:
+                    data = json.loads(pkg_json.read_text())
+                    return data.get("version")
+                except (json.JSONDecodeError, OSError):
+                    pass
+        return "unknown"
+
+    def initialize(self, project_root: Path) -> bool:
+        """Initialize client for a project.
+
+        Args:
+            project_root: Root directory of the TypeScript project
+
+        Returns:
+            True if initialization successful
+        """
+        self._project_root = project_root
+        self._tsserver_path = detect_tsserver(project_root)
+        self._initialized = self._tsserver_path is not None
+        return self._initialized
+
+    def shutdown(self) -> None:
+        """Shutdown the client."""
+        self._initialized = False
+
+    def get_type(self, name: str) -> TypeDefinition | LSPError:
+        """Get type definition by name.
+
+        Note: Full implementation coming in Phase 2.
+        """
+        if not self._initialized:
+            return LSPError(message="Client not initialized", code="NOT_INITIALIZED")
+        return LSPError(message="Type lookup coming in Phase 2", code="NOT_IMPLEMENTED")
+
+    def get_symbol(self, name: str) -> SymbolInfo | LSPError:
+        """Get symbol information by name.
+
+        Note: Full implementation coming in Phase 2.
+        """
+        if not self._initialized:
+            return LSPError(message="Client not initialized", code="NOT_INITIALIZED")
+        return LSPError(message="Symbol lookup coming in Phase 2", code="NOT_IMPLEMENTED")
+
+    def find_references(self, name: str) -> list[Path] | LSPError:
+        """Find all references to a symbol.
+
+        Note: Full implementation coming in Phase 2.
+        """
+        if not self._initialized:
+            return LSPError(message="Client not initialized", code="NOT_INITIALIZED")
+        return LSPError(message="Reference search coming in Phase 2", code="NOT_IMPLEMENTED")
+
+
 __all__ = [
     "Language",
     "TypeDefinition",
@@ -244,4 +357,6 @@ __all__ = [
     "get_client",
     "detect_language",
     "list_available_servers",
+    "detect_tsserver",
+    "TypeScriptClient",
 ]
