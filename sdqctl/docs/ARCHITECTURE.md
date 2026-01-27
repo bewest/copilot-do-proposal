@@ -442,4 +442,5 @@ pytest tests/test_conversation.py  # Specific module
 - [DIRECTIVE-REFERENCE.md](DIRECTIVE-REFERENCE.md) - Complete directive catalog
 - [ADAPTERS.md](ADAPTERS.md) - Adapter implementation details
 - [EXTENDING-VERIFIERS.md](EXTENDING-VERIFIERS.md) - Verifier extension guide
+- [PLUGIN-AUTHORING.md](PLUGIN-AUTHORING.md) - External plugin development
 - [CODE-QUALITY.md](CODE-QUALITY.md) - Code standards

@@ -541,6 +541,7 @@ except Exception as e:
 ## Related Documentation
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Verifier extension points and base classes
+- [PLUGIN-AUTHORING.md](PLUGIN-AUTHORING.md) - External plugin development guide
 - [proposals/VERIFICATION-DIRECTIVES.md](../proposals/VERIFICATION-DIRECTIVES.md) - Original proposal
 - [proposals/STPA-INTEGRATION.md](../proposals/STPA-INTEGRATION.md) - Traceability use cases
 - [README.md](../README.md#verify-directive-in-workflow-verification) - VERIFY directive usage
