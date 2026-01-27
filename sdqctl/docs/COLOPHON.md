@@ -17,13 +17,33 @@ design while revealing practical refinements.
 | Metric | Value |
 |--------|-------|
 | Development period | 8 days (Jan 20-27, 2026) |
-| Total commits | 582 |
-| Lines of Python | ~22,750 |
-| Test count | 1,562 |
+| Total commits | 596 |
+| Lines of Python | ~23,000 |
+| Test count | 1,571 |
 | Test files | 46 |
-| Documentation files | 29 |
+| Documentation files | 30 |
 | Proposals written | 29 |
 | Work packages completed | 6 |
+
+### Authorship Attribution
+
+| Source | Commits | LOC | % of Code |
+|--------|---------|-----|-----------|
+| **Manual writing** | ~46 | ~2,000 | 9% |
+| **Interactive Copilot** (attended) | ~194 | ~8,000 | 35% |
+| **sdqctl iterate** (unattended) | ~356 | ~13,000 | 56% |
+
+**~91% of the codebase was AI-synthesized**, with the majority (56%) produced by
+unattended `sdqctl iterate` runs against the project's own backlog. The tool
+literally built itself.
+
+Commit patterns by development phase:
+
+| Phase | Dates | Commits | Mode |
+|-------|-------|---------|------|
+| Inception | Jan 18-20 | 46 | Manual scaffolding |
+| Feature dev | Jan 21-23 | 194 | Interactive Copilot REPL |
+| Self-building | Jan 24-27 | 356 | Unattended sdqctl iterate |
 
 ## Construction Journey
 
