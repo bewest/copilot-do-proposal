@@ -111,6 +111,7 @@ Items not yet assigned to work packages:
 
 | Item | Source | Notes |
 |------|--------|-------|
+| Agent output on stdout by default | User request | Agent responses not visible even with `-vvv`. Should print agent output to stdout by default for observability. **Context**: Users can't see what the agent is doing/thinking without this. May need `--quiet` to suppress if too verbose. |
 | `--introduce [N] <prompt>` flag | User request | Inject prompt only for first N cycles, then elide. Merges between epilogue and first PROMPT. Use case: one-time context injection that doesn't repeat every cycle. **Naming tradeoffs**: `--introduce` (recommended: follows typesetting form prologue→introduce→body→epilogue), `--warmup` (feedback team: intuitive but informal), `--prime` (pump analogy: domain-relevant but jargon), `--kickoff` (project mgmt: clear but overloaded term). |
 | `--once` flag for non-repeating CLI prompts | [OQ-006] | **Blocked** - needs use case definition. May be superseded by `--introduce 1`. |
 | Performance benchmark suite | [OQ-005] | **Blocked** - needs scope decision |
