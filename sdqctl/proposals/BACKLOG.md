@@ -17,11 +17,21 @@
 
 ---
 
-## Ready Queue (0 Actionable Items)
+## Ready Queue (3 Actionable Items)
 
-**Both work packages complete** - 2026-01-27  
+**Routed from LIVE-BACKLOG** - 2026-01-27  
 **WP-006 LSP Integration**: ✅ Complete (8/8 items)  
 **WP-002 Continuous Monitoring**: ✅ Complete (6/6 items)
+
+### WP-003: Backlog Hygiene (Priority 1 - Human Requested)
+
+| # | Item | Priority | Effort | Status |
+|---|------|----------|--------|--------|
+| 1 | Trim RECENTLY COMPLETED section (max 20 lines) | P2 | Low | Ready |
+| 2 | Documentation audit - find outdated docs | P2 | Medium | Ready |
+| 3 | Backlog organization - archive old material | P2 | Medium | Ready |
+
+**Source**: LIVE-BACKLOG.md (human mid-run request)
 
 ### WP-006: LSP Integration (Priority 1)
 
