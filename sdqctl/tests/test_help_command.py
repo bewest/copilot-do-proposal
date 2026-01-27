@@ -263,3 +263,59 @@ class TestHelpCommandHelp:
         
         assert result.exit_code == 0
         assert "Show help for commands and topics" in result.output
+
+
+class TestInteractiveHelp:
+    """Tests for interactive help mode."""
+    
+    def test_interactive_flag_in_help(self, cli_runner):
+        """Test --interactive flag appears in help."""
+        result = cli_runner.invoke(cli, ["help", "--help"])
+        
+        assert result.exit_code == 0
+        assert "--interactive" in result.output or "-i" in result.output
+    
+    def test_interactive_quit(self, cli_runner):
+        """Test interactive mode exits on quit."""
+        result = cli_runner.invoke(cli, ["help", "-i"], input="q\n")
+        
+        assert result.exit_code == 0
+        assert "Help Browser" in result.output
+        assert "Exiting help browser" in result.output
+    
+    def test_interactive_list(self, cli_runner):
+        """Test list command in interactive mode."""
+        result = cli_runner.invoke(cli, ["help", "-i"], input="list\nq\n")
+        
+        assert result.exit_code == 0
+        assert "Commands" in result.output
+        assert "Topics" in result.output
+    
+    def test_interactive_topic_lookup(self, cli_runner):
+        """Test looking up a topic in interactive mode."""
+        result = cli_runner.invoke(cli, ["help", "-i"], input="run\nq\n")
+        
+        assert result.exit_code == 0
+        assert "sdqctl run" in result.output
+    
+    def test_interactive_prefix_match(self, cli_runner):
+        """Test prefix matching in interactive mode."""
+        result = cli_runner.invoke(cli, ["help", "-i"], input="dir\nq\n")
+        
+        assert result.exit_code == 0
+        # Should match "directives"
+        assert "Directives" in result.output or "directives" in result.output
+    
+    def test_interactive_unknown_topic(self, cli_runner):
+        """Test unknown topic message in interactive mode."""
+        result = cli_runner.invoke(cli, ["help", "-i"], input="xyznonexistent\nq\n")
+        
+        assert result.exit_code == 0
+        assert "Unknown" in result.output
+    
+    def test_interactive_overview(self, cli_runner):
+        """Test overview command in interactive mode."""
+        result = cli_runner.invoke(cli, ["help", "-i"], input="home\nq\n")
+        
+        assert result.exit_code == 0
+        assert "sdqctl" in result.output

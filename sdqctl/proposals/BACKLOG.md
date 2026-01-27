@@ -11,8 +11,8 @@
 | # | Item | Priority | Effort | Notes |
 |---|------|----------|--------|-------|
 | 1 | LSP support for refcat | P3 | High | Language Server Protocol for IDE integration. |
-| 2 | Interactive help (`--interactive`) | P3 | Medium | Browsable help system. |
-| 3 | Multiple .conv files in mixed mode | P3 | High | Complex; requires positional prologue tracking |
+| 2 | Multiple .conv files in mixed mode | P3 | High | Complex; requires positional prologue tracking |
+| 3 | `--once` flag for non-repeating CLI prompts | P3 | Medium | Needs use case research |
 
 ---
 
@@ -46,7 +46,6 @@
 
 | Item | Source | Notes |
 |------|--------|-------|
-| `--once` flag for non-repeating CLI prompts | Phase 6 deferred | Needs use case research |
 | `--prompt` / `--file` disambiguation switches | Phase 6 deferred | Needs impact analysis |
 | Performance benchmark suite | [OQ-005] | **Blocked** - needs scope decision |
 | Work package markers in BACKLOG.md | [SDK-ECONOMY.md](SDK-ECONOMY.md) | `## Work Package:` sections for batch selection |
@@ -70,6 +69,7 @@
 
 | Item | Date | Notes |
 |------|------|-------|
+| **Interactive help (P3)** | 2026-01-27 | Added `--interactive` / `-i` flag for browsable help. Features: list, topic lookup, prefix match, overview. 7 tests. Total 1462 tests. |
 | **REFCAT glob support (P3)** | 2026-01-27 | Added glob expansion for REFCAT directive. `REFCAT @src/**/*.py` now expands to individual files. 9 tests. Total 1455 tests. |
 | **HELP-INLINE directive (P3)** | 2026-01-27 | Added HELP-INLINE for mid-workflow help injection. Merges with next prompt. 6 tests. |
 | **Ecosystem help topics (P3)** | 2026-01-27 | Added gap-ids, 5-facet, stpa, conformance, nightscout topics. 5 tests. Total 1446 tests. |
