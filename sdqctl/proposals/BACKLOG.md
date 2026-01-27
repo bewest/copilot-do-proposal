@@ -16,17 +16,16 @@
 
 ---
 
-## Ready Queue (7 Actionable Items)
+## Ready Queue (6 Actionable Items)
 
 | # | Item | Priority | Effort | Notes |
 |---|------|----------|--------|-------|
-| 1 | Migrate testing items to `backlogs/testing.md` | P3 | Low | WP-001 step 3: Move ~17 test-related completed items. |
-| 2 | Add metrics collection to iterate.py | P3 | Low | WP-001 step 4: ~20 lines, emit to session dir. |
-| 3 | Define `.sdqctl/directives.yaml` schema | P3 | Low | WP-004 step 1: JSON schema for plugin manifest. All OQs resolved. |
-| 4 | Audit existing STPA artifacts | P3 | Low | WP-005 step 1: Count UCAs, SCs, coverage in ecosystem workspace. All OQs resolved. |
-| 5 | Define custom severity scale with ISO 14971 mapping | P3 | Low | WP-005 step 2: Simple 3-5 level scale with standard mapping. |
-| 6 | Implement directive discovery from manifest | P3 | Medium | WP-004 step 2: Load directives.yaml, register handlers. |
-| 7 | Performance benchmark suite | P3 | Medium | **UNBLOCKED** - OQ-005 resolved. Scope: code + workflow + SDK (comprehensive). |
+| 1 | Add metrics collection to iterate.py | P3 | Low | WP-001 step 4: ~20 lines, emit to session dir. |
+| 2 | Define `.sdqctl/directives.yaml` schema | P3 | Low | WP-004 step 1: JSON schema for plugin manifest. All OQs resolved. |
+| 3 | Audit existing STPA artifacts | P3 | Low | WP-005 step 1: Count UCAs, SCs, coverage in ecosystem workspace. All OQs resolved. |
+| 4 | Define custom severity scale with ISO 14971 mapping | P3 | Low | WP-005 step 2: Simple 3-5 level scale with standard mapping. |
+| 5 | Implement directive discovery from manifest | P3 | Medium | WP-004 step 2: Load directives.yaml, register handlers. |
+| 6 | Performance benchmark suite | P3 | Medium | **UNBLOCKED** - OQ-005 resolved. Scope: code + workflow + SDK (comprehensive). |
 
 ---
 
@@ -147,6 +146,7 @@ Items not yet assigned to work packages:
 
 | Item | Date | Notes |
 |------|------|-------|
+| **Migrate testing items (P3)** | 2026-01-27 | WP-001 step 3: Moved 17 test-related items to proposals/backlogs/testing.md. |
 | **Define `metrics.json` schema (P3)** | 2026-01-27 | WP-001 step 2: Created docs/metrics-schema.json with work_output, token_efficiency, duration metrics. JSON Schema draft-07. |
 | **Create `proposals/backlogs/` directory (P3)** | 2026-01-27 | WP-001 step 1: Created 5 domain backlog files (testing, cli, sdk-integration, architecture, directives) with headers and cross-references. |
 | **Fix 5 lint issues (P3)** | 2026-01-27 | Fixed 2 E501 (line-too-long), 2 F401 (unused-import), 1 I001 (import-sort) in iterate.py, workspace.py, verify.py, artifact_ids.py, run.py. All 1476 tests pass. |
@@ -159,16 +159,6 @@ Items not yet assigned to work packages:
 | **REFCAT glob support (P3)** | 2026-01-27 | Added glob expansion for REFCAT directive. `REFCAT @src/**/*.py` now expands to individual files. 9 tests. Total 1455 tests. |
 | **HELP-INLINE directive (P3)** | 2026-01-27 | Added HELP-INLINE for mid-workflow help injection. Merges with next prompt. 6 tests. |
 | **Ecosystem help topics (P3)** | 2026-01-27 | Added gap-ids, 5-facet, stpa, conformance, nightscout topics. 5 tests. Total 1446 tests. |
-| **Test documentation (P3)** | 2026-01-27 | Created tests/README.md: markers, fixtures, parametrization patterns, best practices. |
-| **Verify command integration tests (P3)** | 2026-01-27 | Added TestVerifyCommandIntegration (14 tests): refs, links, traceability, coverage, terminology, assertions. |
-| **Consult/Pause workflow tests (P3)** | 2026-01-27 | Added TestConsultWorkflows (6 tests) + TestPauseWorkflows (3 tests). Total 1435 tests. |
-| **Add CLI integration tests (P2)** | 2026-01-27 | Created test_cli_integration.py with 17 tests: render (4), validate (2), iterate (3), cycle (2), status (2), help (4). |
-| **Add end-to-end workflow tests (P2)** | 2026-01-27 | Extended test_workflow_integration.py with 5 new classes: EndToEndWorkflows (2), ErrorHandling (1), Verify (1), Compact (1). Total 1386 tests. |
-| **Add parametrized test variants (P3)** | 2026-01-27 | Added TestDirectiveVariants (18 cases) and parametrized TestConsultTimeoutErrors (4 cases) to test_conversation_errors.py. |
-| **Extend adapter integration tests (P3)** | 2026-01-27 | Added TestAdapterErrorPaths (5 tests) and TestAdapterRegistryVariants (10 parametrized cases). Total 1364 tests. |
-| **Add error path tests (P3)** | 2026-01-27 | Created test_conversation_errors.py with 29 tests for malformed .conv input, invalid directives, missing files, block errors, encoding, edge cases. Total 1329 tests. |
-| **Add @pytest.mark.slow (P3)** | 2026-01-26 | Marked 1 slow test (timeout test). Enables `pytest -m "not slow"` for faster runs (~1s savings). |
-| **Expand test markers (P3)** | 2026-01-26 | Added tests/integration/conftest.py with auto-marker. 15 integration tests now selectable with `-m integration`. |
 | **Q-019A: Progress timestamps (P3)** | 2026-01-26 | Added `set_timestamps()` to core/progress.py. Enabled when `-v` used. +4 tests. Total 1300 tests. |
 | **iterate.py exit code alignment** | 2026-01-26 | Verified: MissingContextFiles already returns exit code 2 via `ExitCode.MISSING_FILES`. No fix needed. |
 | **copilot.py further modularization (P2)** | 2026-01-26 | Reassessed: 670 lines includes 121 blank + docstrings. Core logic ~500 lines. Already extracted events.py (585) + stats.py (191). No further extraction needed. |
@@ -178,11 +168,6 @@ Items not yet assigned to work packages:
 | **artifact.py modularization (P2)** | 2026-01-26 | Complete: 689 → 500 lines (-27%). Extracted core/artifact_ids.py (213 lines). |
 | **help.py modularization (P2)** | 2026-01-26 | Complete: 698 → 156 lines (-78%). Extracted COMMAND_HELP to core/help_commands.py (550 lines). |
 | **Compaction config unification (P2)** | 2026-01-26 | Complete: COMPACTION-MAX directive, CLI naming alignment, None defaults. +8 tests. Total 1296 tests. |
-| **Session-scoped fixtures + error tests (P3)** | 2026-01-27 | Session-scoped fixtures, 29 error path tests. Total 1314 tests. |
-| **Parametrized tests + adapter integration (P3)** | 2026-01-27 | Directive variants (18 cases), adapter error paths (15 tests). Total 1349 tests. |
-| **CLI + workflow integration tests (P2)** | 2026-01-27 | CLI integration (17 tests), end-to-end workflow (5 tests). Total 1386 tests. |
-| **Flow + Apply integration tests (P3)** | 2026-01-27 | Flow command (6 tests), Apply command (6 tests). Total 1398 tests. |
-| **Sessions + Artifact integration tests (P3)** | 2026-01-27 | Sessions command (7 tests), Artifact command (7 tests). Total 1412 tests. |
 | **`run` command deprecation (P2)** | 2026-01-26 | Complete: 972 → 125 lines. Thin wrapper forwards to `iterate -n 1`. All 1288 tests pass. |
 | **CLI modularization (P2)** | 2026-01-26 | Complete: 966 → 413 lines (-553, 57%). Extracted init.py (276 lines) and resume.py (292 lines). |
 | **Copilot adapter modularization (P2)** | 2026-01-26 | Complete: 1143 → 670 lines (-473, 41%). Extracted CopilotEventHandler class to events.py. +32 tests. Total 1288 tests. |
@@ -192,13 +177,11 @@ Items not yet assigned to work packages:
 | **SESSION-RESILIENCE (P2)** | 2026-01-26 | **PROPOSAL COMPLETE** - All 5 phases (0-4). Quota tracking, rate limit prediction, checkpoint resume, compaction metrics. |
 | **iterate.py Modularization (P2)** | 2026-01-26 | Complete: 1397 → 791 lines (-606, 43%). Extracted 5 modules: iterate_helpers.py, compact_steps.py, prompt_steps.py, json_pipeline.py, output_steps.py. +26 tests. Target <800 ✅ |
 | **run.py Modularization (P2)** | 2026-01-26 | Complete: 1523 → 973 lines (-550, 36%). Extracted elide.py, blocks.py, verify_steps.py, run_steps.py. +9 tests. Target <1000 ✅ |
-| **Integration tests Phase 2 (P2)** | 2026-01-26 | +30 tests for iterate_helpers.py (23) and compact_steps.py (7). Total 1240 tests. |
 | **SESSION-RESILIENCE Phase 0-1 (P2/P3)** | 2026-01-26 | Metrics instrumentation, CompactionEvent, timing props. +11 tests. |
 | **StepExecutor reassessed (P2)** | 2026-01-26 | Analyzed: ~100 lines shared (not ~500). Extracted resolve_run_directory(). Full StepExecutor deferred. |
 | **CONSULT-TIMEOUT (P2)** | 2026-01-26 | Phase 4: Timeout directive, expiration check on resume, clear error. 10 new tests. |
 | **Compaction Simplification (P1)** | 2026-01-26 | Phase 5: Remove default prologue/epilogue. SDK-INFINITE-SESSIONS now complete. |
 | **E501 lint cleanup** | 2026-01-26 | Fixed 69 issues in run.py, iterate.py, file.py. Core commands E501 clean. |
-| **Loop detection: tool-aware** | 2026-01-26 | Skip minimal response check if tools called in turn. 2 new tests. |
 | **claude/openai adapter stubs (P2)** | 2026-01-26 | Created stubs with NotImplementedError. Registered in registry. |
 | **Q-020 Context % fix (P0)** | 2026-01-26 | Sync tokens after each `ai_adapter.send()` in run.py and iterate.py. |
 | **ARCHITECTURE.md (P1)** | 2026-01-26 | Created docs/ARCHITECTURE.md: module structure, data flow, key abstractions, extension points. |
@@ -206,6 +189,7 @@ Items not yet assigned to work packages:
 | **Shared utilities extraction** | 2026-01-26 | Error handling decorators, I/O utilities, VerifierBase scan_files, ExecutionContext. +32 tests. |
 | **Phase 6: Mixed Prompt Support** | 2026-01-26 | Variadic targets, `---` separator, elision into boundaries. 16 new tests. |
 
+*Test-related items migrated to [`proposals/backlogs/testing.md`](backlogs/testing.md)*  
 *Older items archived to [`archive/2026-01-backlog-migration.md`](../archive/2026-01-backlog-migration.md)*
 
 ---
