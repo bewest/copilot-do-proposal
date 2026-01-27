@@ -46,6 +46,9 @@
 
 | Item | Source | Notes |
 |------|--------|-------|
+| HELP-INLINE directive | [HELP-INLINE.md](HELP-INLINE.md) | Allow HELP anywhere, not just prologues |
+| REFCAT glob support | [REFCAT-DESIGN.md](REFCAT-DESIGN.md) | `REFCAT @externals/**/*Treatment*.swift` |
+| Ecosystem help topics | [HELP-INLINE.md](HELP-INLINE.md) | gap-ids, 5-facet, stpa, conformance, nightscout |
 | LSP support for refcat | References | Language Server Protocol for IDE integration |
 | Interactive help (`--interactive`) | References | Browsable help system |
 | Multiple .conv files in mixed mode | Phase 6 deferred | Complex; requires positional prologue tracking |
