@@ -76,6 +76,33 @@ Related items for contributing fixes upstream:
 **Dependencies**: WP-002 (needs drift detection)  
 **Estimated**: 2 iterations, ~300 lines
 
+### WP-004: Plugin System (P3 R&D)
+
+Enable ecosystem teams to extend sdqctl with custom directives/commands independently of sdqctl release cycle.
+
+- [ ] Define `.sdqctl/directives.yaml` manifest schema
+- [ ] Implement directive discovery from manifest
+- [ ] Hello world plugin in externals/rag-nightscout-ecosystem-alignment
+- [ ] Security/sandboxing implementation
+- [ ] Plugin authoring documentation
+
+**Proposal**: [PLUGIN-SYSTEM.md](PLUGIN-SYSTEM.md)  
+**Dependencies**: None  
+**Estimated**: 3-4 iterations, ~500 lines
+
+### WP-005: STPA Deep Integration Research (P3 R&D)
+
+Comprehensive research on STPA integration for Nightscout ecosystem, delivering usage guide and improvement predictions.
+
+- [ ] Current state analysis and gap mapping
+- [ ] Cross-project UCA pattern discovery
+- [ ] STPA usage guide for ecosystem team
+- [ ] Improvement predictions and 12-month roadmap
+
+**Proposal**: [STPA-DEEP-INTEGRATION.md](STPA-DEEP-INTEGRATION.md)  
+**Dependencies**: Existing STPA-INTEGRATION.md  
+**Estimated**: 4 iterations, deliverable: ~2000 word report + templates
+
 ---
 
 ### Future (Unstarted)
