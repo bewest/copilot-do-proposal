@@ -16,11 +16,11 @@
 
 ---
 
-## Ready Queue (0 Actionable Items)
+## Ready Queue (1 Actionable Item)
 
 | # | Item | Priority | Effort | Notes |
 |---|------|----------|--------|-------|
-| *(Queue empty - select from Work Packages below)* | | | | |
+| 1 | Hello world plugin | P3 | Low | WP-004 step 3: Create demo plugin in ecosystem repo. Demonstrates plugin system end-to-end. |
 
 ---
 
