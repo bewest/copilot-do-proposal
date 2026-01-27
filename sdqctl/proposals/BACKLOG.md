@@ -11,8 +11,8 @@
 | # | Item | Priority | Effort | Notes |
 |---|------|----------|--------|-------|
 | 1 | Improve test documentation | P3 | Low | Document test markers, fixtures, parametrization patterns. |
-| 2 | Add flow command integration tests | P3 | Low | Test flow command with multiple .conv files. |
-| 3 | Add apply command integration tests | P3 | Low | Test apply command for per-component workflows. |
+| 2 | Add sessions command integration tests | P3 | Low | Test sessions list, delete, cleanup. |
+| 3 | Add artifact command integration tests | P3 | Low | Test artifact discovery and reporting. |
 
 ---
 
@@ -79,6 +79,10 @@
 | **artifact.py modularization (P2)** | 2026-01-26 | Complete: 689 → 500 lines (-27%). Extracted core/artifact_ids.py (213 lines). |
 | **help.py modularization (P2)** | 2026-01-26 | Complete: 698 → 156 lines (-78%). Extracted COMMAND_HELP to core/help_commands.py (550 lines). |
 | **Compaction config unification (P2)** | 2026-01-26 | Complete: COMPACTION-MAX directive, CLI naming alignment, None defaults. +8 tests. Total 1296 tests. |
+| **Session-scoped fixtures + error tests (P3)** | 2026-01-27 | Session-scoped fixtures, 29 error path tests. Total 1314 tests. |
+| **Parametrized tests + adapter integration (P3)** | 2026-01-27 | Directive variants (18 cases), adapter error paths (15 tests). Total 1349 tests. |
+| **CLI + workflow integration tests (P2)** | 2026-01-27 | CLI integration (17 tests), end-to-end workflow (5 tests). Total 1386 tests. |
+| **Flow + Apply integration tests (P3)** | 2026-01-27 | Flow command (6 tests), Apply command (6 tests). Total 1398 tests. |
 | **`run` command deprecation (P2)** | 2026-01-26 | Complete: 972 → 125 lines. Thin wrapper forwards to `iterate -n 1`. All 1288 tests pass. |
 | **CLI modularization (P2)** | 2026-01-26 | Complete: 966 → 413 lines (-553, 57%). Extracted init.py (276 lines) and resume.py (292 lines). |
 | **Copilot adapter modularization (P2)** | 2026-01-26 | Complete: 1143 → 670 lines (-473, 41%). Extracted CopilotEventHandler class to events.py. +32 tests. Total 1288 tests. |

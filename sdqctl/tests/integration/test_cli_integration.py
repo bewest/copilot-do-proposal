@@ -218,3 +218,181 @@ class TestHelpCommandIntegration:
         result = runner.invoke(cli, ["help", topic])
         # Should succeed or show "not found" gracefully
         assert result.exit_code in (0, 1)
+
+
+class TestFlowCommandIntegration:
+    """Integration tests for flow command (batch workflows)."""
+
+    @pytest.fixture
+    def runner(self):
+        """Create CLI test runner."""
+        return CliRunner()
+
+    @pytest.fixture
+    def workflow_files(self, tmp_path):
+        """Create multiple workflow files for flow testing."""
+        workflows = []
+        for i in range(3):
+            wf = tmp_path / f"workflow{i}.conv"
+            wf.write_text(f"""# Workflow {i}
+MODEL mock
+ADAPTER mock
+
+PROMPT Task {i}: analyze component.
+""")
+            workflows.append(wf)
+        return tmp_path, workflows
+
+    def test_flow_dry_run_single_file(self, runner, tmp_path):
+        """Test flow --dry-run with single file."""
+        wf = tmp_path / "single.conv"
+        wf.write_text("MODEL mock\nADAPTER mock\nPROMPT Test.")
+        
+        result = runner.invoke(cli, ["flow", str(wf), "--dry-run"])
+        assert result.exit_code == 0
+
+    def test_flow_dry_run_glob_pattern(self, runner, workflow_files):
+        """Test flow --dry-run with glob pattern."""
+        tmp_path, _ = workflow_files
+        
+        result = runner.invoke(cli, [
+            "flow", str(tmp_path / "*.conv"),
+            "--dry-run"
+        ])
+        assert result.exit_code == 0
+
+    def test_flow_with_adapter_override(self, runner, tmp_path):
+        """Test flow with adapter override."""
+        wf = tmp_path / "test.conv"
+        wf.write_text("MODEL gpt-4\nADAPTER copilot\nPROMPT Test.")
+        
+        result = runner.invoke(cli, [
+            "flow", str(wf),
+            "--adapter", "mock",
+            "--dry-run"
+        ])
+        assert result.exit_code == 0
+
+    def test_flow_parallel_option(self, runner, workflow_files):
+        """Test flow with parallel option."""
+        tmp_path, _ = workflow_files
+        
+        result = runner.invoke(cli, [
+            "flow", str(tmp_path / "*.conv"),
+            "--parallel", "2",
+            "--dry-run"
+        ])
+        assert result.exit_code == 0
+
+    def test_flow_continue_on_error_option(self, runner, tmp_path):
+        """Test flow with continue-on-error option."""
+        wf = tmp_path / "test.conv"
+        wf.write_text("MODEL mock\nADAPTER mock\nPROMPT Test.")
+        
+        result = runner.invoke(cli, [
+            "flow", str(wf),
+            "--continue-on-error",
+            "--dry-run"
+        ])
+        assert result.exit_code == 0
+
+    def test_flow_no_matches_warns(self, runner, tmp_path):
+        """Test flow handles no matching files gracefully."""
+        result = runner.invoke(cli, [
+            "flow", str(tmp_path / "nonexistent*.conv"),
+            "--dry-run"
+        ])
+        # May succeed with warning or show "no files" message
+        # Behavior depends on implementation - just verify it runs
+        assert result.exit_code in (0, 1)
+
+
+class TestApplyCommandIntegration:
+    """Integration tests for apply command (component iteration)."""
+
+    @pytest.fixture
+    def runner(self):
+        """Create CLI test runner."""
+        return CliRunner()
+
+    @pytest.fixture
+    def apply_workspace(self, tmp_path):
+        """Create workspace with workflow and components."""
+        # Create workflow with template variable
+        workflow = tmp_path / "analyze.conv"
+        workflow.write_text("""# Component Analysis
+MODEL mock
+ADAPTER mock
+
+PROMPT Analyze {{COMPONENT_NAME}} at {{COMPONENT_PATH}}.
+""")
+        
+        # Create components
+        components_dir = tmp_path / "components"
+        components_dir.mkdir()
+        for name in ["auth", "utils", "config"]:
+            comp = components_dir / f"{name}.js"
+            comp.write_text(f"// {name} module")
+        
+        return tmp_path, workflow, components_dir
+
+    def test_apply_dry_run_single_component(self, runner, apply_workspace):
+        """Test apply --dry-run with single component."""
+        tmp_path, workflow, components_dir = apply_workspace
+        
+        result = runner.invoke(cli, [
+            "apply", str(workflow),
+            "--components", str(components_dir / "auth.js"),
+            "--dry-run"
+        ])
+        assert result.exit_code == 0
+
+    def test_apply_dry_run_glob_pattern(self, runner, apply_workspace):
+        """Test apply --dry-run with glob pattern."""
+        tmp_path, workflow, components_dir = apply_workspace
+        
+        result = runner.invoke(cli, [
+            "apply", str(workflow),
+            "--components", str(components_dir / "*.js"),
+            "--dry-run"
+        ])
+        assert result.exit_code == 0
+
+    def test_apply_with_adapter_override(self, runner, apply_workspace):
+        """Test apply with adapter override."""
+        tmp_path, workflow, components_dir = apply_workspace
+        
+        result = runner.invoke(cli, [
+            "apply", str(workflow),
+            "--components", str(components_dir / "auth.js"),
+            "--adapter", "mock",
+            "--dry-run"
+        ])
+        assert result.exit_code == 0
+
+    def test_apply_parallel_option(self, runner, apply_workspace):
+        """Test apply with parallel option."""
+        tmp_path, workflow, components_dir = apply_workspace
+        
+        result = runner.invoke(cli, [
+            "apply", str(workflow),
+            "--components", str(components_dir / "*.js"),
+            "--parallel", "2",
+            "--dry-run"
+        ])
+        assert result.exit_code == 0
+
+    def test_apply_missing_workflow_errors(self, runner, tmp_path):
+        """Test apply errors when workflow doesn't exist."""
+        result = runner.invoke(cli, [
+            "apply", str(tmp_path / "nonexistent.conv"),
+            "--components", "*.js",
+            "--dry-run"
+        ])
+        assert result.exit_code != 0
+
+    def test_apply_help_shows_examples(self, runner):
+        """Test apply --help shows usage examples."""
+        result = runner.invoke(cli, ["apply", "--help"])
+        assert result.exit_code == 0
+        assert "COMPONENT" in result.output or "component" in result.output
