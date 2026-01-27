@@ -12,7 +12,7 @@
 |---|------|----------|--------|-------|
 | 1 | LSP support for refcat | P3 | High | Language Server Protocol for IDE integration. |
 | 2 | Multiple .conv files in mixed mode | P3 | High | Complex; requires positional prologue tracking |
-| 3 | `--once` flag for non-repeating CLI prompts | P3 | Medium | Needs use case research |
+| 3 | Work package markers in BACKLOG.md | P3 | Medium | `## Work Package:` sections for batch selection |
 
 ---
 
@@ -46,9 +46,8 @@
 
 | Item | Source | Notes |
 |------|--------|-------|
-| `--prompt` / `--file` disambiguation switches | Phase 6 deferred | Needs impact analysis |
+| `--once` flag for non-repeating CLI prompts | [OQ-006] | **Blocked** - needs use case definition |
 | Performance benchmark suite | [OQ-005] | **Blocked** - needs scope decision |
-| Work package markers in BACKLOG.md | [SDK-ECONOMY.md](SDK-ECONOMY.md) | `## Work Package:` sections for batch selection |
 | Domain-partitioned queues | [SDK-ECONOMY.md](SDK-ECONOMY.md) | Separate backlogs per domain? Needs research |
 | Iteration metrics tracking | [SDK-ECONOMY.md](SDK-ECONOMY.md) | Items/cycle, lines/cycle metrics |
 | backlog-processor-v3.conv | [SDK-ECONOMY.md](SDK-ECONOMY.md) | Full economy optimization, after v2 validation |
@@ -69,6 +68,7 @@
 
 | Item | Date | Notes |
 |------|------|-------|
+| **Disambiguation flags (P3)** | 2026-01-27 | Added `--prompt/-p` and `--file/-f` to iterate command. Clarifies ambiguous input. 5 tests. Total 1467 tests. |
 | **Interactive help (P3)** | 2026-01-27 | Added `--interactive` / `-i` flag for browsable help. Features: list, topic lookup, prefix match, overview. 7 tests. Total 1462 tests. |
 | **REFCAT glob support (P3)** | 2026-01-27 | Added glob expansion for REFCAT directive. `REFCAT @src/**/*.py` now expands to individual files. 9 tests. Total 1455 tests. |
 | **HELP-INLINE directive (P3)** | 2026-01-27 | Added HELP-INLINE for mid-workflow help injection. Merges with next prompt. 6 tests. |

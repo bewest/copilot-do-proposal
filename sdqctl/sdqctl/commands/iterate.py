@@ -49,6 +49,7 @@ from .iterate_helpers import (
     check_existing_stop_file,
     create_or_resume_session,
     is_workflow_file,  # noqa: F401 - re-exported
+    merge_explicit_with_targets,
     parse_targets,
     perform_compaction,
     recreate_fresh_session,
@@ -79,6 +80,10 @@ console = Console()
 @click.argument("targets", nargs=-1)
 @click.option("--from-json", "from_json", type=click.Path(),
               help="Read workflow from JSON file or - for stdin")
+@click.option("--prompt", "-p", "explicit_prompts", multiple=True,
+              help="Explicit inline prompt (disambiguates from file paths)")
+@click.option("--file", "-f", "explicit_files", multiple=True, type=click.Path(),
+              help="Explicit workflow file (disambiguates from prompts)")
 @click.option("--max-cycles", "-n", type=int, default=None, help="Override max cycles")
 @click.option("--session-mode", "-s", type=click.Choice(["accumulate", "compact", "fresh"]),
               default="accumulate",
@@ -125,6 +130,8 @@ def iterate(
     ctx: click.Context,
     targets: tuple[str, ...],
     from_json: Optional[str],
+    explicit_prompts: tuple[str, ...],
+    explicit_files: tuple[str, ...],
     max_cycles: Optional[int],
     session_mode: str,
     adapter: Optional[str],
@@ -159,6 +166,8 @@ def iterate(
     TARGETS can be a mix of .conv file paths and inline prompt strings.
     Use --- between items to force separate turns (default: adjacent items elide).
     Maximum one .conv file allowed in mixed mode.
+    
+    Use --prompt/-p and --file/-f to disambiguate when auto-detection fails.
 
     NOTE: When using --- separators, place -- before targets to prevent Click
     from parsing --- as an option. Example: sdqctl iterate -n 2 -- "task" --- file.conv
@@ -188,7 +197,20 @@ def iterate(
     \b
     # Fresh session each cycle
     sdqctl iterate workflow.conv -n 3 -s fresh
+
+    \b
+    # Disambiguate when string looks like a file path
+    sdqctl iterate --prompt "Review file.conv changes"
+
+    \b
+    # Disambiguate when file doesn't exist yet
+    sdqctl iterate --file new-workflow.conv
     """
+    # Merge explicit prompts/files with positional targets
+    merged_targets = merge_explicit_with_targets(
+        targets, explicit_prompts, explicit_files
+    )
+    
     # Handle deprecated CLI options with warnings
     effective_compaction_min = compaction_min
     if min_compaction_density is not None:
@@ -222,14 +244,15 @@ def iterate(
         if effective_compaction_max is None:
             effective_compaction_max = buffer_threshold
 
-    # Parse and validate targets
-    groups = parse_targets(targets)
+    # Parse and validate targets (using merged targets from explicit + positional)
+    groups = parse_targets(merged_targets)
     workflow_path, pre_prompts, post_prompts = validate_targets(groups)
 
-    # Validate: need either targets or --from-json
-    if not targets and not from_json:
+    # Validate: need either targets (positional or explicit) or --from-json
+    has_targets = targets or explicit_prompts or explicit_files
+    if not has_targets and not from_json:
         raise click.UsageError("Either TARGETS argument(s) or --from-json is required")
-    if targets and from_json:
+    if has_targets and from_json:
         raise click.UsageError("Cannot use both TARGETS argument(s) and --from-json")
 
     # Handle --render-only by delegating to render logic

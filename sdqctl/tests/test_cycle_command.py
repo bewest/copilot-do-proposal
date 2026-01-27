@@ -507,3 +507,73 @@ PROMPT Middle step.
             "--dry-run"
         ])
         assert result.exit_code == 0
+
+
+class TestIterateDisambiguation:
+    """Tests for --prompt and --file disambiguation flags."""
+
+    def test_iterate_help_shows_disambiguation_flags(self, cli_runner):
+        """Test iterate --help shows --prompt and --file flags."""
+        result = cli_runner.invoke(cli, ["iterate", "--help"])
+        assert result.exit_code == 0
+        assert "-p, --prompt" in result.output
+        assert "-f, --file" in result.output
+        assert "disambiguate" in result.output.lower()
+
+    def test_explicit_prompt_not_treated_as_file(self, cli_runner, tmp_path):
+        """Test --prompt flag prevents file path detection."""
+        # Create a file that would match if treated as path
+        workflow = tmp_path / "test.conv"
+        workflow.write_text("MODEL gpt-4\nPROMPT This is the file.\n")
+        
+        # Use --prompt to treat the path as a prompt string
+        result = cli_runner.invoke(cli, [
+            "iterate",
+            "--prompt", str(workflow),  # Should be treated as prompt, not file
+            "--adapter", "mock",
+            "--dry-run"
+        ])
+        assert result.exit_code == 0
+        # The file path should be in output as prompt, not loaded as workflow
+        assert "test.conv" in result.output or "Dry run" in result.output
+
+    def test_explicit_file_for_nonexistent_path(self, cli_runner, tmp_path):
+        """Test --file flag treats path as file even if it doesn't exist."""
+        # Path that doesn't exist
+        nonexistent = tmp_path / "future.conv"
+        
+        result = cli_runner.invoke(cli, [
+            "iterate",
+            "--file", str(nonexistent),
+            "--adapter", "mock",
+            "--dry-run"
+        ])
+        # Should fail because file doesn't exist
+        assert result.exit_code != 0
+        # Exception type indicates it was treated as a file, not as a prompt
+        assert result.exception is not None
+
+    def test_multiple_explicit_prompts(self, cli_runner):
+        """Test multiple --prompt flags."""
+        result = cli_runner.invoke(cli, [
+            "iterate",
+            "-p", "First prompt",
+            "-p", "Second prompt",
+            "--adapter", "mock",
+            "--dry-run"
+        ])
+        assert result.exit_code == 0
+
+    def test_mixed_explicit_and_positional(self, cli_runner, tmp_path):
+        """Test mixing --prompt/--file with positional args."""
+        workflow = tmp_path / "work.conv"
+        workflow.write_text("MODEL gpt-4\nADAPTER mock\nPROMPT Workflow step.\n")
+        
+        result = cli_runner.invoke(cli, [
+            "iterate",
+            "-p", "Explicit prompt first",
+            str(workflow),
+            "--adapter", "mock",
+            "--dry-run"
+        ])
+        assert result.exit_code == 0

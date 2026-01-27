@@ -41,6 +41,65 @@ def is_workflow_file(item: str) -> bool:
     return path.exists() and path.suffix in (".conv", ".copilot")
 
 
+# Marker prefix for explicit prompts (won't be treated as files)
+EXPLICIT_PROMPT_MARKER = "__PROMPT__:"
+# Marker prefix for explicit files (will be treated as files even if don't exist)
+EXPLICIT_FILE_MARKER = "__FILE__:"
+
+
+def merge_explicit_with_targets(
+    targets: tuple[str, ...],
+    explicit_prompts: tuple[str, ...],
+    explicit_files: tuple[str, ...],
+) -> tuple[str, ...]:
+    """Merge explicit --prompt and --file options with positional targets.
+    
+    Explicit prompts are marked to prevent file detection.
+    Explicit files are marked to ensure file treatment.
+    
+    Args:
+        targets: Positional target arguments
+        explicit_prompts: Values from --prompt/-p options
+        explicit_files: Values from --file/-f options
+    
+    Returns:
+        Merged tuple with markers for disambiguation
+    """
+    merged: list[str] = []
+    
+    # Add explicit prompts with marker
+    for prompt in explicit_prompts:
+        merged.append(f"{EXPLICIT_PROMPT_MARKER}{prompt}")
+    
+    # Add explicit files with marker
+    for file_path in explicit_files:
+        merged.append(f"{EXPLICIT_FILE_MARKER}{file_path}")
+    
+    # Add positional targets as-is
+    merged.extend(targets)
+    
+    return tuple(merged)
+
+
+def is_explicit_prompt(item: str) -> bool:
+    """Check if item is an explicitly marked prompt."""
+    return item.startswith(EXPLICIT_PROMPT_MARKER)
+
+
+def is_explicit_file(item: str) -> bool:
+    """Check if item is an explicitly marked file."""
+    return item.startswith(EXPLICIT_FILE_MARKER)
+
+
+def unwrap_explicit(item: str) -> str:
+    """Remove explicit marker prefix from item."""
+    if item.startswith(EXPLICIT_PROMPT_MARKER):
+        return item[len(EXPLICIT_PROMPT_MARKER):]
+    if item.startswith(EXPLICIT_FILE_MARKER):
+        return item[len(EXPLICIT_FILE_MARKER):]
+    return item
+
+
 def parse_targets(targets: tuple[str, ...]) -> list[TurnGroup]:
     """Parse mixed targets into turn groups separated by ---.
 
@@ -90,11 +149,23 @@ def validate_targets(
     workflow_found = False
     conv_files: list[str] = []
 
+    def is_file_item(item: str) -> bool:
+        """Check if item should be treated as a workflow file."""
+        # Explicit prompts are never files
+        if is_explicit_prompt(item):
+            return False
+        # Explicit files are always files
+        if is_explicit_file(item):
+            return True
+        # Otherwise, check if it exists as a .conv/.copilot file
+        return is_workflow_file(item)
+
     # First pass: find all .conv files
     for group in groups:
         for item in group.items:
-            if is_workflow_file(item):
-                conv_files.append(item)
+            if is_file_item(item):
+                # Unwrap explicit marker if present
+                conv_files.append(unwrap_explicit(item))
 
     if len(conv_files) > 1:
         raise click.UsageError(
@@ -105,13 +176,13 @@ def validate_targets(
     # Second pass: categorize items
     for group in groups:
         for item in group.items:
-            if is_workflow_file(item):
-                workflow_path = item
+            if is_file_item(item):
+                workflow_path = unwrap_explicit(item)
                 workflow_found = True
             elif workflow_found:
-                post_prompts.append(item)
+                post_prompts.append(unwrap_explicit(item))
             else:
-                pre_prompts.append(item)
+                pre_prompts.append(unwrap_explicit(item))
 
     return workflow_path, pre_prompts, post_prompts
 

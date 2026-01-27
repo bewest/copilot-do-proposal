@@ -16,6 +16,7 @@ Questions awaiting human decision or clarification.
 |----|----------|--------|----------|-------|---------|
 | OQ-004 | What output should appear at default verbosity? | [VERBOSITY-DEFAULTS.md](../proposals/VERBOSITY-DEFAULTS.md) | P3 | 2026-01-26 | Proposal drafted with 4 alternatives. Awaiting decision. |
 | OQ-005 | What should the performance benchmark suite measure? | [BACKLOG.md](../proposals/BACKLOG.md) P2 | P2 | 2026-01-26 | Options: 1) Code perf (parsing, compaction), 2) Workflow timing, 3) SDK latency, 4) All. Needs scope decision. |
+| OQ-006 | What is the `--once` flag use case? | [BACKLOG.md](../proposals/BACKLOG.md) Ready Queue #3 | P3 | 2026-01-27 | "Non-repeating CLI prompts" needs definition. How differs from `run`? What problem solved? |
 
 ---
 
