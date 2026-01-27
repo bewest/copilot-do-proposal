@@ -49,7 +49,8 @@ Requirements: `context:Nk`, `tier:economy|standard|premium`, `speed:fast|standar
 |-----------|---------|---------|
 | `PROLOGUE` | Prepend to first prompt | `PROLOGUE Current date: {{DATE}}` |
 | `EPILOGUE` | Append to last prompt | `EPILOGUE Update progress.md` |
-| `HELP` | Inject help topics | `HELP directives workflow` |
+| `HELP` | Inject help topics (prologue) | `HELP directives workflow` |
+| `HELP-INLINE` | Inject help before next prompt | `HELP-INLINE stpa gap-ids` |
 | `HEADER` | Prepend to output | `HEADER # Report` |
 | `FOOTER` | Append to output | `FOOTER ---` |
 
@@ -619,5 +620,301 @@ sdqctl render cycle workflow.conv -n 3
 ```
 
 See also: `sdqctl help workflow`, `docs/GETTING-STARTED.md`
+""",
+
+    # Ecosystem-specific topics for Nightscout and AID systems
+    "gap-ids": """
+# Gap ID Taxonomy
+
+Gap IDs track alignment issues between AID projects and Nightscout.
+
+## Format
+
+```
+GAP-{CATEGORY}-{NUMBER}
+```
+
+## Categories
+
+| Prefix | Domain | Example |
+|--------|--------|---------|
+| `GAP-CGM-` | CGM data handling | GAP-CGM-001 timestamp normalization |
+| `GAP-TREAT-` | Treatment records | GAP-TREAT-002 bolus wizard mapping |
+| `GAP-SYNC-` | Data synchronization | GAP-SYNC-003 upload retry logic |
+| `GAP-PROF-` | Profile management | GAP-PROF-001 basal schedule format |
+| `GAP-LOOP-` | Loop algorithm data | GAP-LOOP-004 IOB calculation diff |
+| `GAP-UI-` | User interface | GAP-UI-001 glucose unit display |
+| `GAP-SEC-` | Security concerns | GAP-SEC-002 token handling |
+| `GAP-API-` | API compatibility | GAP-API-001 endpoint versioning |
+
+## States
+
+| State | Meaning |
+|-------|---------|
+| `open` | Identified, not yet addressed |
+| `in-progress` | Being worked on |
+| `resolved` | Fix implemented |
+| `wontfix` | Intentional difference |
+| `deferred` | Postponed to future version |
+
+## Usage
+
+When identifying issues:
+```
+GAP-CGM-005: Loop uses mg/dL internally, AAPS uses mmol/L
+  Status: open
+  Severity: medium
+  Projects: Loop, AAPS
+  Impact: Display mismatch in Nightscout
+```
+""",
+
+    "5-facet": """
+# 5-Facet Documentation Pattern
+
+Comprehensive documentation structure for cross-project alignment.
+
+## Facets
+
+### 1. Terminology
+Definitions, synonyms, and cross-project mappings.
+
+```markdown
+| Term | Loop | AAPS | Nightscout | Definition |
+|------|------|------|------------|------------|
+| IOB | insulinOnBoard | iob | iob | Insulin remaining active |
+```
+
+### 2. Behaviors
+Functional behavior descriptions with acceptance criteria.
+
+```markdown
+## Behavior: Glucose Display
+- Input: CGM reading
+- Process: Convert to user-preferred units
+- Output: Formatted value with trend arrow
+- Verify: `verify trace REQ-001 -> TEST-001`
+```
+
+### 3. Traceability
+Links between requirements, specs, tests, and code.
+
+```markdown
+REQ-001 → SPEC-001 → TEST-001 → Loop/Sources/CGM.swift#L42
+```
+
+### 4. Gaps
+Alignment issues with severity and remediation.
+
+```markdown
+GAP-CGM-001: Timestamp format mismatch
+  Severity: high
+  Loop: ISO 8601 with milliseconds
+  AAPS: Unix epoch seconds
+  Resolution: Normalize in upload adapter
+```
+
+### 5. Safety (STPA)
+Hazard analysis for safety-critical functionality.
+
+```markdown
+LOSS-001: Incorrect insulin delivery
+HAZ-001: Stale glucose data used for dosing
+UCA-001: Bolus calculated with >15min old data
+SC-001: Reject CGM readings older than 5 minutes
+```
+
+## Integration
+
+```bash
+# Verify all 5 facets are documented
+sdqctl verify coverage "overall >= 80"
+```
+""",
+
+    "stpa": """
+# STPA Hazard Analysis
+
+System-Theoretic Process Analysis for safety-critical AID systems.
+
+## Artifact Hierarchy
+
+```
+LOSS → HAZ → UCA → SC
+```
+
+| Artifact | Purpose | Example |
+|----------|---------|---------|
+| `LOSS-XXX` | Unacceptable outcome | LOSS-001 Hypoglycemia |
+| `HAZ-XXX` | System state leading to loss | HAZ-001 Overdose of insulin |
+| `UCA-XXX` | Unsafe Control Action | UCA-001 Bolus when BG < 70 |
+| `SC-XXX` | Safety Constraint | SC-001 Block bolus if BG < 80 |
+
+## Creating Entries
+
+### LOSS (Loss Scenario)
+```markdown
+LOSS-001: Severe hypoglycemia requiring assistance
+  Severity: critical
+  Category: health
+```
+
+### HAZ (Hazard)
+```markdown
+HAZ-001: Excessive insulin delivery
+  Links: LOSS-001
+  System: Insulin dosing
+```
+
+### UCA (Unsafe Control Action)
+```markdown
+UCA-001: Automated bolus when glucose falling rapidly
+  Links: HAZ-001
+  Control: Bolus command
+  Context: Glucose trend > -2 mg/dL/min
+  Type: provided-causes-hazard
+```
+
+### SC (Safety Constraint)
+```markdown
+SC-001: Suspend automated delivery when trend > -3 mg/dL/min
+  Links: UCA-001
+  Implementation: Loop/SafetyManager.swift#L45
+```
+
+## Verification
+
+```bash
+# Check STPA traceability
+sdqctl verify traceability
+
+# Verify specific link
+sdqctl verify trace UCA-001 SC-001
+```
+""",
+
+    "conformance": """
+# Conformance Testing
+
+Structured test scenarios for cross-project compatibility.
+
+## Scenario Format
+
+```yaml
+Scenario: CGM upload with missing values
+  Given: CGM reading with null trend
+  When: Upload to Nightscout
+  Then: Entry created with trend = "NOT_COMPUTABLE"
+  Projects: [Loop, AAPS, xDrip+]
+  Traces: [REQ-CGM-005, SPEC-CGM-005]
+```
+
+## Categories
+
+| Category | Tests | Example |
+|----------|-------|---------|
+| `CONF-CGM-` | CGM data handling | CONF-CGM-001 trend arrow mapping |
+| `CONF-TREAT-` | Treatment upload | CONF-TREAT-002 bolus wizard fields |
+| `CONF-PROF-` | Profile sync | CONF-PROF-001 basal schedule format |
+| `CONF-API-` | API compatibility | CONF-API-001 v3 entry creation |
+
+## Writing Tests
+
+### Input Specification
+```yaml
+Input:
+  source: Loop
+  type: sgv
+  value: 120
+  direction: "FortyFiveUp"
+  date: "2026-01-27T10:30:00Z"
+```
+
+### Expected Output
+```yaml
+Expected:
+  nightscout:
+    sgv: 120
+    direction: "FortyFiveUp"
+    dateString: "2026-01-27T10:30:00.000Z"
+```
+
+### Verification
+```yaml
+Verify:
+  - Field mapping correct
+  - Date format normalized
+  - Optional fields handled
+```
+
+## Running Conformance Tests
+
+```bash
+# Run all conformance tests
+sdqctl verify conformance
+
+# Run specific category
+sdqctl verify conformance --category CGM
+```
+""",
+
+    "nightscout": """
+# Nightscout Ecosystem
+
+Overview of the Nightscout project and related AID systems.
+
+## Core Projects
+
+| Project | Language | Purpose |
+|---------|----------|---------|
+| **cgm-remote-monitor** | JavaScript | Web-based glucose monitoring |
+| **Loop** | Swift | iOS automated insulin delivery |
+| **AAPS** | Kotlin | Android automated insulin delivery |
+| **xDrip+** | Java | Android CGM app |
+| **Trio** | Swift | Fork of Loop with Oref1 algorithm |
+
+## Data Flow
+
+```
+CGM Device → AID App → Nightscout → Caregivers/Reports
+```
+
+## API Versions
+
+| Version | Status | Key Features |
+|---------|--------|--------------|
+| v1 | Legacy | Basic entries, treatments |
+| v2 | Current | Authorization, extended fields |
+| v3 | Future | GraphQL, streaming |
+
+## Entry Types
+
+| Type | Field | Description |
+|------|-------|-------------|
+| `sgv` | Sensor glucose value | CGM readings |
+| `mbg` | Meter blood glucose | Fingerstick readings |
+| `treatments` | Various | Bolus, carbs, temp basal |
+| `profile` | Object | Basal rates, ISF, CR |
+| `devicestatus` | Object | Loop/AAPS algorithm state |
+
+## Alignment Workflow
+
+```bash
+# Analyze a specific topic
+sdqctl iterate analyze-cgm-handling.conv
+
+# Check current alignment
+sdqctl verify traceability --path docs/ecosystem/
+
+# Identify gaps
+sdqctl verify coverage "overall >= 80"
+```
+
+## Resources
+
+- [Nightscout Docs](https://nightscout.github.io/)
+- [Loop Docs](https://loopkit.github.io/loopdocs/)
+- [AAPS Wiki](https://androidaps.readthedocs.io/)
+- [OpenAPS Docs](https://openaps.readthedocs.io/)
 """
 }

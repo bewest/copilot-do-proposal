@@ -44,6 +44,7 @@ from .iterate_helpers import (
     SESSION_MODES,  # noqa: F401 - re-exported
     TURN_SEPARATOR,  # noqa: F401 - re-exported
     TurnGroup,  # noqa: F401 - re-exported
+    _merge_help_inline_steps,
     build_infinite_session_config,
     check_existing_stop_file,
     create_or_resume_session,
@@ -685,6 +686,11 @@ async def _cycle_async(
                     steps_to_process = conv.steps if conv.steps else [
                         {"type": "prompt", "content": p} for p in conv.prompts
                     ]
+
+                    # Preprocess: merge help_inline steps with following prompts
+                    steps_to_process = _merge_help_inline_steps(
+                        steps_to_process, conv
+                    )
                     total_prompts = len(conv.prompts)
 
                     prompt_idx = 0

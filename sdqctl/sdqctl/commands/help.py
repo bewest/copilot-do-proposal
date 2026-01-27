@@ -64,6 +64,11 @@ sdqctl status                        # Check status
 | `context` | Context management guide |
 | `examples` | Example workflows |
 | `validation` | Static verification workflow guide |
+| `gap-ids` | Gap ID taxonomy for AID alignment |
+| `5-facet` | 5-facet documentation pattern |
+| `stpa` | STPA hazard analysis guide |
+| `conformance` | Conformance testing format |
+| `nightscout` | Nightscout ecosystem overview |
 
 ## Getting Help
 

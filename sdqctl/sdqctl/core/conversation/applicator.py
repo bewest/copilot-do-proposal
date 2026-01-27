@@ -94,6 +94,16 @@ def apply_directive(conv, directive: Directive) -> None:
             topics = directive.value.split()
             conv.help_topics.extend(topics)
 
+        # Help inline - inject help as step that merges with next prompt
+        case DirectiveType.HELP_INLINE:
+            # HELP-INLINE topic1 topic2 - creates step merged with next prompt
+            topics = directive.value.split()
+            conv.steps.append(ConversationStep(
+                type="help_inline",
+                content=" ".join(topics),
+                merge_with_next=True
+            ))
+
         # Pre-flight requirements
         case DirectiveType.REQUIRE:
             # REQUIRE can have multiple items: REQUIRE @file.py cmd:git @other.md

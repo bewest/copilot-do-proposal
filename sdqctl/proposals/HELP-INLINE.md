@@ -1,7 +1,7 @@
 # HELP-INLINE Directive Proposal
 
-> **Status**: Proposal  
-> **Priority**: P2 (Medium)  
+> **Status**: ✅ Complete (2026-01-27)  
+> **Priority**: P3 (Low)  
 > **Effort**: Medium  
 > **Source**: Nightscout ecosystem workflow requirements
 

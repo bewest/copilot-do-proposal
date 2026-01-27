@@ -10,9 +10,9 @@
 
 | # | Item | Priority | Effort | Notes |
 |---|------|----------|--------|-------|
-| 1 | HELP-INLINE directive | P3 | Medium | Allow HELP anywhere, not just prologues. |
-| 2 | REFCAT glob support | P3 | Medium | `REFCAT @externals/**/*Treatment*.swift`. |
-| 3 | Ecosystem help topics | P3 | Low | gap-ids, 5-facet, stpa, conformance, nightscout. |
+| 1 | REFCAT glob support | P3 | Medium | `REFCAT @externals/**/*Treatment*.swift`. |
+| 2 | LSP support for refcat | P3 | High | Language Server Protocol for IDE integration. |
+| 3 | Interactive help (`--interactive`) | P3 | Medium | Browsable help system. |
 
 ---
 
@@ -46,8 +46,6 @@
 
 | Item | Source | Notes |
 |------|--------|-------|
-| LSP support for refcat | References | Language Server Protocol for IDE integration |
-| Interactive help (`--interactive`) | References | Browsable help system |
 | Multiple .conv files in mixed mode | Phase 6 deferred | Complex; requires positional prologue tracking |
 | `--once` flag for non-repeating CLI prompts | Phase 6 deferred | Needs use case research |
 | `--prompt` / `--file` disambiguation switches | Phase 6 deferred | Needs impact analysis |
@@ -73,6 +71,8 @@
 
 | Item | Date | Notes |
 |------|------|-------|
+| **HELP-INLINE directive (P3)** | 2026-01-27 | Added HELP-INLINE for mid-workflow help injection. Merges with next prompt. 6 tests. |
+| **Ecosystem help topics (P3)** | 2026-01-27 | Added gap-ids, 5-facet, stpa, conformance, nightscout topics. 5 tests. Total 1446 tests. |
 | **Test documentation (P3)** | 2026-01-27 | Created tests/README.md: markers, fixtures, parametrization patterns, best practices. |
 | **Verify command integration tests (P3)** | 2026-01-27 | Added TestVerifyCommandIntegration (14 tests): refs, links, traceability, coverage, terminology, assertions. |
 | **Consult/Pause workflow tests (P3)** | 2026-01-27 | Added TestConsultWorkflows (6 tests) + TestPauseWorkflows (3 tests). Total 1435 tests. |
@@ -366,6 +366,7 @@ def _check_minimal_response(
 | [SDK-METADATA-APIS](SDK-METADATA-APIS.md) | ✅ Complete | Adapter methods + status |
 | [SESSION-RESILIENCE](archive/SESSION-RESILIENCE.md) | ✅ Complete | All 5 phases. Quota tracking, rate limit prediction, compaction metrics. |
 | [COMPACTION-UNIFICATION](COMPACTION-UNIFICATION.md) | ✅ Complete | COMPACTION-MAX directive, CLI alignment, None defaults. |
+| [HELP-INLINE](HELP-INLINE.md) | ✅ Complete | HELP-INLINE directive + ecosystem topics (gap-ids, 5-facet, stpa, conformance, nightscout). |
 | [SDK-ECONOMY](SDK-ECONOMY.md) | 📝 Draft | Iteration efficiency: batch selection, work packages, protection policies. |
 
 ---

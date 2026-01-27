@@ -1268,6 +1268,154 @@ PROMPT Analyze.
         assert "invalid_topic" in errors[0][0]
 
 
+class TestHelpInlineDirective:
+    """Tests for HELP-INLINE directive parsing and step creation."""
+
+    def test_parse_help_inline_single_topic(self):
+        """HELP-INLINE creates help_inline step with topic."""
+        content = """MODEL gpt-4
+PROMPT First step.
+HELP-INLINE stpa
+PROMPT Second step.
+"""
+        conv = ConversationFile.parse(content)
+
+        step_types = [s.type for s in conv.steps]
+        assert "help_inline" in step_types
+        
+        help_step = [s for s in conv.steps if s.type == "help_inline"][0]
+        assert help_step.content == "stpa"
+        assert help_step.merge_with_next is True
+
+    def test_parse_help_inline_multiple_topics(self):
+        """HELP-INLINE with multiple topics stores all."""
+        content = """MODEL gpt-4
+PROMPT Analyze.
+HELP-INLINE stpa gap-ids conformance
+PROMPT Continue with guidance.
+"""
+        conv = ConversationFile.parse(content)
+
+        help_steps = [s for s in conv.steps if s.type == "help_inline"]
+        assert len(help_steps) == 1
+        assert "stpa" in help_steps[0].content
+        assert "gap-ids" in help_steps[0].content
+        assert "conformance" in help_steps[0].content
+
+    def test_help_inline_creates_step_not_prologue(self):
+        """HELP-INLINE should not add to help_topics (prologue injection)."""
+        content = """MODEL gpt-4
+HELP directives
+PROMPT First.
+HELP-INLINE stpa
+PROMPT Second.
+"""
+        conv = ConversationFile.parse(content)
+
+        # HELP adds to help_topics (for prologue injection)
+        assert "directives" in conv.help_topics
+        # HELP-INLINE should NOT add to help_topics
+        assert "stpa" not in conv.help_topics
+
+
+class TestHelpInlineMerge:
+    """Tests for help_inline step merging with next prompt."""
+
+    def test_merge_help_inline_with_prompt(self):
+        """help_inline step merges content with following prompt."""
+        from sdqctl.commands.iterate_helpers import _merge_help_inline_steps
+
+        content = """MODEL gpt-4
+PROMPT First.
+HELP-INLINE stpa
+PROMPT Identify hazards.
+"""
+        conv = ConversationFile.parse(content)
+        merged = _merge_help_inline_steps(conv.steps, conv)
+
+        # Should have 2 steps (help_inline merged into second prompt)
+        assert len(merged) == 2
+        
+        # Second prompt should contain STPA help content
+        second_prompt = merged[1]
+        assert "STPA" in second_prompt.content
+        assert "Identify hazards" in second_prompt.content
+
+    def test_merge_multiple_help_inline(self):
+        """Multiple sequential help_inline steps merge together."""
+        from sdqctl.commands.iterate_helpers import _merge_help_inline_steps
+
+        content = """MODEL gpt-4
+PROMPT First.
+HELP-INLINE stpa
+HELP-INLINE gap-ids
+PROMPT Analyze with both guides.
+"""
+        conv = ConversationFile.parse(content)
+        merged = _merge_help_inline_steps(conv.steps, conv)
+
+        # Should have 2 steps
+        assert len(merged) == 2
+        
+        # Second prompt should contain both help topics
+        second_prompt = merged[1]
+        assert "STPA" in second_prompt.content
+        assert "Gap ID" in second_prompt.content
+
+    def test_merge_preserves_non_prompt_steps(self):
+        """Non-prompt steps pass through unchanged."""
+        from sdqctl.commands.iterate_helpers import _merge_help_inline_steps
+
+        content = """MODEL gpt-4
+PROMPT First.
+CHECKPOINT mid
+HELP-INLINE stpa
+PROMPT Analyze.
+"""
+        conv = ConversationFile.parse(content)
+        merged = _merge_help_inline_steps(conv.steps, conv)
+
+        step_types = [s.type for s in merged]
+        assert "checkpoint" in step_types
+
+
+class TestEcosystemHelpTopics:
+    """Tests for ecosystem-specific help topics."""
+
+    def test_gap_ids_topic_exists(self):
+        """gap-ids help topic should exist."""
+        from sdqctl.core.help_topics import TOPICS
+        assert "gap-ids" in TOPICS
+        assert "GAP-CGM" in TOPICS["gap-ids"]
+
+    def test_5_facet_topic_exists(self):
+        """5-facet help topic should exist."""
+        from sdqctl.core.help_topics import TOPICS
+        assert "5-facet" in TOPICS
+        assert "Terminology" in TOPICS["5-facet"]
+
+    def test_stpa_topic_exists(self):
+        """stpa help topic should exist."""
+        from sdqctl.core.help_topics import TOPICS
+        assert "stpa" in TOPICS
+        assert "LOSS" in TOPICS["stpa"]
+        assert "HAZ" in TOPICS["stpa"]
+        assert "UCA" in TOPICS["stpa"]
+
+    def test_conformance_topic_exists(self):
+        """conformance help topic should exist."""
+        from sdqctl.core.help_topics import TOPICS
+        assert "conformance" in TOPICS
+        assert "Scenario" in TOPICS["conformance"]
+
+    def test_nightscout_topic_exists(self):
+        """nightscout help topic should exist."""
+        from sdqctl.core.help_topics import TOPICS
+        assert "nightscout" in TOPICS
+        assert "Loop" in TOPICS["nightscout"]
+        assert "AAPS" in TOPICS["nightscout"]
+
+
 class TestElideChainValidation:
     """Tests for ELIDE chain validation (RUN-RETRY incompatibility)."""
 

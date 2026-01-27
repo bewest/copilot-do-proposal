@@ -332,3 +332,61 @@ async def perform_compaction(
     tokens_msg = f"{compact_result.tokens_before} → {compact_result.tokens_after} tokens"
     console.print(f"[green]Compacted: {tokens_msg}[/green]")
     progress_print(f"  🗜  Compacted: {tokens_msg}")
+
+
+def _merge_help_inline_steps(steps, conv) -> list:
+    """Merge help_inline steps with following prompts.
+
+    HELP-INLINE content is prepended to the next prompt step.
+
+    Args:
+        steps: List of ConversationStep objects
+        conv: ConversationFile for accessing help topics
+
+    Returns:
+        Processed list with help_inline merged into prompts
+    """
+    from ..core.help_topics import TOPICS
+
+    if not steps:
+        return steps
+
+    merged = []
+    pending_help = []  # Accumulate help content to merge
+
+    for step in steps:
+        step_type = step.type if hasattr(step, 'type') else step.get('type')
+
+        if step_type == "help_inline":
+            # Collect help content for merging
+            content = step.content if hasattr(step, 'content') else step.get('content', '')
+            topics = content.split()
+            for topic in topics:
+                if topic in TOPICS:
+                    pending_help.append(TOPICS[topic])
+        elif step_type == "prompt":
+            # Merge any pending help with this prompt
+            if pending_help:
+                step_content = step.content if hasattr(step, 'content') else step.get('content', '')
+                help_text = "\n\n".join(pending_help)
+                merged_content = f"{help_text}\n\n{step_content}"
+
+                # Create new step with merged content
+                if hasattr(step, 'content'):
+                    from ..core.conversation import ConversationStep
+                    new_step = ConversationStep(
+                        type="prompt",
+                        content=merged_content,
+                    )
+                    merged.append(new_step)
+                else:
+                    merged.append({"type": "prompt", "content": merged_content})
+
+                pending_help = []
+            else:
+                merged.append(step)
+        else:
+            # Pass through other step types
+            merged.append(step)
+
+    return merged

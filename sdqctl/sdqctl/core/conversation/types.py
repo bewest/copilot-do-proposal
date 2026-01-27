@@ -146,6 +146,7 @@ class DirectiveType(Enum):
 
     # Help injection
     HELP = "HELP"  # Inject help topic(s) into prologues: HELP directives workflow
+    HELP_INLINE = "HELP-INLINE"  # Inject help inline before next prompt: HELP-INLINE stpa
 
     # File inclusion
     INCLUDE = "INCLUDE"  # Include another .conv file: INCLUDE common/setup.conv
@@ -237,7 +238,7 @@ class ConversationStep:
     """A step in the conversation flow (PROMPT, COMPACT, NEW-CONVERSATION, etc.)."""
 
     # Step types: prompt, compact, new_conversation, checkpoint, run,
-    # run_retry, verify, pause, consult
+    # run_retry, verify, pause, consult, help_inline
     type: str
     content: str = ""  # Prompt text or checkpoint name
     preserve: list[str] = field(default_factory=list)  # For compact
@@ -245,6 +246,7 @@ class ConversationStep:
     retry_prompt: str = ""  # For run_retry: prompt to send on failure
     verify_type: str = ""  # For verify: refs, links, traceability, all
     verify_options: dict = field(default_factory=dict)  # For verify: additional options
+    merge_with_next: bool = False  # For help_inline: merge content with following step
     # For RUN with ON-FAILURE/ON-SUCCESS blocks
     on_failure: list["ConversationStep"] = field(default_factory=list)  # Steps to run on failure
     on_success: list["ConversationStep"] = field(default_factory=list)  # Steps to run on success
