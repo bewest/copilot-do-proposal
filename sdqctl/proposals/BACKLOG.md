@@ -6,14 +6,16 @@
 
 ---
 
-## Ready Queue (4 Actionable Items)
+## Ready Queue (6 Actionable Items)
 
 | # | Item | Priority | Effort | Notes |
 |---|------|----------|--------|-------|
-| 1 | WP-001 first item: Domain-partitioned queues | P3 | Medium | Part of SDK Economy work package |
-| 2 | Performance benchmark suite | P3 | Medium | **UNBLOCKED** - OQ-005 resolved. Scope: code + workflow + SDK (comprehensive). |
-| 3 | LSP support for refcat | P3 | High | Language Server Protocol for IDE integration. |
-| 4 | Multiple .conv files in mixed mode | P3 | High | Complex; requires positional prologue tracking |
+| 1 | Fix 4 lint issues (E501, F401) | P3 | Low | 2 line-too-long, 2 unused-import. Auto-fixable. |
+| 2 | Create `proposals/backlogs/` directory structure | P3 | Low | WP-001 step 1: 5 domain .md files with headers (testing, cli, sdk-integration, architecture, directives). |
+| 3 | Define `metrics.json` schema | P3 | Low | WP-001 step 2: JSON schema for iteration metrics in docs/. |
+| 4 | Migrate testing items to `backlogs/testing.md` | P3 | Low | WP-001 step 3: Move ~17 test-related completed items. |
+| 5 | Add metrics collection to iterate.py | P3 | Low | WP-001 step 4: ~20 lines, emit to session dir. |
+| 6 | Performance benchmark suite | P3 | Medium | **UNBLOCKED** - OQ-005 resolved. Scope: code + workflow + SDK (comprehensive). |
 
 ---
 
