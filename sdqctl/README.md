@@ -4,34 +4,32 @@
 
 ## Motivation
 
-Interactive AI coding assistants like GitHub Copilot CLI excel at **focused, single-spike work**—you enter plan mode, iterate through plan/do cycles, and emerge with a working feature. This corresponds to preparing a ConversationFile and running `sdqctl run`.
+Interactive AI coding assistants like GitHub Copilot CLI excel at **focused, single-spike work**—you enter plan mode, iterate through plan/do cycles, and emerge with a working feature. But real projects require **sustained multi-cycle work**: auditing 15 components, migrating 40 files, or iterating on a complex feature over 5-10 cycles.
 
-But real projects require iterating the **same workflow across many deliverables**: auditing 15 components, migrating 40 files to TypeScript, or verifying traceability across a dozen modules. Manual orchestration means:
+Manual orchestration means:
 
 - **20+ sessions** with repetitive setup
 - **Manual context management** (when to compact? when to start fresh?)
 - **No repeatability** (can't re-run the same workflow reliably)
-- **No parallelization** (sequential even when independent)
+- **No mid-run steering** (can't inject new priorities without stopping)
 
-**sdqctl bridges this gap** by orchestrating context windows and compactions across repeatable cycles:
+**sdqctl bridges this gap** with the `iterate` command—the primary workflow for AI-assisted development:
 
 ```bash
-# Single focused spike (like interactive plan/do)
-sdqctl run audit.conv
-
-# Same workflow, iterated across components with variable expansion
-sdqctl apply audit.conv --components "lib/plugins/*.js" \
-  --prologue "Component: {{COMPONENT_NAME}}" \
-  --epilogue "Update progress.md with findings"
-
-# Multi-cycle iteration with explicit context control
-sdqctl iterate migration.conv -n 5 --session-mode fresh
+# Primary workflow: iterate with context injection
+sdqctl iterate backlog.conv -n 8 \
+  --session-mode accumulate \
+  --introduction "Focus on P0-P2 Ready Queue items" \
+  --prologue proposals/LIVE-BACKLOG.md
 ```
 
-The `--prologue` and `--epilogue` options (and their ConversationFile equivalents) frame each conversation cycle: prologues are prepended to the first prompt, epilogues are appended to the last. This enables **trivial iteration over facets or topics** while ensuring the same conversation structure and tool use in a repeatable way. Template variables like `{{COMPONENT_NAME}}`, `{{CYCLE_NUMBER}}`, and `{{DATE}}` make each iteration context-aware.
+**Key patterns**:
+- `--introduction` — First-cycle-only warmup (goals, focus areas)
+- `--prologue` — Re-read before every cycle (live priorities, status updates)
+- `LIVE-BACKLOG.md` — Edit during spot checks to steer longer runs
 
-**Session modes** give explicit control over context lifecycle:
-- `accumulate` — Context grows; compact only at limit (iterative refinement)
+**Session modes** control context lifecycle:
+- `accumulate` — Context grows; compact only at limit (iterative refinement, 70% of use)
 - `compact` — Summarize after each cycle (long workflows, token economy)  
 - `fresh` — New session each cycle, reload files (autonomous editing)
 
@@ -46,21 +44,24 @@ The `--prologue` and `--epilogue` options (and their ConversationFile equivalent
 
 ### Commands
 
+**Primary command:**
+
 | Command | Purpose | Documentation |
 |---------|---------|---------------|
-| `iterate` | Multi-cycle workflow execution | [COMMANDS.md](docs/COMMANDS.md#iterate) |
-| `run` | Single prompt or workflow execution | [COMMANDS.md](docs/COMMANDS.md#run) |
+| `iterate` | Multi-cycle workflow execution (primary) | [COMMANDS.md](docs/COMMANDS.md#iterate) |
+
+**Advanced commands:**
+
+| Command | Purpose | Documentation |
+|---------|---------|---------------|
+| `run` | Single execution (deprecated, alias for `iterate -n 1`) | [COMMANDS.md](docs/COMMANDS.md#run) |
 | `flow` | Batch/parallel workflows | [COMMANDS.md](docs/COMMANDS.md#flow) |
 | `apply` | Apply workflow to multiple components | [COMMANDS.md](docs/COMMANDS.md#apply) |
 | `render` | Preview prompts without AI execution | [COMMANDS.md](docs/COMMANDS.md#render) |
 | `verify` | Static verification (refs, links, traceability) | [COMMANDS.md](docs/COMMANDS.md#verify) |
-| `plugin` | Plugin management (list, validate) | [COMMANDS.md](docs/COMMANDS.md#plugin) |
-| `lsp` | Language server queries (type lookup) | [COMMANDS.md](docs/COMMANDS.md#lsp) |
-| `drift` | Detect changes in external repositories | [COMMANDS.md](docs/COMMANDS.md#drift) |
 | `refcat` | Extract file content with line precision | [COMMANDS.md](docs/COMMANDS.md#refcat) |
 | `sessions` | Session management (list, resume, cleanup) | [COMMANDS.md](docs/COMMANDS.md#sessions) |
 | `status` | System and adapter status | [COMMANDS.md](docs/COMMANDS.md#status) |
-| `artifact` | Artifact ID utilities | [COMMANDS.md](docs/COMMANDS.md#artifact) |
 | `validate` | Syntax validation for .conv files | [COMMANDS.md](docs/COMMANDS.md#validate) |
 | `init` | Initialize sdqctl in a project | [COMMANDS.md](docs/COMMANDS.md#init) |
 | `help` | Built-in help system | [COMMANDS.md](docs/COMMANDS.md#help) |
@@ -108,21 +109,33 @@ pip install -e ".[all]"
 # Initialize in your project
 sdqctl init
 
-# Run a simple prompt
-sdqctl run "Audit authentication module for security issues"
+# Basic iteration (single cycle)
+sdqctl iterate "Audit authentication module for security issues"
 
-# Run a workflow file
-sdqctl run workflows/security-audit.conv
-
-# Multi-cycle workflow with compaction
-sdqctl iterate workflows/migration.conv --max-cycles 5
-
-# Batch execution
-sdqctl flow workflows/*.conv --parallel 4
+# Multi-cycle with context injection (primary workflow)
+sdqctl iterate backlog.conv -n 5 \
+  --introduction "Focus on high-priority items" \
+  --prologue LIVE-BACKLOG.md
 
 # Check status
 sdqctl status
 ```
+
+### Mid-Run Steering
+
+During longer runs (`-n 5-10`), edit `LIVE-BACKLOG.md` to inject new priorities:
+
+```markdown
+<!-- LIVE-BACKLOG.md - edit while iterate runs -->
+## Hot Items
+- [ ] **URGENT**: Fix token leak spotted in cycle 3
+- [ ] Refocus on error handling
+
+## Skip Until Next Run
+- Documentation updates
+```
+
+The `--prologue` file is re-read before each cycle, enabling real-time course correction.
 
 ## Verbosity & Output Control
 
@@ -131,11 +144,11 @@ sdqctl provides fine-grained control over output:
 ### Verbosity Levels (`-v`)
 
 ```bash
-sdqctl run workflow.conv        # Default: final result only
-sdqctl -v run workflow.conv     # Progress with context %
-sdqctl -vv run workflow.conv    # Streaming agent responses
-sdqctl -vvv run workflow.conv   # Full debug (tool calls, reasoning)
-sdqctl -q run workflow.conv     # Quiet mode (errors only)
+sdqctl iterate workflow.conv     # Default: final result only
+sdqctl -v iterate workflow.conv  # Progress with context %
+sdqctl -vv iterate workflow.conv # Streaming agent responses
+sdqctl -vvv iterate workflow.conv # Full debug (tool calls, reasoning)
+sdqctl -q iterate workflow.conv  # Quiet mode (errors only)
 ```
 
 ### Show Prompts (`-P` / `--show-prompt`)
@@ -144,10 +157,10 @@ See the exact prompts being sent to the AI (on stderr):
 
 ```bash
 # Show prompts in terminal
-sdqctl -P run workflow.conv
+sdqctl -P iterate workflow.conv
 
 # Capture prompts to file while running
-sdqctl -P run workflow.conv 2> prompts.log
+sdqctl -P iterate workflow.conv 2> prompts.log
 
 # Full debugging: prompts + streaming response
 sdqctl -vv -P iterate workflow.conv
@@ -170,10 +183,10 @@ Output follows Unix conventions for pipeable workflows:
 
 ```bash
 # Pipe agent output, see prompts on terminal
-sdqctl -P run workflow.conv > results.md
+sdqctl -P iterate workflow.conv > results.md
 
 # Capture both separately
-sdqctl -P run workflow.conv > results.md 2> prompts.log
+sdqctl -P iterate workflow.conv > results.md 2> prompts.log
 ```
 
 See [docs/IO-ARCHITECTURE.md](docs/IO-ARCHITECTURE.md) for full details.
@@ -308,11 +321,10 @@ FOOTER ---\nGenerated by sdqctl
 
 CLI options:
 ```bash
-sdqctl run workflow.conv \
-  --prologue "Date: 2026-01-21" \
-  --epilogue @templates/footer.md \
-  --header "# Report" \
-  --footer @templates/disclaimer.md
+sdqctl iterate workflow.conv \
+  --introduction "First-cycle warmup context" \
+  --prologue LIVE-BACKLOG.md \
+  --epilogue @templates/footer.md
 ```
 
 ### RUN Directive (Command Execution)
@@ -496,25 +508,50 @@ sdqctl resume pause.json --dry-run --json
 
 ## Commands
 
-### `sdqctl run`
+### `sdqctl iterate` (Primary Command)
 
-Execute a single prompt or workflow:
+The iterate command is the primary way to use sdqctl. It runs multi-cycle workflows with context injection and mid-run steering:
 
 ```bash
-sdqctl run "Analyze this codebase"
-sdqctl run workflow.conv --adapter copilot
-sdqctl run workflow.conv --dry-run
-sdqctl run workflow.conv --render-only  # Preview prompts, no AI calls
+# Basic usage
+sdqctl iterate workflow.conv -n 5
+
+# Full workflow with context injection (recommended pattern)
+sdqctl iterate backlog.conv -n 8 \
+  --session-mode accumulate \
+  --introduction "Focus on P0-P2 items from the Ready Queue" \
+  --prologue LIVE-BACKLOG.md
+
+# Preview without AI calls
+sdqctl iterate workflow.conv -n 3 --render-only
 ```
 
-### `sdqctl iterate`
+**Key options:**
 
-Multi-cycle execution with compaction:
+| Option | Purpose |
+|--------|---------|
+| `-n, --max-cycles` | Number of cycles to run |
+| `--session-mode` | Context management: accumulate, compact, fresh |
+| `--introduction` | First-cycle-only context (warmup, goals) |
+| `--prologue` | Re-read before every cycle (live priorities) |
+| `--epilogue` | Appended after each cycle |
+| `--dry-run` | Validate without execution |
+| `--render-only` | Preview prompts, no AI calls |
+
+#### Session Modes
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| `accumulate` | Context grows, compact only at limit | Iterative refinement (70% of use) |
+| `compact` | Summarize after each cycle | Long-running workflows |
+| `fresh` | New session each cycle, reload files | Autonomous file editing |
 
 ```bash
-sdqctl iterate workflow.conv --max-cycles 5
-sdqctl iterate workflow.conv --checkpoint-dir ./checkpoints
-sdqctl iterate workflow.conv -n 3 --render-only  # Preview all cycles
+# Accumulate mode (default): context builds across cycles
+sdqctl iterate workflow.conv -n 5 --session-mode accumulate
+
+# Fresh mode: each cycle sees file changes from previous cycles
+sdqctl iterate workflow.conv -n 5 --session-mode fresh
 ```
 
 #### Pipeline Input (`--from-json`)
@@ -526,38 +563,23 @@ Execute workflow from pre-rendered JSON, enabling external transformation:
 sdqctl render iterate workflow.conv --json \
   | jq '.cycles[0].prompts[0].resolved += " (modified)"' \
   | sdqctl iterate --from-json -
-
-# Load from file
-sdqctl iterate --from-json rendered.json
-
-# Dry run to validate
-sdqctl iterate --from-json - --dry-run < workflow.json
 ```
 
-This enables powerful composition patterns:
-- Conditional workflow selection based on external state
-- Dynamic prompt modification via jq/jsonnet
-- CI/CD pipeline integration
+### `sdqctl run` (Deprecated)
 
-#### Session Modes
-
-The `--session-mode` option controls how context is managed across cycles:
-
-| Mode | Description | Use Case |
-|------|-------------|----------|
-| `accumulate` | Context grows, compact only at limit | Iterative refinement |
-| `compact` | Summarize after each cycle | Long-running workflows |
-| `fresh` | New session each cycle, reload files | Autonomous file editing |
+> **Note:** `sdqctl run` is deprecated. It forwards to `sdqctl iterate -n 1`.
 
 ```bash
-# Fresh mode: each cycle sees file changes from previous cycles
-sdqctl iterate workflow.conv -n 5 --session-mode fresh
-
-# Compact mode: summarize between cycles to manage token usage
-sdqctl iterate workflow.conv -n 10 --session-mode compact
+# These are equivalent:
+sdqctl run workflow.conv
+sdqctl iterate workflow.conv -n 1
 ```
 
-### `sdqctl render`
+### Advanced Commands
+
+The following commands are available for specialized use cases.
+
+#### `sdqctl render`
 
 Render workflow prompts without executing (no AI calls). Now with subcommands:
 
@@ -598,7 +620,7 @@ epilogues expanded. Useful for:
 > **Note:** `--render-only` flag on `run` and `iterate` commands is deprecated.
 > Use `sdqctl render run` or `sdqctl render iterate` instead.
 
-### `sdqctl flow`
+#### `sdqctl flow`
 
 Batch/parallel execution:
 
@@ -607,7 +629,7 @@ sdqctl flow workflows/*.conv --parallel 4
 sdqctl flow workflows/*.conv --continue-on-error
 ```
 
-### `sdqctl apply`
+#### `sdqctl apply`
 
 Apply a workflow to multiple components with progress tracking:
 
@@ -647,7 +669,7 @@ Status indicators:
 - ⏳ Pending - Waiting to be processed
 - ❌ Failed - Processing failed
 
-### `sdqctl verify`
+#### `sdqctl verify`
 
 Static verification suite for workflows and references. These commands run **without AI calls** and are safe for CI/CD pipelines.
 
@@ -713,7 +735,7 @@ ELIDE
 PROMPT Fix any traceability gaps found above.
 ```
 
-### `sdqctl refcat`
+#### `sdqctl refcat`
 
 Extract file content with line-level precision for context injection:
 
@@ -784,7 +806,7 @@ PROMPT Compare these bolus handling implementations.
 
 See `proposals/REFCAT-DESIGN.md` for full specification.
 
-### `sdqctl status`
+#### `sdqctl status`
 
 Show session and system status:
 
@@ -796,7 +818,7 @@ sdqctl status --models
 sdqctl status --auth
 ```
 
-### `sdqctl sessions`
+#### `sdqctl sessions`
 
 Manage conversation sessions:
 
@@ -815,13 +837,13 @@ sdqctl sessions cleanup --older-than 7d --dry-run
 sdqctl sessions cleanup --older-than 30d
 ```
 
-### `sdqctl help`
+#### `sdqctl help`
 
 Comprehensive help system:
 
 ```bash
 sdqctl help                  # Overview
-sdqctl help run              # Command help
+sdqctl help iterate          # Command help
 sdqctl help directives       # Topic help
 sdqctl help --list           # List all commands and topics
 ```
