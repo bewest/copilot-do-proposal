@@ -31,7 +31,7 @@ MODE implement
 # MAX-CYCLES 1
 
 # === Context Management ===
-CONTEXT-LIMIT 60%
+CONTEXT-LIMIT 50%
 ON-CONTEXT-LIMIT compact
 COMPACT-PRESERVE prompts,errors,tool-results
 
