@@ -221,24 +221,34 @@ Key decisions made during development:
 
 ## Development Workflow
 
-The workflow that built sdqctl:
+The workflow that built sdqctl relied almost exclusively on the `iterate` subcommand
+with `--introduction` and `--prologue` flags, powered by the backlog processor v2:
 
 ```bash
-# 1. Groom backlog - identify next work package
-sdqctl iterate examples/workflows/groom-backlog.conv -n 1
-
-# 2. Specify work items - break into Low-effort chunks
-sdqctl iterate work-package.conv -n 1 \
-  --introduce "Break WP-004 into 4-6 Low items"
-
-# 3. Execute work - typically 3-8 cycle runs
+# Primary workflow: iterate with backlog processor v2
 sdqctl iterate backlog.conv -n 8 \
   --session-mode accumulate \
-  --introduce "Execute Ready Queue P0-P2 items"
-
-# 4. Verify and commit
-pytest && git add -A && git commit
+  --introduction "Focus on P0-P2 Ready Queue items" \
+  --prologue proposals/LIVE-BACKLOG.md
 ```
+
+**Key patterns**:
+
+| Element | Purpose |
+|---------|---------|
+| Backlog processor v2 | Core engine parsing structured markdown backlogs |
+| `--introduction` | First-cycle-only warmup context (goals, focus areas) |
+| `--prologue` | Injected before every cycle (live status, new priorities) |
+| `LIVE-BACKLOG.md` | Mutable file for injecting new items mid-run |
+| Interactive Copilot | Ad-hoc work item injection during spot checks |
+
+**Mid-run steering with LIVE-BACKLOG.md and interactive Copilot**:
+
+During longer cycles (`-n 5-10`), operators performed spot checks and used two
+mechanisms to refocus the automation:
+
+1. **Edit `LIVE-BACKLOG.md`** — Modify priorities without stopping the run
+2. **Interactive Copilot** — Inject urgent work items conversationally
 
 **Session modes observed**:
 - `accumulate`: 70% of development (iterative refinement)
