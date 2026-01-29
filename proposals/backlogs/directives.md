@@ -2,7 +2,7 @@
 
 > **Domain**: Directive system, plugins, extensibility  
 > **Parent**: [BACKLOG.md](../BACKLOG.md)  
-> **Last Updated**: 2026-01-27
+> **Last Updated**: 2026-01-29
 
 ---
 
@@ -10,7 +10,65 @@
 
 | # | Item | Priority | Effort | Notes |
 |---|------|----------|--------|-------|
-| *(No active items)* | | | | |
+| DIR-001 | **Custom directive types from plugins** | P2 | 2-3 iterations | Allow plugins to define new directive types (e.g., HYGIENE, TRACE) beyond VERIFY |
+| DIR-002 | **Extensible DirectiveType enum** | P2 | 1 iteration | Make DirectiveType dynamic to support plugin-defined types |
+| DIR-003 | **Custom directive execution hooks** | P2 | 1 iteration | Wire plugin directives into iterate/run pipeline |
+
+---
+
+## Backlog Details
+
+### DIR-001: Custom directive types from plugins
+
+**Problem**: External projects (e.g., rag-nightscout-ecosystem-alignment) can define custom directive types in `.sdqctl/directives.yaml` (e.g., `HYGIENE`), but sdqctl only processes `VERIFY` plugins. The parser ignores unknown directives.
+
+**Current limitation** (plugins.py line 237):
+```python
+if handler.directive_type == "VERIFY":
+    # Only VERIFY handlers are registered
+```
+
+**Requirements**:
+1. Parser should recognize plugin-defined directive types
+2. Directive handlers should be callable from .conv files
+3. CLI subcommands for custom directives (e.g., `sdqctl hygiene queue-stats`)
+
+**Scope**:
+- Parser extension (DirectiveType enum → extensible registry)
+- Plugin loading for non-VERIFY types
+- Execution pipeline integration
+- CLI command generation
+
+**Dependencies**: DIR-002, DIR-003
+
+**References**:
+- [PLUGIN-SYSTEM.md](PLUGIN-SYSTEM.md) - Phase 4 ecosystem adoption
+- [externals/rag-nightscout-ecosystem-alignment/.sdqctl/directives.yaml](../../externals/rag-nightscout-ecosystem-alignment/.sdqctl/directives.yaml) - HYGIENE example
+
+---
+
+### DIR-002: Extensible DirectiveType enum
+
+**Problem**: `DirectiveType` is a Python Enum, which is static and cannot be extended at runtime.
+
+**Approach options**:
+1. **String-based types**: Use strings instead of enum for directive types
+2. **Hybrid**: Keep enum for built-in, use string registry for plugins
+3. **Dynamic enum**: Create enum class at load time with plugin types
+
+**Recommended**: Option 2 (hybrid) - minimal disruption to existing code.
+
+---
+
+### DIR-003: Custom directive execution hooks
+
+**Problem**: Even if parser recognizes custom directives, the iterate/run pipeline doesn't know how to execute them.
+
+**Requirements**:
+1. Hook system for plugin directive execution
+2. Context passing (workspace, session state)
+3. Output handling (inject into prompt, log, etc.)
+4. Error handling consistent with VERIFY-ON-ERROR patterns
 
 ---
 
