@@ -1,7 +1,8 @@
 # Proposal: Plugin System for Ecosystem Extensions
 
-> **Status**: In Progress (Phase 4 pending - ecosystem adoption)  
+> **Status**: Complete (Phases 1-3); Phase 4 (Ecosystem Adoption) is R&D  
 > **Date**: 2026-01-27  
+> **Updated**: 2026-01-29  
 > **Author**: sdqctl development  
 > **Scope**: Allow external workspaces to extend sdqctl with custom directives/commands
 

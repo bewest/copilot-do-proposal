@@ -206,6 +206,10 @@ Items not yet assigned to work packages:
 | WP-006 Phase 3: Multi-language LSP | [LSP-INTEGRATION.md](LSP-INTEGRATION.md) | Swift, Kotlin support |
 | WP-006 Phase 4: Cross-project compare | [LSP-INTEGRATION.md](LSP-INTEGRATION.md) | `lsp compare-types` |
 | WP-004 Phase 4: Ecosystem adoption | [PLUGIN-SYSTEM.md](PLUGIN-SYSTEM.md) | Migrate tools to plugin format, gather feedback |
+| CONTEXT directive deprecation | [CONTEXT-DEPRECATION.md](CONTEXT-DEPRECATION.md) | Draft - deprecate in favor of REFCAT |
+| STPA template variables | [STPA-INTEGRATION.md](STPA-INTEGRATION.md) | Future work from partial impl |
+| STPA CI JSON output format | [STPA-INTEGRATION.md](STPA-INTEGRATION.md) | Future work from partial impl |
+| Integration Test Expansion | Architecture Roadmap | Adapter, e2e, CLI tests |
 
 ---
 
