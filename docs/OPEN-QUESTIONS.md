@@ -18,7 +18,6 @@ Questions awaiting human decision or clarification.
 | OQ-UP-002 | Auto-create issues before PRs? | UPSTREAM-CONTRIBUTIONS.md | P3 | 2026-01-27 | Some repos require issue first. Default behavior? |
 | OQ-UP-003 | CLA requirement handling? | UPSTREAM-CONTRIBUTIONS.md | P3 | 2026-01-27 | How to detect/handle CLA requirements? |
 | OQ-UP-004 | Project-specific CI integration? | UPSTREAM-CONTRIBUTIONS.md | P3 | 2026-01-27 | Integration with varied CI systems across repos |
-| OQ-UP-005 | Additional consolidation work needed? | LIVE-BACKLOG.md | P3 | 2026-01-27 | Human asked if more consolidation proposals should be created |
 
 ---
 
@@ -28,6 +27,7 @@ Questions that have been answered and can be routed to work queues.
 
 | ID | Question | Answer | Answered | Routed To |
 |----|----------|--------|----------|-----------|
+| OQ-UP-005 | Additional consolidation work needed? | No - ITERATE-CONSOLIDATION complete, remaining proposals are refinements not consolidations | 2026-01-29 | ✅ Closed |
 | OQ-LSP-001 | Language server lifecycle? | Hybrid: on-demand with idle timeout + join existing server | 2026-01-27 | proposals/LSP-INTEGRATION.md |
 | OQ-LSP-004 | LSP error handling? | Fail fast default, `--lsp-fallback` CLI switch for REFCAT fallback | 2026-01-27 | proposals/LSP-INTEGRATION.md |
 | OQ-SE-002 | Self-grooming pattern? | Document in ITERATION-PATTERNS.md, implement in v3 workflow | 2026-01-27 | docs/ITERATION-PATTERNS.md |
