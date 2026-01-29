@@ -48,6 +48,24 @@ class TestIsWorkflowFile:
     def test_nonexistent_file(self):
         assert is_workflow_file("/nonexistent/file.conv") is False
 
+    def test_long_string_treated_as_prompt(self):
+        """Long strings (>1024 chars) are treated as prompts, not file paths."""
+        long_prompt = "x" * 2000
+        assert is_workflow_file(long_prompt) is False
+
+    def test_very_long_string_no_exception(self):
+        """Very long strings should not raise OSError."""
+        # This string would cause 'File name too long' without the fix
+        very_long = "a" * 5000 + ".conv"
+        # Should return False without raising an exception
+        assert is_workflow_file(very_long) is False
+
+    def test_medium_length_path_still_checked(self):
+        """Paths under threshold are still checked for existence."""
+        # 500 chars is under threshold, should still be checked
+        medium_path = "/some/path/" + "x" * 480 + ".conv"
+        assert is_workflow_file(medium_path) is False  # Doesn't exist
+
 
 class TestParseTargets:
     """Tests for parse_targets function."""

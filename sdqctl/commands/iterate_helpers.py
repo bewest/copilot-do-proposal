@@ -36,9 +36,21 @@ class TurnGroup:
 
 
 def is_workflow_file(item: str) -> bool:
-    """Check if item is an existing .conv or .copilot file."""
+    """Check if item is an existing .conv or .copilot file.
+    
+    Long strings (>1024 chars) are treated as prompts, not file paths.
+    OSError is caught to handle edge cases where paths seem valid but fail.
+    """
+    # Long strings can't be file paths - treat as prompt
+    if len(item) > 1024:
+        return False
+    
     path = Path(item)
-    return path.exists() and path.suffix in (".conv", ".copilot")
+    try:
+        return path.exists() and path.suffix in (".conv", ".copilot")
+    except OSError:
+        # Filename too long or other path error - not a file
+        return False
 
 
 # Marker prefix for explicit prompts (won't be treated as files)

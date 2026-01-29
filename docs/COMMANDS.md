@@ -160,6 +160,8 @@ sdqctl render iterate workflow.conv --json | jq '...' | sdqctl iterate --from-js
 | `--compaction-threshold` | Background compaction threshold % (default: 80) |
 | `--compaction-max` | Block until complete at this % (default: 95) |
 
+> **Note:** Long prompts (>1024 chars) passed via `--introduction`, `--until`, or positional arguments are safely treated as text prompts, never as file paths.
+
 **Session Modes:**
 | Mode | Behavior |
 |------|----------|
