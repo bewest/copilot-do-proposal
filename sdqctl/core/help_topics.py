@@ -916,5 +916,253 @@ sdqctl verify coverage "overall >= 80"
 - [Loop Docs](https://loopkit.github.io/loopdocs/)
 - [AAPS Wiki](https://androidaps.readthedocs.io/)
 - [OpenAPS Docs](https://openaps.readthedocs.io/)
+""",
+
+    "plugins": """
+# Plugin System
+
+Extend sdqctl with custom directives and commands.
+
+## Plugin Location
+
+Plugins are defined in `.sdqctl/directives.yaml` at your project root.
+
+## Manifest Structure
+
+```yaml
+# .sdqctl/directives.yaml
+version: "1.0"
+directives:
+  - name: VERIFY lint-check
+    type: VERIFY
+    description: Run custom linting
+    handler:
+      type: shell
+      command: npm run lint
+      
+  - name: VERIFY type-check
+    type: VERIFY
+    handler:
+      type: python
+      module: my_project.verifiers
+      function: type_check
+```
+
+## Handler Types
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `shell` | Execute shell command | `command: pytest` |
+| `python` | Call Python function | `module: pkg.mod`, `function: fn` |
+
+## Using Plugin Directives
+
+In your `.conv` workflow:
+```dockerfile
+VERIFY lint-check
+VERIFY type-check
+```
+
+## CLI Commands
+
+```bash
+# Validate plugin manifest
+sdqctl verify plugin
+
+# List available plugins
+sdqctl plugin list
+
+# Check plugin capabilities
+sdqctl plugin info <name>
+```
+
+## Security
+
+Plugins run with the same permissions as sdqctl. The `verify plugin` command
+checks for unsafe patterns before execution.
+
+See `docs/PLUGIN-AUTHORING.md` for full authoring guide.
+""",
+
+    "verify": """
+# Verification Commands
+
+Static verification without AI calls - safe for CI/CD.
+
+## Available Verifiers
+
+| Command | Purpose | Example |
+|---------|---------|---------|
+| `verify refs` | Check @file references exist | `sdqctl verify refs` |
+| `verify links` | Check markdown links | `sdqctl verify links` |
+| `verify traceability` | Check requirement→test links | `sdqctl verify traceability` |
+| `verify coverage` | Check coverage thresholds | `sdqctl verify coverage ">=80"` |
+| `verify terminology` | Check term consistency | `sdqctl verify terminology` |
+| `verify assertions` | Check assertion markers | `sdqctl verify assertions` |
+| `verify plugin` | Validate plugin manifest | `sdqctl verify plugin` |
+| `verify all` | Run all verifiers | `sdqctl verify all` |
+
+## Output Formats
+
+```bash
+# Human-readable (default)
+sdqctl verify refs
+
+# JSON for CI/CD
+sdqctl verify refs --json
+
+# Exit code only
+sdqctl verify refs --quiet
+```
+
+## In Workflows
+
+```dockerfile
+# Run verifier as directive
+VERIFY refs
+VERIFY links
+VERIFY traceability --path docs/
+
+# Continue on failure
+VERIFY-ON-ERROR continue
+VERIFY coverage ">=70"
+```
+
+## CI/CD Integration
+
+```yaml
+# GitHub Actions
+- name: Static verification
+  run: sdqctl verify all --json
+```
+
+Exit codes: 0 = pass, 1 = fail, 2 = error
+""",
+
+    "iterate": """
+# Iteration Patterns
+
+Multi-cycle workflow execution with `sdqctl iterate`.
+
+## Basic Usage
+
+```bash
+# Single iteration (same as deprecated `run`)
+sdqctl iterate workflow.conv
+
+# Multiple iterations
+sdqctl iterate workflow.conv -n 5
+
+# Until condition met
+sdqctl iterate workflow.conv --until "VERIFY refs"
+```
+
+## Session Modes
+
+| Mode | Behavior | Use Case |
+|------|----------|----------|
+| `resume` | Continue existing session | Long-running work |
+| `fresh` | New session each cycle | Independent iterations |
+| `named` | Use SESSION-NAME from workflow | Team collaboration |
+
+```bash
+sdqctl iterate workflow.conv --session-mode resume
+sdqctl iterate workflow.conv --session-mode fresh
+```
+
+## Cycle Control
+
+```dockerfile
+# In workflow: max cycles
+MAX-CYCLES 5
+
+# Checkpoint between cycles
+CHECKPOINT "Phase 1 complete"
+
+# Stop condition
+STOP-WHEN VERIFY refs
+```
+
+## CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `-n, --cycles` | Number of iterations |
+| `--until` | Stop when condition passes |
+| `--session-mode` | Session handling strategy |
+| `--introduce` | First-cycle-only context |
+| `--prologue` | Prepend to every cycle |
+| `--epilogue` | Append to every cycle |
+
+## Anti-Patterns
+
+❌ Don't use `--cycles 100` without stop conditions
+❌ Don't ignore CHECKPOINT directives
+✅ Use VERIFY-based stop conditions
+✅ Use PAUSE for human review points
+""",
+
+    "compaction": """
+# Context Compaction
+
+Manage context window usage in long-running sessions.
+
+## When Compaction Occurs
+
+1. **Automatic**: When context exceeds CONTEXT-LIMIT threshold
+2. **Explicit**: When COMPACT directive encountered
+3. **CLI**: With `--compact` flag
+
+## Configuration
+
+```dockerfile
+# Set threshold (percentage of context window)
+CONTEXT-LIMIT 80%
+
+# Action when limit reached
+ON-CONTEXT-LIMIT compact    # Summarize and continue
+ON-CONTEXT-LIMIT warn       # Log warning, continue
+ON-CONTEXT-LIMIT error      # Stop with error
+
+# Minimum density for compaction
+COMPACTION-MIN 0.3
+```
+
+## CLI Options
+
+```bash
+# Force compaction at start
+sdqctl iterate workflow.conv --compact
+
+# Set compaction threshold
+sdqctl iterate workflow.conv --context-limit 70
+
+# Set minimum density
+sdqctl iterate workflow.conv --compaction-min 0.4
+```
+
+## How Compaction Works
+
+1. Current conversation summarized by AI
+2. Summary replaces full history
+3. New context calculated
+4. Execution continues
+
+## Monitoring
+
+```bash
+# Check session context usage
+sdqctl sessions status <session-id>
+
+# View compaction history
+sdqctl sessions history <session-id>
+```
+
+## Best Practices
+
+- Set CONTEXT-LIMIT below 90% to allow headroom
+- Use COMPACTION-MIN to prevent over-aggressive compaction
+- Add CHECKPOINT before expensive operations
+- Monitor context % with `-v` flag
 """
 }

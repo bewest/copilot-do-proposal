@@ -65,6 +65,10 @@ sdqctl status                        # Check status
 | `context` | Context management guide |
 | `examples` | Example workflows |
 | `validation` | Static verification workflow guide |
+| `plugins` | Plugin system and custom directives |
+| `verify` | Static verification commands |
+| `iterate` | Multi-cycle iteration patterns |
+| `compaction` | Context compaction strategies |
 | `gap-ids` | Gap ID taxonomy for AID alignment |
 | `5-facet` | 5-facet documentation pattern |
 | `stpa` | STPA hazard analysis guide |
@@ -225,6 +229,15 @@ def _list_topics() -> None:
         "examples": "Example workflows",
         "ai": "Workflow authoring guidance for AI agents",
         "validation": "Static verification workflow guide",
+        "plugins": "Plugin system and custom directives",
+        "verify": "Static verification commands",
+        "iterate": "Multi-cycle iteration patterns",
+        "compaction": "Context compaction strategies",
+        "gap-ids": "Gap identification taxonomy",
+        "5-facet": "5-facet documentation pattern",
+        "stpa": "STPA safety analysis",
+        "conformance": "Conformance verification",
+        "nightscout": "Nightscout ecosystem overview",
     }
 
     for topic in sorted(TOPICS.keys()):
