@@ -12,7 +12,6 @@
 |---|------|----------|--------|-------|
 | DOC-001 | **Documentation coherency audit** | P2 | 2-3 iterations | Review all docs for autonomous operation optimization |
 | DOC-002 | **Deprecation cleanup** | P2 | 1 iteration | Phase 1 done, 12 docs remain |
-| DOC-004 | **Subproject tooling guide** | P2 | 1 iteration | Guide for externals to use verification/directives |
 
 ---
 
@@ -134,6 +133,7 @@ docs/SUBPROJECT-SETUP.md
 
 | Item | Date | Notes |
 |------|------|-------|
+| DOC-004: Subproject tooling guide | 2026-01-29 | Created docs/SUBPROJECT-TOOLING.md with setup, handlers, workflows |
 | DOC-003: HELP-INLINE topic expansion | 2026-01-29 | Added 4 topics: plugins, verify, iterate, compaction (17 total) |
 | DOC-002 Phase 1: GETTING-STARTED.md | 2026-01-29 | Updated all `run` → `iterate`, added deprecation note |
 | Initial documentation structure | 2026-01-21 | 29 docs created |
