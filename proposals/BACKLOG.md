@@ -141,7 +141,7 @@
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| *(No P2 items)* | | |
+| DOC-001: Documentation coherency audit | 2-3 iterations | Review all docs for autonomous operation |
 
 *Details in domain backlogs: [documentation.md](backlogs/documentation.md), [directives.md](backlogs/directives.md)*
 
