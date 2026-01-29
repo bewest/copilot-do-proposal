@@ -11,7 +11,6 @@
 | # | Item | Priority | Effort | Notes |
 |---|------|----------|--------|-------|
 | DIR-001 | **Custom directive types from plugins** | P2 | 2-3 iterations | Allow plugins to define new directive types (e.g., HYGIENE, TRACE) beyond VERIFY |
-| DIR-002 | **Extensible DirectiveType enum** | P2 | 1 iteration | Make DirectiveType dynamic to support plugin-defined types |
 | DIR-003 | **Custom directive execution hooks** | P2 | 1 iteration | Wire plugin directives into iterate/run pipeline |
 
 ---
@@ -76,6 +75,7 @@ if handler.directive_type == "VERIFY":
 
 | Item | Date | Notes |
 |------|------|-------|
+| **DIR-002: Extensible DirectiveType** | 2026-01-29 | Hybrid approach: enum + string registry, 11 tests |
 | **Directive discovery from manifest** | 2026-01-27 | WP-004 step 2: Created sdqctl/plugins.py. 21 tests. |
 | **Define directives.yaml schema** | 2026-01-27 | WP-004 step 1: Created docs/directives-schema.json. |
 

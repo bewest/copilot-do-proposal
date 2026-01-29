@@ -16,6 +16,7 @@ from typing import Any
 
 import yaml
 
+from .core.conversation.types import register_custom_directive
 from .verifiers.base import VerificationError, VerificationResult
 
 
@@ -234,6 +235,14 @@ def load_plugin_verifiers(
             workspace_root = manifest_path.parent.parent  # .sdqctl/../
 
             for handler in manifest.handlers:
+                # Register the directive type in the custom registry
+                register_custom_directive(handler.directive_type, {
+                    "name": handler.name,
+                    "handler": handler.handler,
+                    "description": handler.description,
+                    "source": str(manifest_path),
+                })
+                
                 if handler.directive_type == "VERIFY":
                     # Register as a verifier
                     key = handler.name

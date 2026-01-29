@@ -3,13 +3,48 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     pass
 
 # Patterns for detecting secret environment variable names
 SECRET_KEY_PATTERNS = ('KEY', 'SECRET', 'TOKEN', 'PASSWORD', 'AUTH', 'CREDENTIAL', 'API_')
+
+
+# Registry for plugin-defined directive types
+# Maps directive name (e.g., "HYGIENE") to metadata
+_CUSTOM_DIRECTIVE_REGISTRY: dict[str, dict] = {}
+
+
+def register_custom_directive(name: str, metadata: dict | None = None) -> None:
+    """Register a custom directive type from a plugin.
+    
+    Args:
+        name: Directive name (e.g., "HYGIENE", "TRACE")
+        metadata: Optional metadata about the directive (handler, description, etc.)
+    """
+    _CUSTOM_DIRECTIVE_REGISTRY[name.upper()] = metadata or {}
+
+
+def unregister_custom_directive(name: str) -> None:
+    """Unregister a custom directive type."""
+    _CUSTOM_DIRECTIVE_REGISTRY.pop(name.upper(), None)
+
+
+def get_custom_directives() -> dict[str, dict]:
+    """Get all registered custom directive types."""
+    return _CUSTOM_DIRECTIVE_REGISTRY.copy()
+
+
+def is_custom_directive(name: str) -> bool:
+    """Check if a directive name is a registered custom type."""
+    return name.upper() in _CUSTOM_DIRECTIVE_REGISTRY
+
+
+def clear_custom_directives() -> None:
+    """Clear all custom directive registrations (for testing)."""
+    _CUSTOM_DIRECTIVE_REGISTRY.clear()
 
 
 def _mask_env_value(key: str, value: str) -> str:
@@ -162,12 +197,29 @@ class DirectiveType(Enum):
 
 @dataclass
 class Directive:
-    """A single directive from a ConversationFile."""
+    """A single directive from a ConversationFile.
+    
+    The type field can be:
+    - DirectiveType enum member (built-in directives)
+    - str (plugin-defined custom directives)
+    """
 
-    type: DirectiveType
+    type: Union[DirectiveType, str]
     value: str
     line_number: int
     raw_line: str
+    
+    @property
+    def type_name(self) -> str:
+        """Get the directive type name as a string."""
+        if isinstance(self.type, DirectiveType):
+            return self.type.value
+        return self.type
+    
+    @property
+    def is_custom(self) -> bool:
+        """Check if this is a custom (plugin-defined) directive."""
+        return isinstance(self.type, str)
 
 
 @dataclass
