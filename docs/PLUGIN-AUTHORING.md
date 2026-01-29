@@ -93,6 +93,30 @@ directives:
 | `TRACE` | Traceability commands | Artifact linking |
 | `CHECK` | Validation commands | Runtime checks |
 
+### Using Custom Directives in Workflows
+
+Once registered in `directives.yaml`, custom directives can be used directly in `.conv` workflow files:
+
+```dockerfile
+# my-workflow.conv
+MODEL gpt-4
+
+# Custom directive from plugin
+HYGIENE queue-stats
+
+# Built-in directive  
+PROMPT Review the hygiene results and suggest improvements.
+```
+
+Custom directives are executed in order during `sdqctl iterate`:
+
+1. Plugin hooks are loaded from `directives.yaml`
+2. Parser recognizes custom directive types
+3. Directive handler runs when step is reached
+4. Output is displayed and optionally injected into prompt
+
+**Note**: Custom directives require the plugin to be registered before parsing. The parser ignores unknown directives for forward compatibility.
+
 ---
 
 ## Handler Development
@@ -124,10 +148,13 @@ Use these in your handler command:
 |-------------|-------|
 | `{root}` | Verification target path |
 | `{workspace}` | Workspace root path |
+| `{value}` | Directive value from .conv file |
+| `{directive}` | Directive type name |
 
 Example:
 ```yaml
 handler: python tools/verify.py --path {root}
+handler: ./scripts/hygiene.sh {value}  # passes directive argument
 ```
 
 ---
