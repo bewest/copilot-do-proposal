@@ -12,12 +12,159 @@ import shlex
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import yaml
 
 from .core.conversation.types import register_custom_directive
 from .verifiers.base import VerificationError, VerificationResult
+
+
+@dataclass
+class DirectiveExecutionContext:
+    """Context passed to custom directive handlers during execution.
+    
+    Provides handlers with access to workspace info, session state,
+    and output channels.
+    """
+    
+    workspace_root: Path
+    directive_name: str
+    directive_value: str
+    line_number: int
+    
+    # Optional session context
+    session_id: str | None = None
+    cycle_number: int = 1
+    
+    # Output configuration
+    inject_output: bool = True  # Whether to inject output into prompt
+    
+    def __post_init__(self):
+        self._output_buffer: list[str] = []
+        self._errors: list[str] = []
+    
+    def emit(self, text: str) -> None:
+        """Emit text to be injected into the conversation."""
+        self._output_buffer.append(text)
+    
+    def error(self, message: str) -> None:
+        """Record an error message."""
+        self._errors.append(message)
+    
+    @property
+    def output(self) -> str:
+        """Get all emitted output."""
+        return "\n".join(self._output_buffer)
+    
+    @property
+    def errors(self) -> list[str]:
+        """Get all recorded errors."""
+        return self._errors.copy()
+    
+    @property
+    def has_errors(self) -> bool:
+        """Check if any errors were recorded."""
+        return len(self._errors) > 0
+
+
+@dataclass
+class DirectiveExecutionResult:
+    """Result of executing a custom directive."""
+    
+    success: bool
+    output: str = ""
+    errors: list[str] = field(default_factory=list)
+    inject_into_prompt: bool = True
+    
+    @classmethod
+    def ok(cls, output: str = "", inject: bool = True) -> "DirectiveExecutionResult":
+        """Create a successful result."""
+        return cls(success=True, output=output, inject_into_prompt=inject)
+    
+    @classmethod
+    def fail(cls, errors: list[str], output: str = "") -> "DirectiveExecutionResult":
+        """Create a failed result."""
+        return cls(success=False, output=output, errors=errors)
+
+
+# Type alias for directive hook functions
+DirectiveHookFn = Callable[[DirectiveExecutionContext], DirectiveExecutionResult]
+
+# Registry for custom directive execution hooks
+_DIRECTIVE_HOOKS: dict[str, DirectiveHookFn] = {}
+
+
+def register_directive_hook(directive_type: str, hook: DirectiveHookFn) -> None:
+    """Register an execution hook for a custom directive type.
+    
+    Args:
+        directive_type: The directive type (e.g., "HYGIENE", "TRACE")
+        hook: Function to execute when directive is encountered
+    """
+    _DIRECTIVE_HOOKS[directive_type.upper()] = hook
+
+
+def unregister_directive_hook(directive_type: str) -> None:
+    """Unregister a directive execution hook."""
+    _DIRECTIVE_HOOKS.pop(directive_type.upper(), None)
+
+
+def get_directive_hook(directive_type: str) -> DirectiveHookFn | None:
+    """Get the execution hook for a directive type."""
+    return _DIRECTIVE_HOOKS.get(directive_type.upper())
+
+
+def has_directive_hook(directive_type: str) -> bool:
+    """Check if a directive type has a registered hook."""
+    return directive_type.upper() in _DIRECTIVE_HOOKS
+
+
+def clear_directive_hooks() -> None:
+    """Clear all directive hooks (for testing)."""
+    _DIRECTIVE_HOOKS.clear()
+
+
+def execute_custom_directive(
+    directive_type: str,
+    directive_value: str,
+    workspace_root: Path,
+    line_number: int = 0,
+    session_id: str | None = None,
+    cycle_number: int = 1,
+) -> DirectiveExecutionResult:
+    """Execute a custom directive using its registered hook.
+    
+    Args:
+        directive_type: The directive type (e.g., "HYGIENE")
+        directive_value: The directive value/arguments
+        workspace_root: Path to workspace root
+        line_number: Line number in source file
+        session_id: Optional session identifier
+        cycle_number: Current iteration cycle
+        
+    Returns:
+        DirectiveExecutionResult with success status and output
+    """
+    hook = get_directive_hook(directive_type)
+    if hook is None:
+        return DirectiveExecutionResult.fail(
+            [f"No execution hook registered for directive type: {directive_type}"]
+        )
+    
+    ctx = DirectiveExecutionContext(
+        workspace_root=workspace_root,
+        directive_name=directive_type,
+        directive_value=directive_value,
+        line_number=line_number,
+        session_id=session_id,
+        cycle_number=cycle_number,
+    )
+    
+    try:
+        return hook(ctx)
+    except Exception as e:
+        return DirectiveExecutionResult.fail([f"Hook execution error: {e}"])
 
 
 @dataclass
@@ -254,6 +401,100 @@ def load_plugin_verifiers(
             pass
 
     return verifiers
+
+
+def _create_shell_hook(handler: DirectiveHandler, workspace_root: Path) -> DirectiveHookFn:
+    """Create an execution hook for a shell-based plugin handler.
+    
+    Args:
+        handler: The directive handler configuration
+        workspace_root: Root path for command execution
+        
+    Returns:
+        A DirectiveHookFn that executes the handler command
+    """
+    def hook(ctx: DirectiveExecutionContext) -> DirectiveExecutionResult:
+        cmd = handler.handler
+        
+        # Substitute placeholders
+        cmd = cmd.replace("{root}", str(ctx.workspace_root))
+        cmd = cmd.replace("{workspace}", str(workspace_root))
+        cmd = cmd.replace("{value}", ctx.directive_value)
+        cmd = cmd.replace("{directive}", ctx.directive_name)
+        
+        try:
+            result = subprocess.run(
+                shlex.split(cmd),
+                cwd=workspace_root,
+                capture_output=True,
+                text=True,
+                timeout=handler.timeout,
+            )
+            
+            output = result.stdout
+            if result.returncode == 0:
+                return DirectiveExecutionResult.ok(output=output)
+            else:
+                error_msg = result.stderr or result.stdout or f"Exit code {result.returncode}"
+                return DirectiveExecutionResult.fail(
+                    errors=[error_msg],
+                    output=output,
+                )
+                
+        except subprocess.TimeoutExpired:
+            return DirectiveExecutionResult.fail(
+                [f"Handler timed out after {handler.timeout} seconds"]
+            )
+        except FileNotFoundError as e:
+            return DirectiveExecutionResult.fail(
+                [f"Handler not found: {e}"]
+            )
+        except Exception as e:
+            return DirectiveExecutionResult.fail([str(e)])
+    
+    return hook
+
+
+def load_plugin_hooks(start_path: Path | None = None) -> dict[str, DirectiveHookFn]:
+    """Load all plugin directive hooks from discovered manifests.
+    
+    Registers hooks for ALL directive types (not just VERIFY).
+    
+    Args:
+        start_path: Starting directory for manifest discovery
+        
+    Returns:
+        Dict mapping directive types to their execution hooks
+    """
+    hooks: dict[str, DirectiveHookFn] = {}
+    start = start_path or Path.cwd()
+    
+    for manifest_path in discover_manifests(start):
+        try:
+            manifest = PluginManifest.from_file(manifest_path)
+            workspace_root = manifest_path.parent.parent
+            
+            for handler in manifest.handlers:
+                dtype = handler.directive_type.upper()
+                
+                # Register the directive type
+                register_custom_directive(dtype, {
+                    "name": handler.name,
+                    "handler": handler.handler,
+                    "description": handler.description,
+                    "source": str(manifest_path),
+                })
+                
+                # Create and register execution hook
+                if dtype not in hooks:  # First wins
+                    hook = _create_shell_hook(handler, workspace_root)
+                    hooks[dtype] = hook
+                    register_directive_hook(dtype, hook)
+                    
+        except Exception:
+            pass
+    
+    return hooks
 
 
 def register_plugins(verifiers_registry: dict[str, type]) -> dict[str, PluginVerifier]:
