@@ -27,10 +27,15 @@
 - ⚠️ TODO markers: 3 docs have markers, but in example code (intentional)
 - ✅ New docs added: SUBPROJECT-TOOLING.md, PLUGIN-AUTHORING.md updated
 
-**Remaining for Phase 2-3**:
-- Scan Context, Workflows, Verification sections
-- Check cross-references between docs
-- Verify GLOSSARY.md terminology consistency
+**Phase 2 Findings (2026-01-29)**:
+- ✅ Context docs (CONTEXT-MANAGEMENT, CONVERSATION-LIFECYCLE): v2-aligned
+- ✅ Workflow docs (WORKFLOW-DESIGN, ITERATION-PATTERNS): Current
+- ✅ Verification docs: All use `iterate`, no stale refs
+- ✅ Cross-references: All links valid
+
+**Remaining for Phase 3**:
+- GLOSSARY.md terminology audit
+- Final consistency check
 
 **Scope** (by section):
 
