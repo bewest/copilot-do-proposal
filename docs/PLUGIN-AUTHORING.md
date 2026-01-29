@@ -341,6 +341,7 @@ timeout: 120  # 2 minutes
 
 ## References
 
+- [Subproject Tooling Guide](SUBPROJECT-TOOLING.md) - Setup guide for external projects
 - [Manifest Schema](directives-schema.json) - JSON Schema for validation
 - [Plugin System Proposal](../proposals/PLUGIN-SYSTEM.md) - Design document
 - [Architecture](ARCHITECTURE.md) - Extension points
