@@ -10,11 +10,26 @@
 
 | # | Item | Priority | Effort | Notes |
 |---|------|----------|--------|-------|
-| *(No active items)* | | | | All directive work complete |
+| DIR-004 | **CLI subcommand generation** | P3 | 1 iteration | Optional: `sdqctl hygiene queue-stats` style commands |
 
 ---
 
 ## Backlog Details
+
+### DIR-004: CLI subcommand generation for custom directives
+
+**Problem**: Custom directives can only be used in .conv files. Users may want CLI access like `sdqctl hygiene queue-stats`.
+
+**Current state**: DIR-001..003 complete. Custom directives work in pipelines but not as standalone CLI commands.
+
+**Scope**:
+- Dynamic CLI command registration from plugin manifests
+- Command help text from manifest description
+- Argument handling from manifest args spec
+
+**Priority**: P3 (nice-to-have, not blocking core workflows)
+
+---
 
 ### DIR-001: Custom directive types from plugins
 
