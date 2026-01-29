@@ -70,6 +70,7 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
+| DIR-002: Extensible DirectiveType | ✅ Complete | Hybrid enum + string registry, 11 tests |
 | DOC-003: HELP-INLINE topic expansion | ✅ Complete | 4 new topics: plugins, verify, iterate, compaction (17 total) |
 | DOC-002 Phase 1: GETTING-STARTED.md | ✅ Complete | 7 `run` → `iterate` updates, deprecation note |
 
@@ -139,7 +140,6 @@
 |------|--------|-------|
 | DOC-002: Deprecation cleanup | 1 iteration | Phase 1 done, 12 docs remain (low priority) |
 | DOC-004: Subproject tooling guide | 1 iteration | Guide for externals |
-| DIR-002: Extensible DirectiveType enum | 1 iteration | Enable plugin directive types |
 | DIR-003: Custom directive execution hooks | 1 iteration | Wire plugins into pipeline |
 
 *Details in domain backlogs: [documentation.md](backlogs/documentation.md), [directives.md](backlogs/directives.md)*
